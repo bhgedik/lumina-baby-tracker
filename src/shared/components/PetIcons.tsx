@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Digital Pet Baby Face Icons
+// Sprouty — Digital Pet Baby Face Icons
 // Expressive baby faces that change based on elapsed time
 // Follows MoodIcons.tsx pattern (same imports, props, export)
 // ============================================================

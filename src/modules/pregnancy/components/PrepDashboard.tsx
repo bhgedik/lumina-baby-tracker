@@ -5,11 +5,12 @@
 // ============================================================
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
 import { DAILY_PREP_CARDS, BABY_SIZE_BY_WEEK } from '../data/prepContent';
 import { ProgressRing } from './ProgressRing';
+import { PregnancyInsightsGrid } from './PregnancyInsightsGrid';
 
 const SERIF_FONT = Platform.select({
   ios: 'Georgia',
@@ -26,10 +27,13 @@ interface PrepDashboardProps {
     progress: number;
   };
   onBabyArrivedPress?: () => void;
+  onJournal?: () => void;
+  onAskLumina?: () => void;
 }
 
-export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrivedPress }: PrepDashboardProps) {
+export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrivedPress, onJournal, onAskLumina }: PrepDashboardProps) {
   const { week, dayOfWeek, progress } = gestationalInfo;
+  const weeksLeft = Math.max(0, 40 - week);
 
   // Find the starting index for tips — closest to current week
   const startTipIndex = useMemo(() => {
@@ -71,13 +75,16 @@ export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrive
   const babySize = BABY_SIZE_BY_WEEK[week] ?? null;
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <View style={styles.content}>
       {/* Greeting */}
       <View style={styles.greetingSection}>
         <Text style={styles.greetingText}>
           {babyName === 'your little one'
-            ? 'Preparing for your little one'
-            : `Preparing for ${babyName}`}
+            ? 'Waiting for your little one...'
+            : `Waiting for ${babyName}...`}
+        </Text>
+        <Text style={styles.countdownText}>
+          {weeksLeft > 0 ? `${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} to go!` : 'Any day now!'}
         </Text>
       </View>
 
@@ -108,6 +115,16 @@ export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrive
             <Text style={styles.sizeLength}>{babySize.length}</Text>
           </View>
         </View>
+      )}
+
+      {/* Pregnancy Insights Grid */}
+      {onJournal && onAskLumina && (
+        <PregnancyInsightsGrid
+          week={week}
+          babyName={babyName}
+          onJournal={onJournal}
+          onAskLumina={onAskLumina}
+        />
       )}
 
       {/* Section spacer */}
@@ -151,13 +168,13 @@ export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrive
         </View>
       </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: spacing.base,
+    paddingVertical: spacing.base,
     paddingBottom: 120,
   },
 
@@ -170,6 +187,11 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
+  },
+  countdownText: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
 
   // "I Had My Baby!" button

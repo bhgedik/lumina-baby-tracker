@@ -29,6 +29,9 @@ interface OnboardingData {
 
   // Preferences (step 4)
   preferredUnits: 'metric' | 'imperial';
+
+  // Challenge (quiz step 3)
+  currentChallenge: 'sleep' | 'feeding' | 'fussy' | 'all' | null;
 }
 
 interface OnboardingState extends OnboardingData {
@@ -54,6 +57,9 @@ interface OnboardingState extends OnboardingData {
   setPreferences: (data: {
     preferredUnits: 'metric' | 'imperial';
   }) => void;
+  setCurrentChallenge: (data: {
+    currentChallenge: 'sleep' | 'feeding' | 'fussy' | 'all';
+  }) => void;
   markCompleted: () => void;
   reset: () => void;
   hydrate: () => Promise<void>;
@@ -71,6 +77,7 @@ const INITIAL_DATA: OnboardingData = {
   wasPreterm: null,
   gestationalWeeks: null,
   preferredUnits: 'metric',
+  currentChallenge: null,
 };
 
 function persistData(state: OnboardingState) {
@@ -86,6 +93,7 @@ function persistData(state: OnboardingState) {
     wasPreterm: state.wasPreterm,
     gestationalWeeks: state.gestationalWeeks,
     preferredUnits: state.preferredUnits,
+    currentChallenge: state.currentChallenge,
   };
   AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data)).catch(() => {});
 }
@@ -111,6 +119,11 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   },
 
   setPreferences: (data) => {
+    set(data);
+    persistData({ ...get(), ...data });
+  },
+
+  setCurrentChallenge: (data) => {
     set(data);
     persistData({ ...get(), ...data });
   },

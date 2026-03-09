@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Growth Store (Zustand)
+// Sprouty — Growth Store (Zustand)
 // Weight, length, and head circumference logs
 // ============================================================
 

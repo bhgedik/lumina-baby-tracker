@@ -183,6 +183,43 @@ export function filterContent(
  * Adjust content verbosity based on parent experience level.
  * For experienced parents, filter out basic educational content.
  */
+/**
+ * Validate an AI chat response against feeding method and allergy constraints.
+ * Operates on plain text (unlike filterContent which needs ContentItem[]).
+ * Returns warnings if filtered terms are detected — used as a safety net
+ * alongside prompt-level filtering in the edge function.
+ */
+export function validateChatResponse(
+  text: string,
+  feedingMethod: string,
+  knownAllergies: string[],
+): { safe: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+  const lower = text.toLowerCase();
+
+  // Feeding method check
+  if (feedingMethod === 'formula_only') {
+    if (BREASTFEEDING_TAGS.some((tag) => lower.includes(tag.replace(/_/g, ' ')))) {
+      warnings.push('breastfeeding');
+    }
+  }
+  if (feedingMethod === 'breast_only') {
+    if (FORMULA_TAGS.some((tag) => lower.includes(tag.replace(/_/g, ' ')))) {
+      warnings.push('formula');
+    }
+  }
+
+  // Allergen check
+  for (const allergy of knownAllergies) {
+    const tags = ALLERGEN_TAG_MAP[allergy.toLowerCase()] ?? [allergy.toLowerCase()];
+    if (tags.some((tag) => lower.includes(tag.replace(/_/g, ' ')))) {
+      warnings.push(allergy);
+    }
+  }
+
+  return { safe: warnings.length === 0, warnings };
+}
+
 export function adjustForExperience(
   items: ContentItem[],
   experienceLevel: 'first_time' | 'experienced'

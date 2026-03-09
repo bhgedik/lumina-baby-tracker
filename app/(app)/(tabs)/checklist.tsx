@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Prep Checklist Tab (Pregnancy Mode)
+// Sprouty — Prep Checklist Tab (Pregnancy Mode)
 // Premium category-first dashboard with AI-powered task detail
 // ============================================================
 
@@ -519,14 +519,14 @@ function DetailSheet({
           {/* Title */}
           <Text style={styles.detailTitle}>{task.title}</Text>
 
-          {/* The Veteran Nurse's Take */}
+          {/* Lumina's Take */}
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHead}>
               <View style={[styles.detailSectionDot, { backgroundColor: colors.secondary[50] }]}>
                 <Feather name="heart" size={16} color={colors.secondary[500]} />
               </View>
               <Text style={styles.detailSectionLabel}>
-                {"The Veteran Nurse\u2019s Take"}
+                {"Lumina\u2019s Take"}
               </Text>
             </View>
             <Text style={styles.detailSectionBody}>

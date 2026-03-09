@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Activity Suggestions Service
+// Sprouty — Activity Suggestions Service
 // Calls ai-activity-suggestions edge function with timeout
 // Falls back to static suggestions when offline
 // ============================================================

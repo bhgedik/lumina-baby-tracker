@@ -49,23 +49,6 @@ export default function ProfileScreen() {
           </View>
         </Pressable>
 
-        {/* Caregivers card */}
-        <Pressable
-          style={[styles.card, shadows.sm]}
-          onPress={() => router.push('/(app)/profile/caregivers')}
-        >
-          <View style={styles.cardRow}>
-            <View style={styles.cardIcon}>
-              <Feather name="users" size={20} color={colors.primary[500]} />
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Caregivers</Text>
-              <Text style={styles.cardSubtitle}>Invite partner or family members</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={colors.textTertiary} />
-          </View>
-        </Pressable>
-
         {/* Settings card */}
         <Pressable
           style={[styles.card, shadows.sm]}

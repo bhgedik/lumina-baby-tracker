@@ -62,21 +62,18 @@ export type StoolColor = 'yellow' | 'green' | 'brown' | 'black' | 'red' | 'white
 export type StoolConsistency = 'liquid' | 'soft' | 'formed' | 'hard' | 'mucousy' | 'seedy';
 
 // === Health Types ===
-export type HealthLogType = 'temperature' | 'medication' | 'symptom' | 'doctor_visit' | 'er_visit' | 'other';
+export type HealthLogType = 'temperature' | 'medication' | 'symptom' | 'doctor_visit' | 'er_visit' | 'well_child_checkup' | 'other';
 export type TemperatureMethod = 'rectal' | 'axillary' | 'ear' | 'forehead';
 
 // === Activity Types ===
 export type ActivityCategory = 'tummy_time' | 'reading' | 'music' | 'sensory_play' | 'motor_play' | 'social_play' | 'outdoor' | 'bath' | 'other';
 export type ActivityResponse = 'loved_it' | 'engaged' | 'neutral' | 'fussy' | 'cried';
 
-// === Wellness Types ===
-export type WellnessLogType = 'mood' | 'epds' | 'energy' | 'note';
-
 // === Milestone Status ===
 export type MilestoneStatus = 'not_started' | 'emerging' | 'achieved';
 
 // === AI Insight Types ===
-export type InsightCategory = 'feeding' | 'sleep' | 'growth' | 'milestone' | 'health' | 'wellness' | 'general';
+export type InsightCategory = 'feeding' | 'sleep' | 'growth' | 'milestone' | 'health' | 'general';
 export type InsightPriority = 'low' | 'medium' | 'high' | 'critical';
 export type InsightStatus = 'active' | 'read' | 'dismissed' | 'acted_on';
 export type InsightRating = 'helpful' | 'not_helpful';

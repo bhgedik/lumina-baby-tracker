@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insights Module Types
+// Sprouty — Insights Module Types
 // Smart card feed + conversational AI chat
 // ============================================================
 
@@ -7,7 +7,6 @@ export type InsightTag =
   | 'health_pattern'
   | 'sleep_alert'
   | 'feeding_insight'
-  | 'mothers_wellness'
   | 'diaper_pattern'
   | 'growth_note'
   | 'milestone_watch'
@@ -19,6 +18,23 @@ export interface QuickAction {
   type: QuickActionType;
   label: string;
   icon: string; // Feather icon name
+}
+
+export type VisualGuideType = 'video_link' | 'illustration' | 'step_by_step';
+
+export interface VisualGuideStep {
+  step: number;
+  instruction: string;
+  icon?: string;
+}
+
+export interface VisualGuide {
+  type: VisualGuideType;
+  media_url: string;
+  action_text: string;
+  thumbnail_icon?: string;
+  steps?: VisualGuideStep[];
+  duration_label?: string;
 }
 
 export interface InsightCardData {
@@ -34,6 +50,7 @@ export interface InsightCardData {
   quickAction?: QuickAction;
   createdAt: number; // Date.now() timestamp
   contentHash: string; // Derived from triggering data, used for dismiss tracking
+  visualGuide?: VisualGuide;
 }
 
 export interface ChatMessage {
@@ -63,21 +80,19 @@ export interface PulseData {
 export interface GroupedInsights {
   pulse: PulseData;
   urgent: InsightCardData[];
-  wellness: InsightCardData[];
   patterns: InsightCardData[];
   positive: InsightCardData[];
 }
 
-export type InsightSection = 'urgent' | 'wellness' | 'patterns' | 'positive';
+export type InsightSection = 'urgent' | 'patterns' | 'positive';
 
 // Filter chip categories
-export type FilterCategory = 'all' | 'feeding' | 'sleep' | 'diapers' | 'wellness' | 'growth';
+export type FilterCategory = 'feeding' | 'sleep' | 'health' | 'routine' | 'all';
 
 export const FILTER_OPTIONS: { key: FilterCategory; label: string; tags: InsightTag[] }[] = [
-  { key: 'all', label: 'All', tags: [] },
   { key: 'feeding', label: 'Feeding', tags: ['feeding_insight'] },
   { key: 'sleep', label: 'Sleep', tags: ['sleep_alert'] },
-  { key: 'diapers', label: 'Diapers', tags: ['diaper_pattern'] },
-  { key: 'wellness', label: 'My Wellness', tags: ['mothers_wellness'] },
-  { key: 'growth', label: 'Growth', tags: ['growth_note', 'milestone_watch', 'general', 'health_pattern'] },
+  { key: 'health', label: 'Health', tags: ['health_pattern'] },
+  { key: 'routine', label: 'Routine', tags: ['general'] },
+  { key: 'all', label: 'All', tags: [] },
 ];

@@ -11,7 +11,6 @@ import { useDiaperStore } from '../../../stores/diaperStore';
 import { useBabyStore } from '../../../stores/babyStore';
 import { useOnboardingStore } from '../../../stores/onboardingStore';
 import { useMotherMedsStore, type ActiveMed } from '../../../stores/motherMedsStore';
-import { useMotherMoodStore, type MoodEntry } from '../../../stores/motherMoodStore';
 import { calculateCorrectedAge } from '../../baby/utils/correctedAge';
 import { getNurseInsightForDay, formatInsightAge, type NurseInsight } from '../../../ai/dailyNurseInsights';
 import { timeAgo } from '../../../shared/utils/dateTime';
@@ -36,6 +35,7 @@ interface BabyAge {
 
 interface DashboardData {
   greeting: string;
+  parentName: string | null;
   babyName: string | null;
   isPregnant: boolean;
   dueDate: string | null;
@@ -55,7 +55,6 @@ interface DashboardData {
   isMedHidden: boolean;
   nextMedDue: ActiveMed | null;
   activeMeds: ActiveMed[];
-  todaysMood: MoodEntry | null;
   lastFedAgo: string | null;
   totalFeedsToday: number;
   totalWetToday: number;
@@ -113,15 +112,18 @@ export function useDashboardData(): DashboardData {
   // Select stable primitive/reference values — NOT method calls
   const babies = useBabyStore((s) => s.babies);
   const activeBabyId = useBabyStore((s) => s.activeBabyId);
+  const onboardingParentName = useOnboardingStore((s) => s.parentName);
   const onboardingExperience = useOnboardingStore((s) => s.experienceLevel);
   const onboardingFeeding = useOnboardingStore((s) => s.feedingMethod);
   const feedingTimer = useFeedingStore((s) => s.activeTimer);
+  const feedingItemCount = useFeedingStore((s) => s.items.length);
   const sleepTimer = useSleepStore((s) => s.activeTimer);
+  const sleepItemCount = useSleepStore((s) => s.items.length);
+  const diaperItemCount = useDiaperStore((s) => s.items.length);
 
   // Mother stores — subscribe to reactive state
   const activeMeds = useMotherMedsStore((s) => s.activeMeds);
   const isMedHidden = useMotherMedsStore((s) => s.isHidden);
-  const moodEntries = useMotherMoodStore((s) => s.entries);
 
   const baby = useMemo(() => {
     if (!activeBabyId) return babies[0] ?? null;
@@ -136,17 +138,17 @@ export function useDashboardData(): DashboardData {
   const feedingSummary = useMemo<FeedingSummary | null>(() => {
     if (!baby) return null;
     return useFeedingStore.getState().getSummaryToday(baby.id);
-  }, [baby, feedingTimer]);
+  }, [baby, feedingTimer, feedingItemCount]);
 
   const sleepSummary = useMemo<SleepSummary | null>(() => {
     if (!baby) return null;
     return useSleepStore.getState().getSummaryToday(baby.id);
-  }, [baby, sleepTimer]);
+  }, [baby, sleepTimer, sleepItemCount]);
 
   const diaperSummary = useMemo<DiaperSummary | null>(() => {
     if (!baby) return null;
     return useDiaperStore.getState().getSummaryToday(baby.id);
-  }, [baby]);
+  }, [baby, diaperItemCount]);
 
   const correctedAge = useMemo(() => {
     return baby ? calculateCorrectedAge(baby) : null;
@@ -163,10 +165,6 @@ export function useDashboardData(): DashboardData {
   const nextMedDue = useMemo(() => {
     return useMotherMedsStore.getState().getNextDue();
   }, [activeMeds]);
-
-  const todaysMood = useMemo(() => {
-    return useMotherMoodStore.getState().getTodaysMood();
-  }, [moodEntries]);
 
   const lastFedAgo = useMemo(() => {
     if (!feedingSummary?.last_feed_at) return null;
@@ -196,6 +194,7 @@ export function useDashboardData(): DashboardData {
 
   return {
     greeting: getGreeting(),
+    parentName: onboardingParentName || null,
     babyName: baby?.name ?? null,
     isPregnant: baby?.is_pregnant ?? false,
     dueDate,
@@ -215,7 +214,6 @@ export function useDashboardData(): DashboardData {
     isMedHidden,
     nextMedDue,
     activeMeds,
-    todaysMood,
     lastFedAgo,
     totalFeedsToday: feedingSummary?.total_feeds ?? 0,
     totalWetToday: diaperSummary?.wet_count ?? 0,

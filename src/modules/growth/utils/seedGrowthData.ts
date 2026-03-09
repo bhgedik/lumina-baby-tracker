@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Seed Growth Data Generator
+// Sprouty — Seed Growth Data Generator
 // Generates realistic monthly growth logs targeting 30–40th
 // percentile with natural drift
 // ============================================================

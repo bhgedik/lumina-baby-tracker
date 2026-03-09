@@ -23,6 +23,7 @@ export const APP_CONFIG = {
     FEVER_INFANT_AGE_DAYS: 90,
     EPDS_CLINICAL_THRESHOLD: 13,
     DEHYDRATION_HOURS_NEWBORN: 12,
+    SOLID_FOODS_MIN_AGE_MONTHS: 6,
   },
 
   // Lifecycle stage boundaries (in corrected age months)
@@ -46,7 +47,6 @@ export const APP_CONFIG = {
     FEEDING_REMINDER: 'feeding_reminder',
     MILESTONE_ALERT: 'milestone_alert',
     AI_INSIGHT: 'ai_insight',
-    WELLNESS_CHECKIN: 'wellness_checkin',
     RED_FLAG: 'red_flag',
     MEDICINE_CHECKIN: 'medicine_checkin',
   },

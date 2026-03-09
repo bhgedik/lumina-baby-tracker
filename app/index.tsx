@@ -33,24 +33,22 @@ export default function Index() {
     // Defer navigation by one frame to ensure the navigation container is ready
     const navigateAfterMount = () => {
       try {
-        if (!isSupabaseConfigured) {
-          if (!hasCompletedOnboarding) {
-            router.replace('/(onboarding)/welcome');
-          } else {
-            router.replace('/(app)/(tabs)/home');
-          }
+        // Onboarding not completed → ALWAYS go to onboarding (regardless of auth)
+        if (!hasCompletedOnboarding) {
+          router.replace('/(onboarding)/welcome');
           return;
         }
 
-        if (!isAuthenticated) {
-          router.replace('/(auth)/login');
-        } else if (!hasCompletedOnboarding) {
-          router.replace('/(onboarding)/welcome');
-        } else {
-          router.replace('/(app)/(tabs)/home');
+        // Onboarding completed but not authenticated → resume auth
+        if (isSupabaseConfigured && !isAuthenticated) {
+          router.replace('/(onboarding)/create-account');
+          return;
         }
+
+        // Fully ready → app
+        router.replace('/(app)/(tabs)/home');
       } catch (e) {
-        console.warn('[Sprout] Navigation error:', e);
+        console.warn('[Sprouty] Navigation error:', e);
       }
     };
 

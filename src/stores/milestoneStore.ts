@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Milestone Store (Zustand)
+// Sprouty — Milestone Store (Zustand)
 // Tracks celebrated milestones with persist to AsyncStorage
 // ============================================================
 

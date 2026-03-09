@@ -144,6 +144,7 @@ export const useDiaperStore = create<DiaperState>((set, get) => ({
       wet_count: items.filter((i) => i.type === 'wet').length,
       dirty_count: items.filter((i) => i.type === 'dirty').length,
       both_count: items.filter((i) => i.type === 'both').length,
+      dry_count: items.filter((i) => i.type === 'dry').length,
       has_rash_today: items.some((i) => i.has_rash),
       last_change_at: lastChange?.logged_at ?? null,
       hours_since_last_change: hoursSince ? Math.round(hoursSince * 10) / 10 : null,

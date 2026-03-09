@@ -1,23 +1,17 @@
 // ============================================================
-// Sprout — Breast Feeding Panel
-// Warm, squishy Left/Right toggle + timer + side switching
+// Sprouty — Breast Feeding Panel
+// Side-by-side "Start Left" / "Start Right" pills
+// Active = Sage Green · Inactive = Dimmed · No modals
 // ============================================================
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { SegmentControl } from '../../../shared/components/SegmentControl';
 import { TimerDisplay } from '../../../shared/components/TimerDisplay';
-import { QuickButton } from '../../../shared/components/QuickButton';
 import { useFeedingTimer } from '../hooks/useFeedingTimer';
 import { useFeedingStore } from '../../../stores/feedingStore';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
+import { typography, spacing } from '../../../shared/constants/theme';
 import { formatTimerSeconds } from '../../../shared/utils/dateTime';
-
-const SIDE_OPTIONS = [
-  { value: 'left', label: 'Left' },
-  { value: 'right', label: 'Right' },
-];
 
 interface Props {
   onTimerStop: () => void;
@@ -29,8 +23,14 @@ export function BreastFeedingPanel({ onTimerStop }: Props) {
 
   const hasStarted = !!activeTimer;
 
-  const handleStart = () => {
-    startTimer('breast', 'left');
+  const handleSideTap = (side: 'left' | 'right') => {
+    if (!hasStarted) {
+      startTimer('breast', side);
+    } else if (currentSide !== side) {
+      switchSide();
+      // If paused, resume on the new side
+      if (isPaused) resumeTimer();
+    }
   };
 
   const handleStop = () => {
@@ -38,105 +38,128 @@ export function BreastFeedingPanel({ onTimerStop }: Props) {
     onTimerStop();
   };
 
+  const isLeftActive = hasStarted && currentSide === 'left';
+  const isRightActive = hasStarted && currentSide === 'right';
+
   return (
     <View style={styles.container}>
-      {/* Side selector */}
-      {hasStarted && (
-        <SegmentControl
-          options={SIDE_OPTIONS}
-          selected={currentSide ?? 'left'}
-          onSelect={() => switchSide()}
-          size="large"
-        />
-      )}
-
-      {/* Timer */}
+      {/* Timer — always rendered, controls appear only after start */}
       <TimerDisplay
         elapsedSeconds={elapsedSeconds}
         isRunning={isRunning}
         label={hasStarted ? `${currentSide === 'left' ? 'Left' : 'Right'} breast` : 'Breast feeding'}
-        onStart={handleStart}
-        onPause={pauseTimer}
-        onResume={resumeTimer}
-        onStop={handleStop}
+        onPause={hasStarted ? pauseTimer : undefined}
+        onResume={hasStarted ? resumeTimer : undefined}
+        onStop={hasStarted ? handleStop : undefined}
       />
 
-      {/* Switch side button */}
-      {hasStarted && (
-        <View style={styles.switchContainer}>
-          <QuickButton
-            icon={<Feather name="refresh-cw" size={24} color={colors.secondary[500]} />}
-            label="Switch Side"
-            onPress={switchSide}
-            size={70}
-            color={colors.secondary[500]}
-            variant="outlined"
+      {/* Side-by-side pills */}
+      <View style={styles.pillRow}>
+        {/* Left pill */}
+        <Pressable
+          style={[
+            styles.pill,
+            isLeftActive && styles.pillActive,
+            hasStarted && !isLeftActive && styles.pillDimmed,
+          ]}
+          onPress={() => handleSideTap('left')}
+          accessibilityLabel={hasStarted ? 'Switch to left' : 'Start left breast'}
+        >
+          <Feather
+            name="chevron-left"
+            size={18}
+            color={isLeftActive ? '#FFF' : '#3D3D3D'}
           />
-        </View>
-      )}
+          <View style={styles.pillInner}>
+            <Text style={[styles.pillLabel, isLeftActive && styles.pillLabelActive]}>
+              {hasStarted ? 'Left' : 'Start Left'}
+            </Text>
+            {hasStarted && (
+              <Text style={[styles.pillTime, isLeftActive && styles.pillTimeActive]}>
+                {formatTimerSeconds(leftSeconds)}
+              </Text>
+            )}
+          </View>
+        </Pressable>
 
-      {/* Side durations */}
-      {hasStarted && (
-        <View style={[styles.sidesRow, shadows.sm]}>
-          <View style={[styles.sideBox, currentSide === 'left' && styles.sideBoxActive]}>
-            <Text style={styles.sideLabel}>Left</Text>
-            <Text style={[styles.sideDuration, currentSide === 'left' && styles.activeSide]}>
-              {formatTimerSeconds(leftSeconds)}
+        {/* Right pill */}
+        <Pressable
+          style={[
+            styles.pill,
+            isRightActive && styles.pillActive,
+            hasStarted && !isRightActive && styles.pillDimmed,
+          ]}
+          onPress={() => handleSideTap('right')}
+          accessibilityLabel={hasStarted ? 'Switch to right' : 'Start right breast'}
+        >
+          <View style={styles.pillInner}>
+            <Text style={[styles.pillLabel, isRightActive && styles.pillLabelActive]}>
+              {hasStarted ? 'Right' : 'Start Right'}
             </Text>
+            {hasStarted && (
+              <Text style={[styles.pillTime, isRightActive && styles.pillTimeActive]}>
+                {formatTimerSeconds(rightSeconds)}
+              </Text>
+            )}
           </View>
-          <View style={styles.sideDivider} />
-          <View style={[styles.sideBox, currentSide === 'right' && styles.sideBoxActive]}>
-            <Text style={styles.sideLabel}>Right</Text>
-            <Text style={[styles.sideDuration, currentSide === 'right' && styles.activeSide]}>
-              {formatTimerSeconds(rightSeconds)}
-            </Text>
-          </View>
-        </View>
-      )}
+          <Feather
+            name="chevron-right"
+            size={18}
+            color={isRightActive ? '#FFF' : '#3D3D3D'}
+          />
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.base,
+    gap: spacing.lg,
   },
-  switchContainer: {
-    alignItems: 'center',
-  },
-  sidesRow: {
+
+  // Side-by-side pill row
+  pillRow: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing.base,
-    marginTop: spacing.xs,
+    gap: 12,
   },
-  sideBox: {
+  pill: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F0EAE1',
+    borderRadius: 999,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    minHeight: 64,
   },
-  sideBoxActive: {
-    backgroundColor: colors.primary[50],
+  pillActive: {
+    backgroundColor: '#8BA88E',
   },
-  sideDivider: {
-    width: 1,
-    backgroundColor: colors.neutral[200],
-    marginHorizontal: spacing.sm,
+  pillDimmed: {
+    opacity: 0.5,
   },
-  sideLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+  pillInner: {
+    alignItems: 'center',
+    gap: 2,
   },
-  sideDuration: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textTertiary,
+  pillLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3D3D3D',
+  },
+  pillLabelActive: {
+    color: '#FFFFFF',
+  },
+  pillTime: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#8A8A8A',
     fontVariant: ['tabular-nums'],
   },
-  activeSide: {
-    color: colors.primary[600],
+  pillTimeActive: {
+    color: 'rgba(255, 255, 255, 0.85)',
   },
 });

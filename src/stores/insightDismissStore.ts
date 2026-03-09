@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insight Dismiss Store (Zustand)
+// Sprouty — Insight Dismiss Store (Zustand)
 // Tracks dismissed insight content hashes with auto-resurface
 // When underlying data changes, hash changes, card resurfaces
 // ============================================================

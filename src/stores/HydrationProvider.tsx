@@ -14,10 +14,10 @@ import { useDiaperStore } from './diaperStore';
 import { useOnboardingStore } from './onboardingStore';
 import { usePrepChecklistStore } from './prepChecklistStore';
 import { useMotherMedsStore } from './motherMedsStore';
-import { useMotherMoodStore } from './motherMoodStore';
 import { useInsightDismissStore } from './insightDismissStore';
 import { useGrowthStore } from './growthStore';
-import { useMotherWellnessStore } from './motherWellnessStore';
+import { useHealthStore } from './healthStore';
+import { useLuminaThreadStore } from './luminaThreadStore';
 import { colors } from '../shared/constants/theme';
 
 // ⚠️  TEMPORARY: Set to true to wipe all data and restart onboarding.
@@ -49,10 +49,10 @@ export function HydrationProvider({ children }: Props) {
           useOnboardingStore.getState().hydrate(),
           usePrepChecklistStore.getState().hydrate(),
           useMotherMedsStore.getState().hydrate(),
-          useMotherMoodStore.getState().hydrate(),
           useInsightDismissStore.getState().hydrate(),
           useGrowthStore.getState().hydrate(),
-          useMotherWellnessStore.getState().hydrate(),
+          useHealthStore.getState().hydrate(),
+          useLuminaThreadStore.getState().hydrate(),
         ]);
       } catch (e) {
         console.warn('[Sprout] Hydration error (non-fatal):', e);

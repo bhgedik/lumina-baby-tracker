@@ -1,4 +1,4 @@
--- Nodd: Vaccination records
+-- Sprouty: Vaccination records
 -- NOTE: Vaccination schedules use CHRONOLOGICAL age (not corrected!)
 CREATE TABLE vaccinations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

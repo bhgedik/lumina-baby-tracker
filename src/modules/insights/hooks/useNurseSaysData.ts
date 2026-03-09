@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Nurse Says Data Hook
+// Sprouty — Nurse Says Data Hook
 // Provides veteran nurse reference cards + daily nurse insight
 // for the dedicated Nurse Says tab
 // ============================================================
@@ -11,7 +11,7 @@ import { useOnboardingStore } from '../../../stores/onboardingStore';
 import { getNurseInsightForDay } from '../../../ai/dailyNurseInsights';
 import { VETERAN_RULES } from '../../../ai/veteranInsights';
 import { VET_CATEGORY_TAG, VET_CATEGORY_ICON, VET_SEVERITY_PRIORITY } from '../constants';
-import type { InsightCardData, InsightTag } from '../types';
+import type { InsightCardData, InsightTag, VisualGuide } from '../types';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -43,7 +43,7 @@ function formatAgeDays(days: number): string {
 /** Map daily nurse insight categories to InsightTag */
 const NURSE_CATEGORY_TAG: Record<string, InsightTag> = {
   Feeding: 'feeding_insight',
-  Recovery: 'mothers_wellness',
+  Recovery: 'health_pattern',
   Sleep: 'sleep_alert',
   Bonding: 'general',
 };
@@ -117,6 +117,7 @@ export function useNurseSaysData(): NurseSaysState {
         body: rule.insight.body,
         priority: VET_SEVERITY_PRIORITY[rule.insight.severity] ?? ('low' as const),
         createdAt: Date.now() - 86400000,
+        ...(rule.insight.visual_guide ? { visualGuide: rule.insight.visual_guide as VisualGuide } : {}),
       }));
 
     // Filter dismissed

@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Growth Seed Data Hook
+// Sprouty — Growth Seed Data Hook
 // Auto-seeds growth data for the active baby if none exists.
 // Runs once per baby via AsyncStorage flag.
 // ============================================================

@@ -1,33 +1,47 @@
 // ============================================================
-// Sprout — Welcome Screen
-// The emotional hook. Warm, nurturing first impression.
+// Sprouty — Welcome Screen
+// 3-slide swipeable carousel. Warm, nurturing first impression.
 // ============================================================
 
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
-import { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Animated,
+  ScrollView,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 
-const FEATURES = [
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SLIDE_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
+const AUTO_ADVANCE_MS = 4000;
+
+const SLIDES = [
   {
-    icon: 'heart' as const,
-    color: colors.secondary[400],
-    title: 'Track with Love',
-    description: 'Feedings, sleep, diapers — effortless logging designed for one-handed use at 3AM',
+    icon: 'moon' as const,
+    title: 'AI Guidance at 3 AM',
+    description:
+      "Get expert-level guidance when the pediatrician's office is closed. Lumina, your AI companion, never sleeps.",
   },
   {
     icon: 'zap' as const,
-    color: colors.primary[500],
-    title: 'Expert by Your Side',
-    description: 'AI-powered guidance from a veteran nurse who has seen it all',
+    title: 'Frictionless Logging',
+    description:
+      'Track feedings, sleep, and diapers with one thumb. Designed for exhausted parents at 3 AM.',
   },
   {
-    icon: 'star' as const,
-    color: colors.warning,
-    title: 'Every Milestone',
-    description: 'Personalized for your baby\'s unique developmental journey',
+    icon: 'heart' as const,
+    title: 'Parental Burnout Tracking',
+    description:
+      "We don't just track your baby. We track YOU. Because a healthy parent means a thriving baby.",
   },
 ];
 
@@ -35,7 +49,11 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const autoAdvanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Entrance animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
@@ -43,46 +61,103 @@ export default function WelcomeScreen() {
     ]).start();
   }, []);
 
+  // Start auto-advance interval
+  const startAutoAdvance = useCallback(() => {
+    if (autoAdvanceRef.current) {
+      clearInterval(autoAdvanceRef.current);
+    }
+    autoAdvanceRef.current = setInterval(() => {
+      setActiveSlide((prev) => {
+        const next = (prev + 1) % SLIDES.length;
+        scrollViewRef.current?.scrollTo({ x: next * SLIDE_WIDTH, animated: true });
+        return next;
+      });
+    }, AUTO_ADVANCE_MS);
+  }, []);
+
+  // Auto-advance carousel
+  useEffect(() => {
+    startAutoAdvance();
+    return () => {
+      if (autoAdvanceRef.current) {
+        clearInterval(autoAdvanceRef.current);
+      }
+    };
+  }, [startAutoAdvance]);
+
+  // Cancel auto-advance on manual swipe
+  const handleScrollBeginDrag = useCallback(() => {
+    if (autoAdvanceRef.current) {
+      clearInterval(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+  }, []);
+
+  // Track active slide
+  const handleMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const index = Math.round(event.nativeEvent.contentOffset.x / SLIDE_WIDTH);
+      setActiveSlide(index);
+    },
+    [],
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        {/* Hero */}
+        {/* Logo badge */}
         <View style={styles.hero}>
           <View style={[styles.logoBadge, shadows.soft]}>
             <Text style={styles.logoText}>S</Text>
           </View>
-          <Text style={styles.appName}>Sprout</Text>
-          <Text style={styles.title}>
-            Welcome to your{'\n'}parenting journey
-          </Text>
-          <Text style={styles.subtitle}>
-            You're not alone in this. Sprout is your calm, experienced companion — like having a
-            gentle night nurse and pediatric expert always in your corner, cheering you on.
-          </Text>
+          <Text style={styles.appName}>Sprouty</Text>
         </View>
 
-        {/* Feature cards */}
-        <View style={styles.features}>
-          {FEATURES.map((feature) => (
-            <View key={feature.title} style={[styles.featureCard, shadows.sm]}>
-              <View style={[styles.featureIconWrap, { backgroundColor: feature.color + '15' }]}>
-                <Feather name={feature.icon} size={20} color={feature.color} />
+        {/* Carousel */}
+        <View style={styles.carouselContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            contentContainerStyle={styles.carouselContent}
+            decelerationRate="fast"
+            snapToInterval={SLIDE_WIDTH}
+          >
+            {SLIDES.map((slide) => (
+              <View key={slide.title} style={styles.slide}>
+                <View style={styles.slideIconWrap}>
+                  <Feather name={slide.icon} size={32} color={colors.primary[500]} />
+                </View>
+                <Text style={styles.slideTitle}>{slide.title}</Text>
+                <Text style={styles.slideDescription}>{slide.description}</Text>
               </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
-              </View>
-            </View>
-          ))}
+            ))}
+          </ScrollView>
+
+          {/* Dot indicators */}
+          <View style={styles.dotsContainer}>
+            {SLIDES.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  index === activeSlide ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
         </View>
 
         {/* CTA */}
         <Pressable
           style={[styles.button, shadows.md]}
-          onPress={() => router.push('/(onboarding)/parent-profile')}
+          onPress={() => router.push('/(onboarding)/baby-profile')}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Let's Get Started</Text>
+          <Text style={styles.buttonText}>Let's meet your baby</Text>
           <Feather name="arrow-right" size={20} color={colors.textInverse} />
         </Pressable>
       </Animated.View>
@@ -124,54 +199,60 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.primary[500],
     letterSpacing: 1,
+  },
+  carouselContainer: {
+    alignItems: 'center',
+  },
+  carouselContent: {
+    // no extra padding — slides are sized to SLIDE_WIDTH
+  },
+  slide: {
+    width: SLIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  slideIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primary[50],
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.lg,
   },
-  title: {
-    fontSize: typography.fontSize['2xl'],
+  slideTitle: {
+    fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
     textAlign: 'center',
-    lineHeight: 38,
     marginBottom: spacing.md,
   },
-  subtitle: {
+  slideDescription: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 23,
     paddingHorizontal: spacing.sm,
   },
-  features: {
-    gap: spacing.md,
-  },
-  featureCard: {
+  dotsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.base,
-    borderRadius: borderRadius['2xl'],
-    gap: spacing.md,
-  },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: spacing.xl,
+    gap: spacing.sm,
   },
-  featureText: {
-    flex: 1,
+  dot: {
+    height: 8,
+    borderRadius: 4,
   },
-  featureTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: 2,
+  dotActive: {
+    width: 24,
+    backgroundColor: colors.primary[500],
   },
-  featureDescription: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 18,
+  dotInactive: {
+    width: 8,
+    backgroundColor: colors.neutral[200],
   },
   button: {
     flexDirection: 'row',

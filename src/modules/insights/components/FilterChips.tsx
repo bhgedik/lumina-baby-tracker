@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Filter Chips
+// Sprouty — Filter Chips
 // Horizontal scrollable category pills for filtering insights
 // ============================================================
 

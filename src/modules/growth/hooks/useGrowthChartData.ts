@@ -1,12 +1,12 @@
 // ============================================================
-// Nodd — Growth Chart Data Hook
+// Sprouty — Growth Chart Data Hook
 // Prepares chart-ready data from growth store
 // ============================================================
 
 import { useMemo } from 'react';
 import { useBabyStore } from '../../../stores/babyStore';
 import { useGrowthStore } from '../../../stores/growthStore';
-import { resolveSex } from '../utils/percentileCalculation';
+import { resolveSex, calculatePercentile } from '../utils/percentileCalculation';
 import type { Sex } from '../data/whoGrowthStandards';
 
 interface ChartPoint {
@@ -86,15 +86,25 @@ export function useGrowthChartData(): GrowthChartData {
     // Round up to next whole month for chart range, minimum 2
     const maxAgeMonths = Math.max(2, Math.ceil(lastAgeDays / 30.44) + 1);
 
+    // Compute percentiles dynamically — stored fields may be null for user-entered data
+    const lastAgeMonths = Math.round((lastAgeDays / 30.44) * 2) / 2;
+    const latestPercentiles = {
+      weight: lastLog.weight_grams != null
+        ? calculatePercentile(sex, 'weight', lastAgeMonths, lastLog.weight_grams)
+        : 0,
+      length: lastLog.height_cm != null
+        ? calculatePercentile(sex, 'length', lastAgeMonths, lastLog.height_cm)
+        : 0,
+      head: lastLog.head_circumference_cm != null
+        ? calculatePercentile(sex, 'head', lastAgeMonths, lastLog.head_circumference_cm)
+        : 0,
+    };
+
     return {
       measurements: { weight, length, head },
       sex,
       maxAgeMonths,
-      latestPercentiles: {
-        weight: lastLog.weight_percentile ?? 0,
-        length: lastLog.height_percentile ?? 0,
-        head: lastLog.head_percentile ?? 0,
-      },
+      latestPercentiles,
       latestValues: {
         weight: lastLog.weight_grams,
         length: lastLog.height_cm,

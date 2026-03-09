@@ -22,6 +22,15 @@ export interface AIInsight extends Timestamps {
   triggered_by: string | null;
 }
 
+export interface VeteranRuleVisualGuide {
+  type: 'video_link' | 'illustration' | 'step_by_step';
+  media_url: string;
+  action_text: string;
+  thumbnail_icon?: string;
+  steps?: { step: number; instruction: string; icon?: string }[];
+  duration_label?: string;
+}
+
 export interface VeteranRule {
   id: string;
   trigger: {
@@ -35,6 +44,7 @@ export interface VeteranRule {
     severity: 'info' | 'warning' | 'urgent';
     category: string;
     source: string;
+    visual_guide?: VeteranRuleVisualGuide;
   };
   proactive_timer_minutes?: number;
 }

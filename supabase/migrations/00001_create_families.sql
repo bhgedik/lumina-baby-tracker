@@ -1,4 +1,4 @@
--- Nodd: Family table
+-- Sprouty: Family table
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE families (

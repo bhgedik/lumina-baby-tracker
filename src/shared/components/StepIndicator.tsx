@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Step Indicator
+// Sprouty — Step Indicator
 // Icon-based progress bar with dashed connectors for onboarding
 // ============================================================
 

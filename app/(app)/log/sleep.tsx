@@ -1,221 +1,352 @@
 // ============================================================
-// Sprout — Sleep Log Screen
-// Warm, squishy timer-based sleep tracking with wake window
+// Sprouty — Sleep Log Screen (State-Based)
+// Three vertical state buttons: Falling Asleep → Deep Sleep → Waking Up
+// No timers — each tap logs a timestamped state transition
 // ============================================================
 
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, Pressable, Animated, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Platform,
+  Vibration,
+} from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-// SafeAreaView not needed — Stack header handles top safe area
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
-import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
-import { SegmentControl } from '../../../src/shared/components/SegmentControl';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
-import { WakeWindowIndicator } from '../../../src/modules/sleep/components/WakeWindowIndicator';
-import { SleepDetailsPanel } from '../../../src/modules/sleep/components/SleepDetailsPanel';
-import { useSleepTimer } from '../../../src/modules/sleep/hooks/useSleepTimer';
-import { useWakeWindow } from '../../../src/modules/sleep/hooks/useWakeWindow';
 import { useSleepStore } from '../../../src/stores/sleepStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useAuthStore } from '../../../src/stores/authStore';
-import { useFeedingStore } from '../../../src/stores/feedingStore';
-import { calculateCorrectedAge } from '../../../src/modules/baby/utils/correctedAge';
-import type { SleepType, SleepMethod, SleepLocation, Rating } from '../../../src/shared/types/common';
+import { generateUUID } from '../../../src/stores/createSyncedStore';
+import type { SleepLog } from '../../../src/modules/sleep/types';
 
-const SLEEP_TYPE_OPTIONS = [
-  { value: 'nap', label: 'Nap' },
-  { value: 'night', label: 'Night' },
+// ── Design tokens ────────────────────────────────────────────
+const UI = {
+  bg: '#F7F4F0',
+  card: '#FFFFFF',
+  text: '#3D3D3D',
+  textSecondary: '#5C5C5C',  // body text — readable on cream
+  textMuted: '#8A8A8A',      // small labels, captions
+  accent: '#8BA88E',
+};
+
+const SOFT_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.05,
+  shadowRadius: 12,
+  elevation: 2,
+};
+
+// ── Sleep states ─────────────────────────────────────────────
+
+type SleepPhase = 'falling_asleep' | 'deep_sleep' | 'waking_up';
+
+interface SleepState {
+  id: SleepPhase;
+  label: string;
+  description: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  iconBg: string;
+  iconTint: string;
+  activeBg: string;
+  activeBorder: string;
+}
+
+const SLEEP_STATES: SleepState[] = [
+  {
+    id: 'falling_asleep',
+    label: 'Falling Asleep',
+    description: 'Baby is in my arms, transitioning to sleep.',
+    icon: 'heart',
+    iconBg: '#F3EEF8',
+    iconTint: '#9B7DB8',
+    activeBg: '#F0EAF5',
+    activeBorder: '#C4ABD8',
+  },
+  {
+    id: 'deep_sleep',
+    label: 'Deep Sleep',
+    description: 'Baby is now in the crib, sound asleep.',
+    icon: 'moon',
+    iconBg: '#EDF3EE',
+    iconTint: '#6B8E6F',
+    activeBg: '#E8F0E9',
+    activeBorder: '#8BA88E',
+  },
+  {
+    id: 'waking_up',
+    label: 'Waking Up',
+    description: 'Baby has woken up, ending the session.',
+    icon: 'sun',
+    iconBg: '#FEF4E8',
+    iconTint: '#C4943A',
+    activeBg: '#FDF0DE',
+    activeBorder: '#D4A84B',
+  },
 ];
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${m} ${period}`;
+}
+
+function hapticTap() {
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    Vibration.vibrate(10);
+  }
+}
+
+// ── Main component ───────────────────────────────────────────
 
 export default function SleepLogScreen() {
   const router = useRouter();
+  const baby = useBabyStore((s) => s.getActiveBaby());
+  const profile = useAuthStore((s) => s.profile);
+  const { addItem } = useSleepStore();
+
   const headerLeft = useCallback(
     () => (
-      <Pressable onPress={() => router.back()} hitSlop={12} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: Platform.OS === 'ios' ? -8 : 0 }}>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={12}
+        style={{ flexDirection: 'row', alignItems: 'center', marginLeft: Platform.OS === 'ios' ? -8 : 0 }}
+      >
         <Feather name="chevron-left" size={26} color={colors.primary[600]} />
         <Text style={{ fontSize: 17, color: colors.primary[600], marginLeft: -2 }}>Home</Text>
       </Pressable>
     ),
     [router],
   );
-  const baby = useBabyStore((s) => s.getActiveBaby());
-  const profile = useAuthStore((s) => s.profile);
-  const { startSleep, endSleep, addItem, updateItem, activeTimer } = useSleepStore();
-  const feedingTimer = useFeedingStore((s) => s.activeTimer);
 
-  const correctedAge = baby ? calculateCorrectedAge(baby) : null;
-  const ageMonths = correctedAge?.effectiveAgeMonths ?? 3;
+  // Current active phase + timestamps for each phase
+  const [activePhase, setActivePhase] = useState<SleepPhase | null>(null);
+  const [phaseTimestamps, setPhaseTimestamps] = useState<Record<string, string>>({});
+  const [sessionLogId, setSessionLogId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
 
-  const { elapsedSeconds, isRunning } = useSleepTimer();
-  const { minutesSinceWake, wakeWindowConfig, status } = useWakeWindow(baby?.id, ageMonths);
+  // Animated scales for each button
+  const scales = useRef(
+    SLEEP_STATES.reduce(
+      (acc, s) => ({ ...acc, [s.id]: new Animated.Value(1) }),
+      {} as Record<SleepPhase, Animated.Value>,
+    ),
+  ).current;
 
-  const [sleepType, setSleepType] = useState<SleepType>('nap');
-  const [showDetails, setShowDetails] = useState(false);
-  const [completedLogId, setCompletedLogId] = useState<string | null>(null);
+  const babyName = baby?.name ?? 'Baby';
 
-  const [method, setMethod] = useState<SleepMethod | null>(null);
-  const [location, setLocation] = useState<SleepLocation | null>(null);
-  const [roomTemp, setRoomTemp] = useState(21.0);
-  const [quality, setQuality] = useState<Rating | null>(null);
-  const [nightWakings, setNightWakings] = useState(0);
-  const [toast, setToast] = useState<{ title: string; body: string; severity: 'info' | 'warning'; source: string } | null>(null);
+  const statusText = useMemo(() => {
+    if (!activePhase) return null;
+    const state = SLEEP_STATES.find((s) => s.id === activePhase);
+    if (!state) return null;
 
-  const startScale = useRef(new Animated.Value(1)).current;
-  const stopScale = useRef(new Animated.Value(1)).current;
+    switch (activePhase) {
+      case 'falling_asleep':
+        return `${babyName} is falling asleep...`;
+      case 'deep_sleep':
+        return `${babyName} is in deep sleep`;
+      case 'waking_up':
+        return `${babyName} has woken up`;
+      default:
+        return null;
+    }
+  }, [activePhase, babyName]);
 
-  const handleStartSleep = useCallback(() => {
-    if (feedingTimer) return;
-    startSleep(sleepType);
-  }, [feedingTimer, startSleep, sleepType]);
+  const handlePhasePress = useCallback(
+    (phase: SleepPhase) => {
+      hapticTap();
 
-  const handleEndSleep = useCallback(() => {
-    const log = endSleep();
-    if (log && baby) {
-      const completedLog = {
-        ...log,
-        baby_id: baby.id,
-        family_id: profile?.family_id ?? baby.family_id,
-        logged_by: profile?.id ?? '',
-        type: sleepType,
-      };
-      addItem(completedLog);
-      setCompletedLogId(completedLog.id);
-      setShowDetails(true);
+      const now = new Date().toISOString();
 
-      if (roomTemp) {
+      // Record the timestamp for this phase
+      setPhaseTimestamps((prev) => ({ ...prev, [phase]: now }));
+      setActivePhase(phase);
+
+      // If "Waking Up" is pressed, finalize and log the sleep session
+      if (phase === 'waking_up') {
+        if (!baby) return;
+
+        const startedAt = phaseTimestamps.falling_asleep ?? phaseTimestamps.deep_sleep ?? now;
+        const endedAt = now;
+        const durationMs = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+        const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+
+        const log: SleepLog = {
+          id: generateUUID(),
+          baby_id: baby.id,
+          family_id: profile?.family_id ?? baby.family_id,
+          logged_by: profile?.id ?? '',
+          type: 'nap',
+          started_at: startedAt,
+          ended_at: endedAt,
+          duration_minutes: durationMinutes,
+          method: null,
+          location: null,
+          quality: null,
+          night_wakings: null,
+          room_temperature_celsius: null,
+          notes: buildNotes(phaseTimestamps, now),
+          created_at: now,
+          updated_at: now,
+        };
+
+        addItem(log);
+        setSessionLogId(log.id);
+        setToast({ title: 'Sleep logged!', body: `${durationMinutes} min session saved.` });
+      } else {
         setToast({
-          title: 'Sleep Layering Guide (TOG Scale)',
-          body: roomTemp > 25
-            ? 'Room is warm — use only a short-sleeve bodysuit or light 0.5 TOG sleep sack.'
-            : roomTemp < 18
-              ? 'Room is cool — use a bodysuit with a 2.5-3.5 TOG sleep sack.'
-              : 'Room is ideal (20-22°C) — bodysuit + 1.0-1.5 TOG sleep sack is perfect.',
-          severity: 'info',
-          source: 'The Lullaby Trust / Red Nose Safe Sleep',
+          title: `${SLEEP_STATES.find((s) => s.id === phase)?.label}`,
+          body: `Logged at ${formatTime(now)}`,
         });
       }
-    }
-  }, [endSleep, baby, profile, sleepType, addItem, roomTemp]);
+    },
+    [baby, profile, addItem, phaseTimestamps],
+  );
 
-  const handleSaveDetails = useCallback(() => {
-    if (completedLogId) {
-      updateItem(completedLogId, {
-        method,
-        location,
-        room_temperature_celsius: roomTemp,
-        quality,
-        night_wakings: sleepType === 'night' ? nightWakings : null,
-      });
-    }
-    setShowDetails(false);
-    setTimeout(() => router.back(), 500);
-  }, [completedLogId, method, location, roomTemp, quality, nightWakings, sleepType, updateItem, router]);
+  // Check if a phase is disabled (enforce order: falling_asleep → deep_sleep → waking_up)
+  const isPhaseDisabled = useCallback(
+    (phase: SleepPhase): boolean => {
+      if (phase === 'falling_asleep') return activePhase !== null;
+      if (phase === 'deep_sleep') return activePhase !== 'falling_asleep';
+      if (phase === 'waking_up') return activePhase !== 'deep_sleep' && activePhase !== 'falling_asleep';
+      return false;
+    },
+    [activePhase],
+  );
+
+  const sessionComplete = activePhase === 'waking_up';
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: 'Log Sleep', headerTintColor: colors.primary[600], headerLeft, headerStyle: { backgroundColor: colors.background }, headerShadowVisible: false }} />
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Wake Window */}
-        {minutesSinceWake !== null && (
-          <WakeWindowIndicator
-            minutesSinceWake={minutesSinceWake}
-            minMinutes={wakeWindowConfig.min_minutes}
-            maxMinutes={wakeWindowConfig.max_minutes}
-            status={status}
-          />
-        )}
-
-        {/* Sleep Type Selector */}
-        {!activeTimer && (
-          <View style={styles.typeSelector}>
-            <SegmentControl
-              options={SLEEP_TYPE_OPTIONS}
-              selected={sleepType}
-              onSelect={(v) => setSleepType(v as SleepType)}
-              size="large"
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Sleep',
+          headerTintColor: colors.primary[600],
+          headerLeft,
+          headerStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
+        }}
+      />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Status banner */}
+        {statusText && (
+          <View style={styles.statusBanner}>
+            <Feather
+              name={activePhase === 'waking_up' ? 'sun' : 'moon'}
+              size={16}
+              color={UI.accent}
             />
+            <Text style={styles.statusText}>{statusText}</Text>
           </View>
         )}
 
-        {/* Start Button */}
-        {!activeTimer && !showDetails && (
-          <View style={styles.startContainer}>
-            {feedingTimer && (
-              <View style={styles.conflictPill}>
-                <Feather name="alert-circle" size={14} color={colors.warning} />
-                <Text style={styles.conflictText}>Feeding timer is active — stop it first</Text>
+        {/* Phase timeline */}
+        {Object.keys(phaseTimestamps).length > 0 && !sessionComplete && (
+          <View style={styles.timeline}>
+            {SLEEP_STATES.filter((s) => phaseTimestamps[s.id]).map((s) => (
+              <View key={s.id} style={styles.timelineItem}>
+                <View style={[styles.timelineDot, { backgroundColor: s.iconTint }]} />
+                <Text style={styles.timelineLabel}>{s.label}</Text>
+                <Text style={styles.timelineTime}>{formatTime(phaseTimestamps[s.id])}</Text>
               </View>
-            )}
-            <Pressable
-              onPress={handleStartSleep}
-              onPressIn={() => Animated.spring(startScale, { toValue: 0.92, useNativeDriver: true }).start()}
-              onPressOut={() => Animated.spring(startScale, { toValue: 1, useNativeDriver: true }).start()}
-              disabled={!!feedingTimer}
-              accessibilityRole="button"
-              accessibilityLabel="Start sleep"
-            >
-              <Animated.View style={[
-                styles.hugeButton,
-                styles.startButton,
-                shadows.soft,
-                feedingTimer && styles.disabledButton,
-                { transform: [{ scale: startScale }] },
-              ]}>
-                <Feather name="moon" size={40} color={colors.textInverse} />
-                <Text style={styles.hugeButtonLabel}>Start Sleep</Text>
-              </Animated.View>
-            </Pressable>
+            ))}
           </View>
         )}
 
-        {/* Active Timer */}
-        {activeTimer && !showDetails && (
-          <View style={styles.timerContainer}>
-            <View style={styles.timerLabelRow}>
-              <Feather name="moon" size={18} color={colors.primary[500]} />
-              <Text style={styles.timerLabel}>
-                {activeTimer.type === 'nap' ? 'Nap' : 'Night Sleep'} in progress
-              </Text>
+        {/* State buttons */}
+        <View style={styles.stateButtons}>
+          {SLEEP_STATES.map((state) => {
+            const isActive = activePhase === state.id;
+            const disabled = isPhaseDisabled(state.id);
+
+            return (
+              <Pressable
+                key={state.id}
+                disabled={disabled || sessionComplete}
+                onPress={() => handlePhasePress(state.id)}
+                onPressIn={() =>
+                  Animated.spring(scales[state.id], { toValue: 0.97, useNativeDriver: true }).start()
+                }
+                onPressOut={() =>
+                  Animated.spring(scales[state.id], { toValue: 1, useNativeDriver: true }).start()
+                }
+                accessibilityRole="button"
+                accessibilityLabel={state.label}
+                accessibilityState={{ selected: isActive, disabled }}
+              >
+                <Animated.View
+                  style={[
+                    styles.stateCard,
+                    isActive && {
+                      backgroundColor: state.activeBg,
+                      borderColor: state.activeBorder,
+                      borderWidth: 1.5,
+                    },
+                    (disabled || sessionComplete) && !isActive && styles.stateCardDisabled,
+                    { transform: [{ scale: scales[state.id] }] },
+                  ]}
+                >
+                  <View style={[styles.stateIconWrap, { backgroundColor: state.iconBg }]}>
+                    <Feather name={state.icon} size={28} color={state.iconTint} />
+                  </View>
+                  <View style={styles.stateTextWrap}>
+                    <Text
+                      style={[
+                        styles.stateLabel,
+                        isActive && { color: state.iconTint },
+                      ]}
+                    >
+                      {state.label}
+                    </Text>
+                    <Text style={styles.stateDesc}>{state.description}</Text>
+                    {isActive && phaseTimestamps[state.id] && (
+                      <Text style={[styles.stateTime, { color: state.iconTint }]}>
+                        {formatTime(phaseTimestamps[state.id])}
+                      </Text>
+                    )}
+                  </View>
+                  {isActive && (
+                    <View style={[styles.activeIndicator, { backgroundColor: state.iconTint }]}>
+                      <Feather name="check" size={14} color="#FFF" />
+                    </View>
+                  )}
+                </Animated.View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Session complete — done button */}
+        {sessionComplete && (
+          <View style={styles.completeSection}>
+            <View style={styles.completeSummary}>
+              {SLEEP_STATES.filter((s) => phaseTimestamps[s.id]).map((s) => (
+                <View key={s.id} style={styles.completeSummaryRow}>
+                  <View style={[styles.completeDot, { backgroundColor: s.iconTint }]} />
+                  <Text style={styles.completeSummaryLabel}>{s.label}</Text>
+                  <Text style={styles.completeSummaryTime}>{formatTime(phaseTimestamps[s.id])}</Text>
+                </View>
+              ))}
             </View>
-            <Text style={styles.timerDisplay}>{formatTimerSeconds(elapsedSeconds)}</Text>
-            <Pressable
-              onPress={handleEndSleep}
-              onPressIn={() => Animated.spring(stopScale, { toValue: 0.92, useNativeDriver: true }).start()}
-              onPressOut={() => Animated.spring(stopScale, { toValue: 1, useNativeDriver: true }).start()}
-              accessibilityRole="button"
-              accessibilityLabel="End sleep"
-            >
-              <Animated.View style={[styles.hugeButton, styles.stopButton, shadows.md, { transform: [{ scale: stopScale }] }]}>
-                <Feather name="square" size={36} color={colors.textInverse} />
-                <Text style={styles.hugeButtonLabel}>End Sleep</Text>
-              </Animated.View>
+            <Pressable style={styles.doneButton} onPress={() => router.back()}>
+              <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
         )}
 
-        {/* Details after stopping */}
-        {showDetails && (
-          <View style={styles.detailsContainer}>
-            <Text style={styles.detailsTitle}>Sleep Details</Text>
-            <SleepDetailsPanel
-              method={method}
-              location={location}
-              roomTemp={roomTemp}
-              quality={quality}
-              nightWakings={nightWakings}
-              sleepType={sleepType}
-              onMethodChange={setMethod}
-              onLocationChange={setLocation}
-              onRoomTempChange={setRoomTemp}
-              onQualityChange={setQuality}
-              onNightWakingsChange={setNightWakings}
-            />
-            <Pressable style={[styles.saveButton, shadows.sm]} onPress={handleSaveDetails} accessibilityRole="button">
-              <Text style={styles.saveButtonText}>Save</Text>
-            </Pressable>
-          </View>
-        )}
+        <View style={{ height: 40 }} />
       </ScrollView>
 
       {toast && (
@@ -223,98 +354,183 @@ export default function SleepLogScreen() {
           visible={!!toast}
           title={toast.title}
           body={toast.body}
-          severity={toast.severity}
-          source={toast.source}
+          severity="info"
           onDismiss={() => setToast(null)}
+          autoDismissMs={2500}
         />
       )}
     </View>
   );
 }
 
+// ── Helpers ──────────────────────────────────────────────────
+
+function buildNotes(timestamps: Record<string, string>, wakingAt: string): string {
+  const parts: string[] = [];
+  if (timestamps.falling_asleep) parts.push(`Falling asleep: ${formatTime(timestamps.falling_asleep)}`);
+  if (timestamps.deep_sleep) parts.push(`Deep sleep: ${formatTime(timestamps.deep_sleep)}`);
+  parts.push(`Waking up: ${formatTime(wakingAt)}`);
+  return parts.join(' → ');
+}
+
+// ── Styles ───────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, alignItems: 'center' },
-  typeSelector: { width: '100%', marginBottom: spacing.xl },
-  startContainer: { alignItems: 'center', marginTop: spacing['2xl'] },
-  conflictPill: {
+  container: {
+    flex: 1,
+    backgroundColor: UI.bg,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+
+  // ── Status banner ──
+  statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.warning + '15',
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.lg,
-  },
-  conflictText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.warning,
-    fontWeight: typography.fontWeight.medium,
-  },
-  hugeButton: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
     justifyContent: 'center',
+    gap: 8,
+    backgroundColor: UI.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    ...SOFT_SHADOW,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: UI.text,
+  },
+
+  // ── Timeline ──
+  timeline: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 20,
+  },
+  timelineItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
   },
-  startButton: {
-    backgroundColor: colors.primary[500],
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  stopButton: {
-    backgroundColor: colors.error,
+  timelineLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: UI.textMuted,
   },
-  disabledButton: {
+  timelineTime: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: UI.text,
+  },
+
+  // ── State buttons ──
+  stateButtons: {
+    gap: 16,
+  },
+  stateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: UI.card,
+    borderRadius: 24,
+    minHeight: 96,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    gap: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    ...SOFT_SHADOW,
+  },
+  stateCardDisabled: {
     opacity: 0.4,
   },
-  hugeButtonLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textInverse,
-  },
-  timerContainer: {
+  stateIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
-    marginTop: spacing.xl,
-    gap: spacing.xl,
+    justifyContent: 'center',
   },
-  timerLabelRow: {
+  stateTextWrap: {
+    flex: 1,
+    gap: 3,
+  },
+  stateLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: UI.text,
+  },
+  stateDesc: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: UI.textSecondary,
+    lineHeight: 18,
+  },
+  stateTime: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  activeIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Complete section ──
+  completeSection: {
+    marginTop: 24,
+    gap: 16,
+  },
+  completeSummary: {
+    backgroundColor: UI.card,
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
+    ...SOFT_SHADOW,
+  },
+  completeSummaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 10,
   },
-  timerLabel: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+  completeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  timerDisplay: {
-    fontSize: 56,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
+  completeSummaryLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: UI.text,
   },
-  detailsContainer: {
-    width: '100%',
-    marginTop: spacing.base,
+  completeSummaryTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI.text,
   },
-  detailsTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-  },
-  saveButton: {
+  doneButton: {
     height: 56,
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: UI.accent,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing.xl,
+    ...SOFT_SHADOW,
   },
-  saveButtonText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textInverse,
+  doneButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

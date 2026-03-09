@@ -1,94 +1,140 @@
 // ============================================================
-// Nodd — Growth Chart Card for Insights Feed
-// Card with WHO percentile chart, segment tabs, and summary
+// Sprouty — Growth Chart Card
+// Visual-first, interactive growth visualization
+// Tap data points for percentile drill-down
+// "Ask the Nurse" integration for trend context
 // ============================================================
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
-import { SegmentControl } from '../../../shared/components/SegmentControl';
 import { GrowthChart } from './GrowthChart';
 import { useGrowthChartData } from '../hooks/useGrowthChartData';
+import { calculatePercentile } from '../utils/percentileCalculation';
 import type { GrowthMetric } from '../data/whoGrowthStandards';
 
-const METRIC_SEGMENTS = [
-  { value: 'weight', label: 'Weight' },
-  { value: 'length', label: 'Length' },
-  { value: 'head', label: 'Head' },
+const METRICS: { key: GrowthMetric; label: string; icon: string }[] = [
+  { key: 'weight', label: 'Weight', icon: 'bar-chart-2' },
+  { key: 'length', label: 'Height', icon: 'maximize-2' },
+  { key: 'head', label: 'Head', icon: 'circle' },
 ];
 
-function formatLatestValue(metric: GrowthMetric, value: number | null): string {
-  if (value == null) return '—';
+function formatValue(metric: GrowthMetric, value: number): string {
   if (metric === 'weight') {
     return value >= 1000 ? `${(value / 1000).toFixed(1)} kg` : `${Math.round(value)} g`;
   }
   return `${value.toFixed(1)} cm`;
 }
 
-export function GrowthChartCard() {
+interface GrowthChartCardProps {
+  onAskNurse?: (context: string) => void;
+}
+
+export function GrowthChartCard({ onAskNurse }: GrowthChartCardProps) {
   const [activeMetric, setActiveMetric] = useState<GrowthMetric>('weight');
-  const { measurements, sex, maxAgeMonths, latestPercentiles, latestValues, babyName, hasData } = useGrowthChartData();
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const data = useGrowthChartData();
 
-  if (!hasData) return null;
+  if (!data.hasData) return null;
 
-  const currentPercentile = latestPercentiles[activeMetric === 'length' ? 'length' : activeMetric === 'head' ? 'head' : 'weight'];
-  const currentValue = latestValues[activeMetric === 'length' ? 'length' : activeMetric === 'head' ? 'head' : 'weight'];
-  const currentMeasurements = measurements[activeMetric];
+  const currentMeasurements = data.measurements[activeMetric];
 
-  // Average percentile across all metrics for summary
-  const avgPercentile = Math.round(
-    (latestPercentiles.weight + latestPercentiles.length + latestPercentiles.head) / 3,
+  // Sort once for consistent indexing with GrowthChart
+  const sortedMeasurements = useMemo(
+    () => [...currentMeasurements].sort((a, b) => a.ageMonths - b.ageMonths),
+    [currentMeasurements],
   );
 
-  return (
-    <View style={[styles.card, shadows.md]}>
-      {/* Left accent bar */}
-      <View style={styles.accentBar} />
+  // Compute tooltip label when a point is selected
+  const tooltipLabel = useMemo(() => {
+    if (selectedIndex == null) return undefined;
+    const point = sortedMeasurements[selectedIndex];
+    if (!point) return undefined;
+    const percentile = calculatePercentile(data.sex, activeMetric, point.ageMonths, point.value);
+    return `${formatValue(activeMetric, point.value)} · P${Math.round(percentile)}`;
+  }, [selectedIndex, sortedMeasurements, data.sex, activeMetric]);
 
-      {/* Tag row */}
-      <View style={styles.tagRow}>
-        <View style={styles.tag}>
-          <Feather name="trending-up" size={12} color={colors.primary[600]} />
-          <Text style={styles.tagText}>Growth & Development</Text>
+  const handleMetricChange = useCallback((metric: GrowthMetric) => {
+    setActiveMetric(metric);
+    setSelectedIndex(null);
+  }, []);
+
+  const handlePointPress = useCallback((index: number) => {
+    setSelectedIndex((prev) => (prev === index ? null : index));
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIndex(null);
+  }, []);
+
+  const handleAskNurse = useCallback(() => {
+    const p = data.latestPercentiles;
+    const latestWeight = data.latestValues.weight != null ? formatValue('weight', data.latestValues.weight) : 'N/A';
+    const latestLength = data.latestValues.length != null ? formatValue('length', data.latestValues.length) : 'N/A';
+
+    const context = [
+      `${data.babyName}'s current growth:`,
+      `Weight: ${latestWeight} (P${Math.round(p.weight)})`,
+      `Height: ${latestLength} (P${Math.round(p.length)})`,
+      `Head: ${data.latestValues.head != null ? formatValue('head', data.latestValues.head) : 'N/A'} (P${Math.round(p.head)})`,
+    ].join('\n');
+
+    onAskNurse?.(context);
+  }, [data, onAskNurse]);
+
+  const currentPercentile = Math.round(data.latestPercentiles[activeMetric]);
+
+  return (
+    <View style={[styles.card, shadows.soft]}>
+      {/* Metric toggle pills */}
+      <View style={styles.metricRow}>
+        {METRICS.map(({ key, label }) => {
+          const isActive = activeMetric === key;
+          return (
+            <Pressable
+              key={key}
+              style={[styles.metricPill, isActive && styles.metricPillActive]}
+              onPress={() => handleMetricChange(key)}
+            >
+              <Text style={[styles.metricPillText, isActive && styles.metricPillTextActive]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+
+        {/* Current percentile badge */}
+        <View style={styles.percentileBadge}>
+          <Text style={styles.percentileText}>P{currentPercentile}</Text>
         </View>
       </View>
 
-      {/* Hook text */}
-      <Text style={styles.hook}>
-        Here's how {babyName} is growing...
-      </Text>
-
-      {/* Segment Control */}
-      <View style={styles.segmentWrapper}>
-        <SegmentControl
-          options={METRIC_SEGMENTS}
-          selected={activeMetric}
-          onSelect={(v) => setActiveMetric(v as GrowthMetric)}
-        />
-      </View>
-
-      {/* Chart */}
-      <View style={styles.chartContainer}>
+      {/* Interactive chart — hero element */}
+      <Pressable onPress={handleClearSelection} style={styles.chartWrap}>
         <GrowthChart
           metric={activeMetric}
-          sex={sex}
+          sex={data.sex}
           measurements={currentMeasurements}
-          maxAgeMonths={maxAgeMonths}
-          compact
+          maxAgeMonths={data.maxAgeMonths}
+          selectedIndex={selectedIndex}
+          onPointPress={handlePointPress}
+          tooltipLabel={tooltipLabel}
         />
-      </View>
-
-      {/* Summary line */}
-      <Text style={styles.summary}>
-        Tracking at ~{avgPercentile}th percentile • Last: {formatLatestValue(activeMetric, currentValue)}
-      </Text>
-
-      {/* CTA */}
-      <Pressable style={styles.ctaButton}>
-        <Feather name="message-circle" size={14} color={colors.primary[600]} />
-        <Text style={styles.ctaText}>Discuss with your AI Nurse</Text>
       </Pressable>
+
+      {/* Hint text */}
+      {selectedIndex == null && (
+        <Text style={styles.hint}>Tap a data point for details</Text>
+      )}
+
+      {/* Ask Nurse CTA */}
+      {onAskNurse && (
+        <Pressable style={styles.nurseButton} onPress={handleAskNurse}>
+          <Feather name="message-circle" size={16} color={colors.primary[600]} />
+          <Text style={styles.nurseButtonText}>Ask the Nurse about this trend</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -97,69 +143,69 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius['2xl'],
-    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.base,
+    paddingHorizontal: spacing.base,
     marginBottom: spacing.md,
-    overflow: 'hidden',
   },
-  accentBar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
+  metricRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  metricPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.neutral[50],
+  },
+  metricPillActive: {
     backgroundColor: colors.primary[500],
-    borderTopLeftRadius: borderRadius['2xl'],
-    borderBottomLeftRadius: borderRadius['2xl'],
   },
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+  metricPillText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textTertiary,
   },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary[50],
-    paddingHorizontal: spacing.sm,
+  metricPillTextActive: {
+    color: colors.textInverse,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  percentileBadge: {
+    marginLeft: 'auto',
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
-    gap: 4,
+    backgroundColor: colors.secondary[50],
   },
-  tagText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[600],
-  },
-  hook: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  segmentWrapper: {
-    marginBottom: spacing.md,
-  },
-  chartContainer: {
-    marginBottom: spacing.md,
-  },
-  summary: {
+  percentileText: {
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.md,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.secondary[600],
   },
-  ctaButton: {
+  chartWrap: {
+    marginHorizontal: -spacing.xs,
+  },
+  hint: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  nurseButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral[100],
   },
-  ctaText: {
+  nurseButtonText: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
     color: colors.primary[600],

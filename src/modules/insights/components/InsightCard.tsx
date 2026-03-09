@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insight Card
+// Sprouty — Insight Card
 // Premium smart card with context tag, rich body, and chat CTA
 // Collapsible body + swipe-to-dismiss support
 // ============================================================
@@ -10,6 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
 import { TAG_COLORS, PRIORITY_ACCENT } from '../constants';
 import { RichBody } from './RichBody';
+import { VisualGuide } from './VisualGuide';
 import type { InsightCardData, QuickAction } from '../types';
 
 interface Props {
@@ -116,6 +117,13 @@ export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Pr
             )}
           </Pressable>
 
+          {/* Visual guide — visible only when expanded */}
+          {expanded && insight.visualGuide && (
+            <View style={{ marginBottom: spacing.md }}>
+              <VisualGuide guide={insight.visualGuide} />
+            </View>
+          )}
+
           {/* Action items — visible only when expanded */}
           {expanded && insight.actionItems && insight.actionItems.length > 0 && (
             <View style={styles.actionList}>
@@ -147,7 +155,7 @@ export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Pr
             accessibilityLabel={`Discuss: ${insight.title}`}
           >
             <Feather name="message-circle" size={16} color={colors.primary[600]} />
-            <Text style={styles.discussText}>Discuss with your AI Nurse</Text>
+            <Text style={styles.discussText}>Discuss with Lumina</Text>
             <Feather name="chevron-right" size={16} color={colors.primary[400]} />
           </Pressable>
         </View>

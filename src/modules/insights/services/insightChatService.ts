@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insight Chat Service
+// Sprouty — Insight Chat Service
 // Client-side interface to the ai-chat edge function
 // Falls back gracefully when offline or Supabase not configured
 // ============================================================
@@ -11,12 +11,26 @@ interface ChatMessage {
   content: string;
 }
 
+interface RecentLogEntry {
+  type: string;
+  time: string;
+  details?: string;
+}
+
 interface ChatRequest {
   insightContext: string;
   messages: ChatMessage[];
   babyName?: string;
   babyAgeDays?: number;
+  babyDob?: string;
   feedingMethod?: string;
+  isPregnant?: boolean;
+  recentLogs?: {
+    feedings?: RecentLogEntry[];
+    sleep?: RecentLogEntry[];
+    diapers?: RecentLogEntry[];
+    health?: RecentLogEntry[];
+  };
 }
 
 interface ChatResponse {
@@ -30,6 +44,7 @@ const OFFLINE_REPLIES: Record<string, string> = {
 
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
   if (!isSupabaseConfigured) {
+    console.warn('[insightChatService] Supabase not configured — returning offline fallback. Check EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env.local');
     return { reply: OFFLINE_REPLIES.default, error: 'offline' };
   }
 
@@ -43,7 +58,8 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
     }
 
     return { reply: data?.reply ?? null };
-  } catch {
+  } catch (error) {
+    console.error('[insightChatService] sendChatMessage failed:', error);
     return { reply: null, error: 'network' };
   }
 }

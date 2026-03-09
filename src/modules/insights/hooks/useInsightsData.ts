@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insights Data Hook
+// Sprouty — Insights Data Hook
 // Cross-references ALL stores to generate smart insight cards
 // Combines static nurse knowledge + live pattern detection
 // ============================================================
@@ -10,9 +10,7 @@ import { useFeedingStore } from '../../../stores/feedingStore';
 import { useSleepStore } from '../../../stores/sleepStore';
 import { useDiaperStore } from '../../../stores/diaperStore';
 import { useGrowthStore } from '../../../stores/growthStore';
-import { useMotherMoodStore, MOOD_CONFIG, type MoodEmoji } from '../../../stores/motherMoodStore';
 import { useMotherMedsStore } from '../../../stores/motherMedsStore';
-import { useMotherWellnessStore } from '../../../stores/motherWellnessStore';
 import { useOnboardingStore } from '../../../stores/onboardingStore';
 import { useInsightDismissStore } from '../../../stores/insightDismissStore';
 import { calculateCorrectedAge } from '../../baby/utils/correctedAge';
@@ -27,7 +25,7 @@ import type { Baby } from '../../baby/types';
 /** Map daily nurse insight categories to InsightTag */
 const NURSE_CATEGORY_TAG: Record<string, InsightTag> = {
   Feeding: 'feeding_insight',
-  Recovery: 'mothers_wellness',
+  Recovery: 'health_pattern',
   Sleep: 'sleep_alert',
   Bonding: 'general',
 };
@@ -80,10 +78,7 @@ export function useInsightsData(): InsightsState {
   const babies = useBabyStore((s) => s.babies);
   const activeBabyId = useBabyStore((s) => s.activeBabyId);
   const feedingMethod = useOnboardingStore((s) => s.feedingMethod) ?? 'mixed';
-  const moodEntries = useMotherMoodStore((s) => s.entries);
   const activeMeds = useMotherMedsStore((s) => s.activeMeds);
-  const wellnessSymptoms = useMotherWellnessStore((s) => s.symptoms);
-  const wellnessWeights = useMotherWellnessStore((s) => s.weights);
   const feedingTimer = useFeedingStore((s) => s.activeTimer);
   const sleepTimer = useSleepStore((s) => s.activeTimer);
   const dismissedHashes = useInsightDismissStore((s) => s.dismissedHashes);
@@ -114,38 +109,9 @@ export function useInsightsData(): InsightsState {
     const sleepSummary = baby ? useSleepStore.getState().getSummaryToday(baby.id) : null;
     const diaperSummary = baby ? useDiaperStore.getState().getSummaryToday(baby.id) : null;
 
-    const recentMoods = moodEntries.slice(-7);
-    const todaysMood = useMotherMoodStore.getState().getTodaysMood();
-
     // ─── CROSS-REFERENCED INSIGHTS ───
 
-    // 1. Mother wellness + sleep pattern cross-reference
-    const hasStrugglingMood = recentMoods.some(
-      (e) => e.mood === 'struggling' || e.mood === 'overwhelmed'
-    );
-
-    if (hasStrugglingMood) {
-      const moodLabel = todaysMood ? MOOD_CONFIG[todaysMood.mood].label.toLowerCase() : 'recent mood logs';
-      allCards.push({
-        id: generateId(),
-        contentHash: `wellness-mood-struggling-${day}`,
-        tag: 'mothers_wellness',
-        tagLabel: "Mother's Wellness",
-        tagIcon: 'heart',
-        hook: `Based on your ${moodLabel} and ${name}'s frequent night waking logs...`,
-        title: 'Checking in on you',
-        body: `I want you to know that **feeling overwhelmed is not a sign of failure** — it's a sign you're giving everything you have. When ${name} wakes frequently at night, it creates a cycle of exhaustion that makes everything feel harder.\n\n**Here's what I'd suggest:** Try to get one uninterrupted 4-hour sleep block tonight. Ask your partner or a family member to take one night shift. Sleep deprivation is cumulative, and even one good stretch can reset your resilience.\n\nIf these feelings persist for more than two weeks, please talk to your OB or midwife. **Postpartum mood disorders are common, treatable, and never your fault.**`,
-        priority: 'high',
-        actionItems: [
-          'Arrange one 4-hour uninterrupted sleep block tonight',
-          'Talk to your partner about taking a night shift',
-          'If feelings persist 2+ weeks, call your provider',
-        ],
-        createdAt: Date.now(),
-      });
-    }
-
-    // 2. Feeding pattern insight
+    // 1. Feeding pattern insight
     if (feedingSummary && feedingSummary.total_feeds > 0) {
       const totalFeeds = feedingSummary.total_feeds;
       const isNewborn = ageDays <= 28;
@@ -307,8 +273,8 @@ export function useInsightsData(): InsightsState {
         allCards.push({
           id: generateId(),
           contentHash: `meds-overdue-${medNames}-${day}`,
-          tag: 'mothers_wellness',
-          tagLabel: "Mother's Wellness",
+          tag: 'health_pattern',
+          tagLabel: "Health & Recovery",
           tagIcon: 'heart',
           hook: `Based on your medication schedule (${medNames} overdue)...`,
           title: 'Your recovery medication is overdue',
@@ -318,53 +284,6 @@ export function useInsightsData(): InsightsState {
           createdAt: Date.now() - 600000,
         });
       }
-    }
-
-    // 6. Symptom-based wellness insight
-    const todaysSymptoms = useMotherWellnessStore.getState().getTodaysSymptoms();
-    const severeSymptoms = todaysSymptoms.filter((s) => s.severity >= 3);
-    if (severeSymptoms.length > 0) {
-      const symptomNames = severeSymptoms.map((s) => s.symptom.toLowerCase()).join(', ');
-      allCards.push({
-        id: generateId(),
-        contentHash: `wellness-symptom-severe-${day}`,
-        tag: 'mothers_wellness',
-        tagLabel: "Mother's Wellness",
-        tagIcon: 'heart',
-        hook: `Based on your symptom log today (${symptomNames})...`,
-        title: 'Recovery Alert',
-        body: `You've logged **${symptomNames}** with severity ${severeSymptoms[0].severity}/5. Your body is still healing, and this is worth paying attention to.\n\n**Recovery tip:** Rest when you can, stay hydrated, and don't push through pain. If this symptom persists or worsens over the next 24 hours, contact your provider.\n\n**Remember:** Asking for help isn't weakness — it's wisdom.`,
-        priority: 'medium',
-        actionItems: [
-          'Rest and stay hydrated',
-          'Monitor if symptoms worsen',
-          'Contact provider if persistent',
-        ],
-        createdAt: Date.now() - 300000,
-      });
-    }
-
-    // 7. Weight tracking insight
-    if (wellnessWeights.length >= 2) {
-      const sorted = [...wellnessWeights].sort((a, b) => b.loggedAt - a.loggedAt);
-      const latest = sorted[0];
-      const previous = sorted[1];
-      const diff = Math.round((latest.weightKg - previous.weightKg) * 10) / 10;
-      const trend = diff < 0 ? 'lost' : diff > 0 ? 'gained' : 'maintained';
-      const absDiff = Math.abs(diff);
-
-      allCards.push({
-        id: generateId(),
-        contentHash: `wellness-weight-trend-${day}`,
-        tag: 'mothers_wellness',
-        tagLabel: "Mother's Wellness",
-        tagIcon: 'heart',
-        hook: `Based on your weight log (${latest.weightKg} kg)...`,
-        title: 'Weight Tracking',
-        body: `Your latest weight is **${latest.weightKg} kg**. You've ${trend} **${absDiff} kg** since your last recording.\n\n**Postpartum note:** Weight changes after birth are normal and happen at different paces for everyone. Focus on nourishment and energy rather than numbers. Your body did something incredible.`,
-        priority: 'low',
-        createdAt: Date.now() - 15000000,
-      });
     }
 
     // Corrected age insight for preterm babies
@@ -421,14 +340,11 @@ export function useInsightsData(): InsightsState {
 
     // ─── GROUP INTO SECTIONS ───
     const urgent: InsightCardData[] = [];
-    const wellness: InsightCardData[] = [];
     const patterns: InsightCardData[] = [];
     const positive: InsightCardData[] = [];
 
     for (const card of cards) {
-      if (card.tag === 'mothers_wellness') {
-        wellness.push(card); // Wellness is ALWAYS its own section, even if high priority
-      } else if (card.priority === 'high') {
+      if (card.priority === 'high') {
         urgent.push(card);
       } else if (card.priority === 'medium') {
         patterns.push(card);
@@ -440,7 +356,6 @@ export function useInsightsData(): InsightsState {
     // Sort each group by recency
     const byRecency = (a: InsightCardData, b: InsightCardData) => b.createdAt - a.createdAt;
     urgent.sort(byRecency);
-    wellness.sort(byRecency);
     patterns.sort(byRecency);
     positive.sort(byRecency);
 
@@ -464,13 +379,6 @@ export function useInsightsData(): InsightsState {
           ? 'attention'
           : 'good';
 
-    const moodStatus: DomainStatus =
-      !todaysMood
-        ? 'no_data'
-        : todaysMood.mood === 'struggling' || todaysMood.mood === 'overwhelmed'
-          ? 'attention'
-          : 'good';
-
     const overdueMeds = activeMeds.filter(
       (m) => m.nextDueAt && m.nextDueAt <= Date.now()
     );
@@ -481,7 +389,6 @@ export function useInsightsData(): InsightsState {
       { key: 'feeding', label: 'Feeding', status: feedingStatus, icon: 'coffee' },
       { key: 'sleep', label: 'Sleep', status: sleepStatus, icon: 'moon' },
       { key: 'diapers', label: 'Diapers', status: diaperStatus, icon: 'droplet' },
-      { key: 'mood', label: 'Mood', status: moodStatus, icon: 'heart' },
       { key: 'meds', label: 'Meds', status: medsStatus, icon: 'thermometer' },
     ];
 
@@ -496,8 +403,8 @@ export function useInsightsData(): InsightsState {
 
     const pulse: PulseData = { domains, summary, dayLabel };
 
-    return { pulse, urgent, wellness, patterns, positive };
-  }, [baby, babyName, babyAgeDays, correctedAge, moodEntries, activeMeds, feedingTimer, sleepTimer, feedingMethod, dismissedHashes, wellnessSymptoms, wellnessWeights]);
+    return { pulse, urgent, patterns, positive };
+  }, [baby, babyName, babyAgeDays, correctedAge, activeMeds, feedingTimer, sleepTimer, feedingMethod, dismissedHashes]);
 
   const growthLogs = useMemo(() => {
     if (!baby) return [];

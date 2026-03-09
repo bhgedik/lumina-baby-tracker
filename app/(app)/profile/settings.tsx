@@ -27,7 +27,6 @@ export default function SettingsScreen() {
     feeding_reminders: true,
     milestone_alerts: true,
     ai_insights: true,
-    wellness_checkins: true,
     quiet_hours_start: '22:00',
     quiet_hours_end: '07:00',
   };
@@ -75,12 +74,6 @@ export default function SettingsScreen() {
             label="AI Insights"
             value={prefs.ai_insights}
             onToggle={(v) => toggleNotification('ai_insights', v)}
-          />
-          <View style={styles.divider} />
-          <SettingRow
-            label="Wellness Check-ins"
-            value={prefs.wellness_checkins}
-            onToggle={(v) => toggleNotification('wellness_checkins', v)}
           />
         </View>
 

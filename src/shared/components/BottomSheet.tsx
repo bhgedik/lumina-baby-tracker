@@ -3,7 +3,7 @@
 // Warm, squishy slide-up modal with drag-to-dismiss
 // ============================================================
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,13 @@ import {
   PanResponder,
   Modal,
   KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius, shadows } from '../constants/theme';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from './KeyboardDoneBar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -30,9 +34,14 @@ interface Props {
 export function BottomSheet({ visible, onClose, title, children }: Props) {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      // Reset to off-screen before animating open
+      translateY.setValue(SCREEN_HEIGHT);
+      backdropOpacity.setValue(0);
+      setModalVisible(true);
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -47,6 +56,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
         }),
       ]).start();
     } else {
+      // Animate close, then hide Modal
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: SCREEN_HEIGHT,
@@ -58,7 +68,9 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(({ finished }) => {
+        if (finished) setModalVisible(false);
+      });
     }
   }, [visible]);
 
@@ -85,7 +97,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   ).current;
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal visible={modalVisible} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.wrapper}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -99,8 +111,19 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
         >
           <View style={styles.handle} />
           {title && <Text style={styles.title}>{title}</Text>}
-          <View style={styles.content}>{children}</View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <ScrollView
+              style={styles.content}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              {children}
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </Animated.View>
+        <KeyboardDoneBar />
       </KeyboardAvoidingView>
     </Modal>
   );

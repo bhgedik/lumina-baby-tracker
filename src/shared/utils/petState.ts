@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Pet State Resolver
+// Sprouty — Pet State Resolver
 // Maps elapsed hours since last log → pet expression + colors
 // ============================================================
 

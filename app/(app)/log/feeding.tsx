@@ -3,8 +3,8 @@
 // Warm, squishy Breast | Bottle | Solid with timer + response
 // ============================================================
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Animated, LayoutAnimation, StyleSheet, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 // SafeAreaView not needed — Stack header handles top safe area
 import { Feather } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { BottleFeedingPanel } from '../../../src/modules/feeding/components/Bott
 import { SolidFeedingPanel } from '../../../src/modules/feeding/components/SolidFeedingPanel';
 import { FeedingResponsePanel } from '../../../src/modules/feeding/components/FeedingResponsePanel';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { ALLERGEN_DISPLAY, searchAllergens } from '../../../src/ai/contentFilter';
 import type { AllergenSuggestion } from '../../../src/ai/contentFilter';
 import { useFeedingStore } from '../../../src/stores/feedingStore';
@@ -25,14 +26,9 @@ import { useSleepStore } from '../../../src/stores/sleepStore';
 import { useVeteranInsight } from '../../../src/ai/hooks/useVeteranInsight';
 import { calculateCorrectedAge } from '../../../src/modules/baby/utils/correctedAge';
 import { generateUUID } from '../../../src/stores/createSyncedStore';
+import { APP_CONFIG } from '../../../src/shared/constants/config';
 import type { FeedingType, BabyResponse, BottleContentType } from '../../../src/shared/types/common';
 import type { FeedingLog, SolidFoodEntry } from '../../../src/modules/feeding/types';
-
-const TYPE_OPTIONS = [
-  { value: 'breast', label: 'Breast' },
-  { value: 'bottle', label: 'Bottle' },
-  { value: 'solid', label: 'Solid' },
-];
 
 export default function FeedingLogScreen() {
   const router = useRouter();
@@ -52,10 +48,44 @@ export default function FeedingLogScreen() {
   const { insight, checkAfterLog, dismiss } = useVeteranInsight();
 
   const correctedAge = baby ? calculateCorrectedAge(baby) : null;
+  const canLogSolids =
+    (correctedAge?.effectiveAgeMonths ?? 0) >=
+    APP_CONFIG.medical.SOLID_FOODS_MIN_AGE_MONTHS;
+
+  const typeOptions = useMemo(() => {
+    const opts = [
+      { value: 'breast', label: 'Breast' },
+      { value: 'bottle', label: 'Bottle' },
+    ];
+    if (canLogSolids) {
+      opts.push({ value: 'solid', label: 'Solid' });
+    }
+    return opts;
+  }, [canLogSolids]);
+
+  // Milestone animation: fade-in banner when solids first become available
+  const solidsBannerOpacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (canLogSolids) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      Animated.timing(solidsBannerOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [canLogSolids]);
 
   const [feedingType, setFeedingType] = useState<FeedingType>(
     activeTimer?.type ?? 'breast'
   );
+
+  // Safety: reset to breast if solid was selected but age-gate kicked in
+  useEffect(() => {
+    if (feedingType === 'solid' && !canLogSolids) {
+      setFeedingType('breast');
+    }
+  }, [feedingType, canLogSolids]);
   const [babyResponse, setBabyResponse] = useState<BabyResponse | null>(null);
   const [notes, setNotes] = useState('');
 
@@ -64,6 +94,8 @@ export default function FeedingLogScreen() {
   const [bottleTemp, setBottleTemp] = useState<'warm' | 'room' | 'cold' | null>(null);
 
   const [solidFoods, setSolidFoods] = useState<SolidFoodEntry[]>([]);
+  const [sensitivityNotes, setSensitivityNotes] = useState('');
+  const [showSensitivity, setShowSensitivity] = useState(false);
 
   const [showAllergySheet, setShowAllergySheet] = useState(false);
   const knownAllergies = useMemo(() => baby?.known_allergies ?? [], [baby?.known_allergies]);
@@ -116,6 +148,7 @@ export default function FeedingLogScreen() {
           logged_by: loggedBy,
           baby_response: babyResponse,
           notes: notes.trim() || null,
+          sensitivity_notes: sensitivityNotes.trim() || null,
         });
         checkAfterLog('feeding', {
           type: 'breast',
@@ -142,6 +175,7 @@ export default function FeedingLogScreen() {
       bottle_temperature: feedingType === 'bottle' ? bottleTemp : null,
       solid_foods: feedingType === 'solid' ? solidFoods : null,
       notes: notes.trim() || null,
+      sensitivity_notes: sensitivityNotes.trim() || null,
       baby_response: babyResponse,
       photo_url: null,
       created_at: now,
@@ -157,7 +191,7 @@ export default function FeedingLogScreen() {
     }, correctedAge?.effectiveAgeDays ?? 0);
 
     setTimeout(() => router.back(), 500);
-  }, [baby, profile, feedingType, babyResponse, notes, bottleAmount, bottleContent, bottleTemp, solidFoods, timerStopped, correctedAge, addItem, checkAfterLog, router]);
+  }, [baby, profile, feedingType, babyResponse, notes, sensitivityNotes, bottleAmount, bottleContent, bottleTemp, solidFoods, timerStopped, correctedAge, addItem, checkAfterLog, router]);
 
   const canSave = feedingType === 'breast'
     ? timerStopped
@@ -168,7 +202,7 @@ export default function FeedingLogScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: 'Log Feeding', headerTintColor: colors.primary[600], headerLeft, headerStyle: { backgroundColor: colors.background }, headerShadowVisible: false }} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {/* Conflict warning */}
         {sleepTimer && (
           <View style={styles.warningBanner}>
@@ -177,10 +211,22 @@ export default function FeedingLogScreen() {
           </View>
         )}
 
+        {/* Solids milestone banner */}
+        {canLogSolids && (
+          <Animated.View
+            style={[styles.milestoneBanner, { opacity: solidsBannerOpacity }]}
+          >
+            <Feather name="award" size={16} color={colors.success} />
+            <Text style={styles.milestoneText}>
+              Solid foods unlocked! Your baby is ready to explore new tastes.
+            </Text>
+          </Animated.View>
+        )}
+
         {/* Type selector */}
         {!activeTimer && (
           <SegmentControl
-            options={TYPE_OPTIONS}
+            options={typeOptions}
             selected={feedingType}
             onSelect={(v) => setFeedingType(v as FeedingType)}
             size="large"
@@ -259,6 +305,43 @@ export default function FeedingLogScreen() {
           )}
         </View>
 
+        {/* Sensitivity tracker — collapsible */}
+        <Pressable
+          style={styles.sensitivityToggle}
+          onPress={() => setShowSensitivity(!showSensitivity)}
+          accessibilityRole="button"
+        >
+          <View style={styles.sensitivityIconBadge}>
+            <Feather name="wind" size={15} color={colors.primary[500]} />
+          </View>
+          <View style={styles.sensitivityToggleText}>
+            <Text style={styles.sensitivityLabel}>Sensitivity Tracker</Text>
+            <Text style={styles.sensitivityHint} numberOfLines={1}>
+              {sensitivityNotes ? sensitivityNotes : 'Note suspected triggers'}
+            </Text>
+          </View>
+          <Feather
+            name={showSensitivity ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.textTertiary}
+          />
+        </Pressable>
+        {showSensitivity && (
+          <View style={styles.sensitivityBody}>
+            <TextInput
+              style={styles.sensitivityInput}
+              placeholder="e.g. Dairy, Caffeine, Spicy food..."
+              placeholderTextColor={colors.textTertiary}
+              value={sensitivityNotes}
+              onChangeText={setSensitivityNotes}
+              multiline
+              textAlignVertical="top"
+              maxLength={300}
+              inputAccessoryViewID={KEYBOARD_DONE_ID}
+            />
+          </View>
+        )}
+
         {/* Response panel */}
         {(feedingType !== 'breast' || timerStopped) && (
           <View style={styles.responseSection}>
@@ -329,6 +412,7 @@ export default function FeedingLogScreen() {
           onChangeText={setAllergyQuery}
           autoCapitalize="none"
           autoCorrect={false}
+          inputAccessoryViewID={KEYBOARD_DONE_ID}
         />
 
         {/* Suggestions list */}
@@ -364,6 +448,7 @@ export default function FeedingLogScreen() {
           <Text style={styles.allergySaveText}>Save</Text>
         </Pressable>
       </BottomSheet>
+      <KeyboardDoneBar />
     </View>
   );
 }
@@ -384,6 +469,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.fontSize.sm,
     color: colors.warning,
+    fontWeight: typography.fontWeight.medium,
+  },
+  milestoneBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.success + '12',
+    padding: spacing.md,
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.md,
+  },
+  milestoneText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.success,
     fontWeight: typography.fontWeight.medium,
   },
   panelContainer: {
@@ -476,6 +576,53 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.primary[500],
     fontWeight: typography.fontWeight.semibold,
+  },
+  // Sensitivity Tracker
+  sensitivityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.base,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+  },
+  sensitivityIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sensitivityToggleText: {
+    flex: 1,
+  },
+  sensitivityLabel: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  sensitivityHint: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    marginTop: 1,
+  },
+  sensitivityBody: {
+    marginTop: spacing.sm,
+  },
+  sensitivityInput: {
+    borderWidth: 1.5,
+    borderColor: colors.neutral[200],
+    borderRadius: borderRadius.xl,
+    padding: spacing.base,
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+    minHeight: 72,
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
   addAllergyButton: {
     flexDirection: 'row',

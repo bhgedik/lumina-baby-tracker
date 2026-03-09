@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Locale-Aware Date Input Formatting
+// Sprouty — Locale-Aware Date Input Formatting
 // US / Imperial: MM/DD/YYYY | Metric / Rest of world: DD/MM/YYYY
 // Supports explicit override via preferred_units setting
 // ============================================================

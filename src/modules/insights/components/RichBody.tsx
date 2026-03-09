@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Rich Body Text
+// Sprouty — Rich Body Text
 // Renders text with **bold** markers as actual bold Text nodes
 // ============================================================
 

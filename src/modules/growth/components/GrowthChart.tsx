@@ -1,15 +1,21 @@
 // ============================================================
-// Nodd — Growth Chart (SVG)
-// Custom chart with WHO percentile bands + baby's data line
-// Uses react-native-svg (already installed)
+// Sprouty — Growth Chart (SVG)
+// Interactive chart with WHO percentile bands + baby's data line
+// Tap data points for exact percentile & measurement tooltip
 // ============================================================
 
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
-import Svg, { Path, Circle, Line, Text as SvgText, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Text as SvgText, Rect, G } from 'react-native-svg';
 import { colors } from '../../../shared/constants/theme';
 import { getPercentileCurve } from '../utils/percentileCalculation';
 import type { GrowthMetric, Sex, PercentileCurvePoint } from '../data/whoGrowthStandards';
+
+export interface DataPointInfo {
+  index: number;
+  ageMonths: number;
+  value: number;
+}
 
 interface GrowthChartProps {
   metric: GrowthMetric;
@@ -17,11 +23,14 @@ interface GrowthChartProps {
   measurements: { ageMonths: number; value: number }[];
   maxAgeMonths: number;
   compact?: boolean;
+  selectedIndex?: number | null;
+  onPointPress?: (index: number) => void;
+  tooltipLabel?: string;
 }
 
 const VIEWBOX_W = 320;
 const VIEWBOX_H = 200;
-const PAD = { top: 10, right: 35, bottom: 30, left: 40 };
+const PAD = { top: 16, right: 35, bottom: 30, left: 40 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
@@ -30,6 +39,7 @@ const BAND_FILL_INNER = colors.primary[100];
 const P50_COLOR = colors.primary[400];
 const BOUND_COLOR = colors.neutral[300];
 const DATA_COLOR = colors.secondary[500];
+const TOOLTIP_BG = colors.neutral[0];
 
 const METRIC_LABEL: Record<GrowthMetric, string> = {
   weight: 'g',
@@ -37,14 +47,16 @@ const METRIC_LABEL: Record<GrowthMetric, string> = {
   head: 'cm',
 };
 
-function formatValue(metric: GrowthMetric, value: number): string {
-  if (metric === 'weight') {
-    return value >= 1000 ? `${(value / 1000).toFixed(1)}kg` : `${Math.round(value)}g`;
-  }
-  return `${value.toFixed(1)}`;
-}
-
-export function GrowthChart({ metric, sex, measurements, maxAgeMonths, compact = false }: GrowthChartProps) {
+export function GrowthChart({
+  metric,
+  sex,
+  measurements,
+  maxAgeMonths,
+  compact = false,
+  selectedIndex,
+  onPointPress,
+  tooltipLabel,
+}: GrowthChartProps) {
   const curveData = useMemo(
     () => getPercentileCurve(sex, metric, Math.max(maxAgeMonths, 2)),
     [sex, metric, maxAgeMonths],
@@ -144,6 +156,12 @@ export function GrowthChart({ metric, sex, measurements, maxAgeMonths, compact =
     { label: 'P3', y: scaleY(lastPoint.p3) },
   ] : [];
 
+  // Selected point tooltip
+  const selectedPoint = selectedIndex != null ? sortedMeasurements[selectedIndex] : null;
+
+  const dotRadius = compact ? 3 : 4.5;
+  const touchRadius = 14; // larger invisible touch target
+
   return (
     <View style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}>
@@ -153,8 +171,8 @@ export function GrowthChart({ metric, sex, measurements, maxAgeMonths, compact =
         <Path d={bandPaths.outerHigh} fill={BAND_FILL_OUTER} opacity={0.5} />
 
         {/* Percentile lines */}
-        <Path d={buildLinePath(curveData, 'p3')} stroke={BOUND_COLOR} strokeWidth={1} fill="none" />
-        <Path d={buildLinePath(curveData, 'p97')} stroke={BOUND_COLOR} strokeWidth={1} fill="none" />
+        <Path d={buildLinePath(curveData, 'p3')} stroke={BOUND_COLOR} strokeWidth={0.8} fill="none" />
+        <Path d={buildLinePath(curveData, 'p97')} stroke={BOUND_COLOR} strokeWidth={0.8} fill="none" />
         <Path
           d={buildLinePath(curveData, 'p50')}
           stroke={P50_COLOR}
@@ -178,21 +196,100 @@ export function GrowthChart({ metric, sex, measurements, maxAgeMonths, compact =
 
         {/* Baby data line */}
         {dataLinePath && (
-          <Path d={dataLinePath} stroke={DATA_COLOR} strokeWidth={2} fill="none" strokeLinejoin="round" />
+          <Path d={dataLinePath} stroke={DATA_COLOR} strokeWidth={2.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
         )}
 
         {/* Baby data dots */}
-        {sortedMeasurements.map((m, i) => (
-          <Circle
-            key={`dot-${i}`}
-            cx={scaleX(m.ageMonths)}
-            cy={scaleY(m.value)}
-            r={compact ? 3 : 4}
-            fill={DATA_COLOR}
-            stroke={colors.neutral[0]}
-            strokeWidth={1.5}
-          />
-        ))}
+        {sortedMeasurements.map((m, i) => {
+          const cx = scaleX(m.ageMonths);
+          const cy = scaleY(m.value);
+          const isSelected = selectedIndex === i;
+
+          return (
+            <G key={`dot-${i}`}>
+              {/* Selection highlight ring */}
+              {isSelected && (
+                <Circle
+                  cx={cx}
+                  cy={cy}
+                  r={10}
+                  fill={DATA_COLOR + '15'}
+                  stroke={DATA_COLOR}
+                  strokeWidth={1.5}
+                />
+              )}
+
+              {/* Visible dot */}
+              <Circle
+                cx={cx}
+                cy={cy}
+                r={isSelected ? 5.5 : dotRadius}
+                fill={isSelected ? DATA_COLOR : DATA_COLOR}
+                stroke={TOOLTIP_BG}
+                strokeWidth={isSelected ? 2 : 1.5}
+              />
+
+              {/* Invisible touch target */}
+              {onPointPress && (
+                <Circle
+                  cx={cx}
+                  cy={cy}
+                  r={touchRadius}
+                  fill="transparent"
+                  onPress={() => onPointPress(i)}
+                />
+              )}
+            </G>
+          );
+        })}
+
+        {/* Tooltip for selected point */}
+        {selectedPoint && tooltipLabel && (() => {
+          const cx = scaleX(selectedPoint.ageMonths);
+          const cy = scaleY(selectedPoint.value);
+
+          const tooltipW = Math.max(70, tooltipLabel.length * 6.5 + 16);
+          const tooltipH = 22;
+          const gap = 14;
+
+          // Position above the point; flip below if too close to top
+          const showAbove = cy - gap - tooltipH > PAD.top;
+          const tooltipY = showAbove ? cy - gap - tooltipH : cy + gap;
+
+          // Horizontal centering with clamping
+          const tooltipX = Math.max(
+            PAD.left + 2,
+            Math.min(cx - tooltipW / 2, VIEWBOX_W - PAD.right - tooltipW + 2),
+          );
+
+          return (
+            <G>
+              {/* Tooltip background */}
+              <Rect
+                x={tooltipX}
+                y={tooltipY}
+                width={tooltipW}
+                height={tooltipH}
+                rx={6}
+                ry={6}
+                fill={TOOLTIP_BG}
+                stroke={colors.neutral[200]}
+                strokeWidth={1}
+              />
+              {/* Tooltip text */}
+              <SvgText
+                x={tooltipX + tooltipW / 2}
+                y={tooltipY + tooltipH / 2 + 3.5}
+                textAnchor="middle"
+                fontSize={9}
+                fontWeight="600"
+                fill={colors.textPrimary}
+              >
+                {tooltipLabel}
+              </SvgText>
+            </G>
+          );
+        })()}
 
         {/* X-axis labels */}
         {xTicks.map((age) => (

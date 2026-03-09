@@ -1,4 +1,4 @@
--- Nodd: Row Level Security Policies
+-- Sprouty: Row Level Security Policies
 -- Security boundary: family_id isolation via get_user_family_id()
 
 -- Helper function: get user's family_id from their profile

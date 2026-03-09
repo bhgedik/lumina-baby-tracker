@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { UUID, ISO8601, BreastSide } from '../shared/types/common';
 import type { FeedingLog, FeedingSummary } from '../modules/feeding/types';
 import { createSyncedStore, generateUUID, type SyncQueueItem } from './createSyncedStore';
+import { APP_CONFIG } from '../shared/constants/config';
 
 const STORAGE_KEY = '@sprout/feeding-logs';
 const TIMER_KEY = '@sprout/feeding-timer';
@@ -71,6 +72,23 @@ export const useFeedingStore = create<FeedingState>((set, get) => ({
   isHydrated: false,
 
   addItem: (item) => {
+    // Age-gate: block solid food logs for babies under 6 months
+    if (item.type === 'solid' || item.type === 'snack') {
+      try {
+        const { useBabyStore } = require('./babyStore');
+        const { calculateCorrectedAge } = require('../modules/baby/utils/correctedAge');
+        const baby = useBabyStore.getState().getActiveBaby();
+        if (baby) {
+          const age = calculateCorrectedAge(baby);
+          if (age.effectiveAgeMonths < APP_CONFIG.medical.SOLID_FOODS_MIN_AGE_MONTHS) {
+            return;
+          }
+        }
+      } catch {
+        // If imports fail, allow the log (UI already gates this)
+      }
+    }
+
     const state = get();
     const newItems = [...state.items, item];
     const queueItem: SyncQueueItem = {
@@ -236,6 +254,7 @@ export const useFeedingStore = create<FeedingState>((set, get) => ({
       bottle_content: null,
       bottle_temperature: null,
       solid_foods: null,
+      sensitivity_notes: null,
       notes: null,
       baby_response: null,
       photo_url: null,

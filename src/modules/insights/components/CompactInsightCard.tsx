@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Compact Insight Card
+// Sprouty — Compact Insight Card
 // Smaller card for medium/low priority insights with
 // tap-to-expand body, action items, and quick actions
 // ============================================================
@@ -10,6 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
 import { TAG_COLORS } from '../constants';
 import { RichBody } from './RichBody';
+import { VisualGuide } from './VisualGuide';
 import type { InsightCardData, QuickAction } from '../types';
 
 interface Props {
@@ -59,6 +60,13 @@ export function CompactInsightCard({ insight, onDiscuss, onQuickAction, onDismis
       {/* Expanded content */}
       {expanded && (
         <>
+          {/* Visual guide */}
+          {insight.visualGuide && (
+            <View style={{ marginTop: spacing.md }}>
+              <VisualGuide guide={insight.visualGuide} />
+            </View>
+          )}
+
           {/* Action items */}
           {insight.actionItems && insight.actionItems.length > 0 && (
             <View style={styles.actionItemsBox}>
@@ -94,7 +102,7 @@ export function CompactInsightCard({ insight, onDiscuss, onQuickAction, onDismis
             style={styles.discussButton}
           >
             <Feather name="message-circle" size={14} color={colors.primary[600]} style={styles.discussIcon} />
-            <Text style={styles.discussText}>Discuss with your AI Nurse</Text>
+            <Text style={styles.discussText}>Discuss with Lumina</Text>
           </Pressable>
         </>
       )}

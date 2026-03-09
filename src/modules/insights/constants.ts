@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Insights Shared Constants
+// Sprouty — Insights Shared Constants
 // Tag colors and priority accents used across insight components
 // ============================================================
 
@@ -10,7 +10,6 @@ export const TAG_COLORS: Record<string, { bg: string; text: string; icon: string
   health_pattern:    { bg: colors.primary[50],    text: colors.primary[700],    icon: colors.primary[500] },
   sleep_alert:       { bg: '#EDE7F6',             text: '#5E35B1',              icon: '#7E57C2' },
   feeding_insight:   { bg: colors.secondary[50],  text: colors.secondary[700],  icon: colors.secondary[500] },
-  mothers_wellness:  { bg: '#FCE4EC',             text: '#C62828',              icon: '#E53935' },
   diaper_pattern:    { bg: '#E3F2FD',             text: '#1565C0',              icon: '#42A5F5' },
   growth_note:       { bg: colors.primary[50],    text: colors.primary[700],    icon: colors.primary[500] },
   milestone_watch:   { bg: '#FFF8E1',             text: '#F57F17',              icon: '#FFB300' },

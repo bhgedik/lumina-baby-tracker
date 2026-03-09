@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Sprout",
-    "slug": "sprout",
+    "name": "Sprouty",
+    "slug": "sprouty",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -42,9 +42,10 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Nodd needs camera access to analyze diaper contents."
+          "cameraPermission": "Sprouty needs camera access to analyze diaper contents."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

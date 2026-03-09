@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Mini Insight Row
+// Sprouty — Mini Insight Row
 // Minimal positive reinforcement row with green check circle,
 // title, and chevron for navigation
 // ============================================================

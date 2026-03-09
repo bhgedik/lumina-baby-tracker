@@ -1,10 +1,9 @@
 // ============================================================
-// Nodd — Health Log Screen
-// The Doctor Visit Assistant: Temperature, Symptoms, Meds,
-// AI-Powered Doctor Questions, AI Scribe, and Health History
+// Sprouty — Health Log Screen
+// Health Logger: Temperature, Symptoms, Medications, and Notes
 // ============================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,15 +15,20 @@ import {
   Alert,
   StyleSheet,
   Platform,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { ChipSelector } from '../../../src/shared/components/ChipSelector';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
-import type { TemperatureMethod } from '../../../src/shared/types/common';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
+import { useHealthStore } from '../../../src/stores/healthStore';
+import { useBabyStore } from '../../../src/stores/babyStore';
+import { useAuthStore } from '../../../src/stores/authStore';
+import { generateUUID } from '../../../src/stores/createSyncedStore';
+import type { TemperatureMethod, HealthLogType } from '../../../src/shared/types/common';
+import type { HealthLog } from '../../../src/modules/health/types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -51,108 +55,6 @@ const METHOD_OPTIONS = [
 ];
 
 type DoseUnit = 'mL' | 'mg';
-
-// ── AI Question Suggestion Logic ──
-const SYMPTOM_QUESTION_MAP: Record<string, string[]> = {
-  fever: [
-    'At what temperature should I take her to the ER?',
-    'How long can a fever safely last before I should worry?',
-    'Is it safe to alternate Tylenol and Motrin?',
-  ],
-  cough: [
-    'Could this cough indicate croup or something more serious?',
-    'Should I use a humidifier at night?',
-    'When does a cough warrant a chest X-ray?',
-  ],
-  runny_nose: [
-    'How can I tell if this is allergies vs. a cold?',
-    'At what point should I worry about a potential ear infection?',
-    'Is it okay to use saline drops multiple times a day?',
-  ],
-  vomiting: [
-    'How do I know if she is getting dehydrated?',
-    'Should I withhold solids and just do fluids?',
-    'When does vomiting become an ER situation?',
-  ],
-  diarrhea: [
-    'Should I switch to a BRAT diet?',
-    'How many wet diapers per day indicates adequate hydration?',
-    'Could this be related to a food sensitivity or allergy?',
-  ],
-  rash: [
-    'Is this rash something I should photograph to track changes?',
-    'Could this be eczema, and if so what moisturizer do you recommend?',
-    'Does this rash look like it could be an allergic reaction?',
-  ],
-  fussy: [
-    'Could this fussiness be colic, and when does it typically resolve?',
-    'Are there any red flags that would distinguish pain from normal fussiness?',
-  ],
-  poor_feeding: [
-    'How many ounces/minutes per feed is considered adequate at this age?',
-    'Should I be concerned about weight gain with reduced feeding?',
-    'Could reflux be causing the poor feeding?',
-  ],
-  congestion: [
-    'Is it safe to use a nasal aspirator multiple times a day?',
-    'Should I elevate the crib mattress slightly?',
-    'At what point does congestion become a breathing concern?',
-  ],
-  eye_discharge: [
-    'Could this be a blocked tear duct vs. conjunctivitis?',
-    'Do I need antibiotic drops or will warm compresses suffice?',
-  ],
-  ear_pulling: [
-    'Does ear pulling always mean an ear infection?',
-    'Should we get her ears checked today or wait a few days?',
-    'Is there anything I can do at home to relieve ear discomfort?',
-  ],
-  lethargy: [
-    'What level of sleepiness is normal vs. concerning?',
-    'Should I try to wake her for feeds if she is unusually drowsy?',
-    'Could this be related to dehydration?',
-  ],
-};
-
-function generateAIQuestions(
-  symptoms: string[],
-  tempValue: string,
-  customSymptoms: string[],
-): string[] {
-  const questions: string[] = [];
-
-  const temp = parseFloat(tempValue);
-  if (!isNaN(temp) && temp >= 38.0) {
-    questions.push('At what temperature should I go to the emergency room?');
-    if (temp >= 39.0) {
-      questions.push('Should I give fever medication now, or let the fever do its job?');
-    }
-  }
-
-  for (const symptom of symptoms) {
-    const mapped = SYMPTOM_QUESTION_MAP[symptom];
-    if (mapped) {
-      questions.push(...mapped.slice(0, 2));
-    }
-  }
-
-  if (symptoms.includes('fever') && symptoms.includes('ear_pulling')) {
-    questions.push('Could the fever and ear pulling together indicate an ear infection?');
-  }
-  if (symptoms.includes('fever') && symptoms.includes('rash')) {
-    questions.push('Could the fever and rash be related — like roseola?');
-  }
-  if (symptoms.includes('vomiting') && symptoms.includes('diarrhea')) {
-    questions.push('With both vomiting and diarrhea, should I give an oral rehydration solution like Pedialyte?');
-  }
-
-  for (const custom of customSymptoms) {
-    questions.push(`I've noticed "${custom}" — is this something to monitor or worry about?`);
-  }
-
-  const unique = [...new Set(questions)];
-  return unique.slice(0, 6);
-}
 
 // ── Health History Sample Data ──
 interface HealthEntry {
@@ -225,37 +127,6 @@ const SAMPLE_HISTORY: HealthEntry[] = [
   },
 ];
 
-// AI scribe mockup summary
-const SCRIBE_MOCKUP = {
-  title: 'Doctor Visit Summary',
-  date: 'Feb 23, 2026 — Dr. Chen, Pediatrics',
-  sections: [
-    {
-      heading: 'Action Items',
-      items: [
-        'Continue current feeding schedule — gaining well',
-        'Start vitamin D drops (400 IU daily)',
-        'Schedule 2-month vaccines for next visit',
-      ],
-    },
-    {
-      heading: 'Medication Dosages',
-      items: [
-        'Acetaminophen: 2.5 mL if fever above 100.4°F (38°C)',
-        'Vitamin D: 1 mL once daily with morning feed',
-      ],
-    },
-    {
-      heading: 'Reassuring Notes',
-      items: [
-        '"Her weight gain is excellent — 75th percentile"',
-        '"The mild cradle cap is completely normal and will resolve on its own"',
-        '"Her hip exam looks great — no concerns"',
-      ],
-    },
-  ],
-};
-
 // ── History Entry Card ──
 function HistoryCard({ entry }: { entry: HealthEntry }) {
   const isFever = entry.temperature && parseFloat(entry.temperature) >= 38.0;
@@ -313,7 +184,23 @@ function HistoryCard({ entry }: { entry: HealthEntry }) {
 }
 
 // ── History Bottom Sheet ──
-function HistorySheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function HistorySheet({ visible, onClose, logs }: { visible: boolean; onClose: () => void; logs: HealthLog[] }) {
+  const storeEntries: HealthEntry[] = logs.map((log) => {
+    const d = new Date(log.logged_at);
+    return {
+      id: log.id,
+      date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      temperature: log.temperature_celsius != null ? `${log.temperature_celsius}°C` : null,
+      method: log.temperature_method ? METHOD_OPTIONS.find((m) => m.value === log.temperature_method)?.label ?? log.temperature_method : null,
+      symptoms: (log.symptoms ?? []).map((s) => SYMPTOM_OPTIONS.find((o) => o.value === s)?.label ?? s),
+      medName: log.medication_name,
+      medDose: log.medication_dose,
+      notes: log.notes,
+    };
+  });
+  const displayData = storeEntries.length > 0 ? storeEntries : SAMPLE_HISTORY;
+
   return (
     <Modal
       visible={visible}
@@ -336,7 +223,7 @@ function HistorySheet({ visible, onClose }: { visible: boolean; onClose: () => v
 
         {/* Entry list */}
         <FlatList
-          data={SAMPLE_HISTORY}
+          data={displayData}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <HistoryCard entry={item} />}
           contentContainerStyle={hs.listContent}
@@ -357,6 +244,14 @@ function HistorySheet({ visible, onClose }: { visible: boolean; onClose: () => v
 // ── Main Screen ──
 export default function HealthLogScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ episodeId?: string; type?: string }>();
+  const episodeId = params.episodeId ?? null;
+
+  // Store
+  const addHealthLog = useHealthStore((s) => s.addHealthLog);
+  const healthLogs = useHealthStore((s) => s.healthLogs);
+  const activeEpisodes = useHealthStore((s) => s.episodes).filter((e) => e.status === 'active');
+  const baby = useBabyStore((s) => s.getActiveBaby());
 
   // Temperature
   const [tempValue, setTempValue] = useState('');
@@ -373,22 +268,26 @@ export default function HealthLogScreen() {
   const [medDoseAmount, setMedDoseAmount] = useState('');
   const [medDoseUnit, setMedDoseUnit] = useState<DoseUnit>('mL');
 
-  // Doctor questions
-  const [doctorQuestions, setDoctorQuestions] = useState('');
+  // Notes
+  const [notes, setNotes] = useState('');
 
-  // AI question suggestions
-  const [aiQuestions, setAiQuestions] = useState<string[]>([]);
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-
-  // AI Scribe
-  const [showScribeMockup, setShowScribeMockup] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  // Episode linking
+  const [linkedEpisodeId, setLinkedEpisodeId] = useState<string | null>(episodeId);
 
   // History sheet
   const [showHistory, setShowHistory] = useState(false);
 
   // Toast
   const [showToast, setShowToast] = useState(false);
+
+  // Real history from store
+  const babyLogs = useMemo(() => {
+    if (!baby) return [];
+    return healthLogs
+      .filter((l) => l.baby_id === baby.id)
+      .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
+      .slice(0, 20);
+  }, [baby, healthLogs]);
 
   const handleSymptomToggle = (value: string) => {
     setSelectedSymptoms((prev) =>
@@ -412,50 +311,48 @@ export default function HealthLogScreen() {
     setMedDoseUnit((prev) => (prev === 'mL' ? 'mg' : 'mL'));
   };
 
-  const handleGenerateQuestions = useCallback(() => {
-    const allSymptoms = [...selectedSymptoms];
-    if (allSymptoms.length === 0 && customSymptoms.length === 0 && !tempValue.trim()) {
-      Alert.alert(
-        'Add Some Context',
-        'Log a temperature or select symptoms first so the AI can suggest relevant questions.',
-      );
+  const handleSave = () => {
+    if (!baby) {
+      setShowToast(true);
+      setTimeout(() => router.back(), 1500);
       return;
     }
 
-    setIsGeneratingQuestions(true);
-    setTimeout(() => {
-      const questions = generateAIQuestions(allSymptoms, tempValue, customSymptoms);
-      setAiQuestions(questions);
-      setIsGeneratingQuestions(false);
-    }, 600);
-  }, [selectedSymptoms, customSymptoms, tempValue]);
+    const session = useAuthStore.getState().session;
+    const now = new Date().toISOString();
+    const allSymptoms = [...selectedSymptoms, ...customSymptoms];
 
-  const handleInsertQuestion = (question: string) => {
-    setDoctorQuestions((prev) => {
-      const prefix = prev.trim() ? prev.trim() + '\n' : '';
-      return prefix + '- ' + question + '\n';
-    });
-  };
+    // Determine log type
+    let logType: HealthLogType = 'other';
+    if (params.type === 'doctor_visit') logType = 'doctor_visit';
+    else if (tempValue.trim()) logType = 'temperature';
+    else if (allSymptoms.length > 0) logType = 'symptom';
+    else if (medName.trim()) logType = 'medication';
 
-  const handleSave = () => {
+    const log: HealthLog = {
+      id: generateUUID(),
+      baby_id: baby.id,
+      family_id: baby.family_id,
+      logged_by: session?.user?.id ?? '',
+      logged_at: now,
+      type: logType,
+      temperature_celsius: tempValue.trim() ? parseFloat(tempValue) : null,
+      temperature_method: tempMethod,
+      medication_name: medName.trim() || null,
+      medication_dose: medDoseAmount.trim() ? `${medDoseAmount} ${medDoseUnit}` : null,
+      symptoms: allSymptoms.length > 0 ? allSymptoms : null,
+      doctor_name: null,
+      diagnosis: null,
+      notes: notes.trim() || null,
+      attachments: null,
+      episode_id: linkedEpisodeId,
+      created_at: now,
+      updated_at: now,
+    };
+
+    addHealthLog(log);
     setShowToast(true);
     setTimeout(() => router.back(), 1500);
-  };
-
-  const handleRecordPress = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setTimeout(() => setShowScribeMockup(true), 800);
-    } else {
-      Alert.alert(
-        'Record Appointment',
-        'Place your phone on the table during your doctor visit. The AI will listen, transcribe, and organize the key information for you.\n\nThis is a preview of an upcoming feature.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Start Recording', onPress: () => setIsRecording(true) },
-        ]
-      );
-    }
   };
 
   const tempNum = parseFloat(tempValue);
@@ -504,6 +401,7 @@ export default function HealthLogScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* ── Section 1: Temperature ── */}
         <View style={styles.section}>
@@ -522,6 +420,7 @@ export default function HealthLogScreen() {
                 onChangeText={setTempValue}
                 keyboardType="decimal-pad"
                 maxLength={5}
+                inputAccessoryViewID={KEYBOARD_DONE_ID}
               />
               <Text style={styles.tempUnit}>°C</Text>
             </View>
@@ -606,6 +505,7 @@ export default function HealthLogScreen() {
                 autoFocus
                 onSubmitEditing={handleAddCustomSymptom}
                 returnKeyType="done"
+                inputAccessoryViewID={KEYBOARD_DONE_ID}
               />
               <Pressable
                 style={[
@@ -643,6 +543,7 @@ export default function HealthLogScreen() {
             placeholderTextColor={colors.textTertiary}
             value={medName}
             onChangeText={setMedName}
+            inputAccessoryViewID={KEYBOARD_DONE_ID}
           />
 
           <View style={styles.doseRow}>
@@ -654,6 +555,7 @@ export default function HealthLogScreen() {
               onChangeText={setMedDoseAmount}
               keyboardType="decimal-pad"
               maxLength={8}
+              inputAccessoryViewID={KEYBOARD_DONE_ID}
             />
             <Pressable style={styles.doseUnitToggle} onPress={toggleDoseUnit}>
               <Text style={styles.doseUnitText}>{medDoseUnit}</Text>
@@ -669,127 +571,24 @@ export default function HealthLogScreen() {
           </View>
         </View>
 
-        {/* ── Section 4: Questions for the Doctor ── */}
+        {/* ── Section 4: Notes ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Feather name="clipboard" size={18} color={colors.primary[500]} />
-            <Text style={styles.sectionTitle}>Questions for the Doctor</Text>
+            <Feather name="edit-3" size={18} color={colors.primary[500]} />
+            <Text style={styles.sectionTitle}>Notes</Text>
           </View>
-          <Text style={styles.sectionSub}>
-            Jot down worries and questions before your appointment so you don't forget.
-          </Text>
-
-          <Pressable
-            style={[styles.aiSuggestButton, shadows.sm]}
-            onPress={handleGenerateQuestions}
-            disabled={isGeneratingQuestions}
-          >
-            {isGeneratingQuestions ? (
-              <ActivityIndicator size="small" color={colors.primary[600]} />
-            ) : (
-              <Feather name="zap" size={16} color={colors.primary[600]} />
-            )}
-            <Text style={styles.aiSuggestText}>
-              {isGeneratingQuestions ? 'Thinking...' : 'Auto-Suggest Questions'}
-            </Text>
-          </Pressable>
-
-          {aiQuestions.length > 0 && (
-            <View style={styles.aiQuestionsCard}>
-              <View style={styles.aiQuestionsHeader}>
-                <Feather name="message-circle" size={14} color={colors.primary[600]} />
-                <Text style={styles.aiQuestionsTitle}>Suggested Questions</Text>
-              </View>
-              <Text style={styles.aiQuestionsHint}>Tap a question to add it to your notes</Text>
-              {aiQuestions.map((q, i) => (
-                <Pressable
-                  key={i}
-                  style={styles.aiQuestionRow}
-                  onPress={() => handleInsertQuestion(q)}
-                >
-                  <View style={styles.aiQuestionBullet}>
-                    <Text style={styles.aiQuestionBulletText}>{i + 1}</Text>
-                  </View>
-                  <Text style={styles.aiQuestionText}>{q}</Text>
-                  <Feather name="plus-circle" size={16} color={colors.primary[400]} />
-                </Pressable>
-              ))}
-              <View style={styles.aiQuestionsFooter}>
-                <Feather name="lock" size={11} color={colors.textTertiary} />
-                <Text style={styles.aiQuestionsFooterText}>
-                  Based on your logged symptoms — always use your own judgement
-                </Text>
-              </View>
-            </View>
-          )}
 
           <TextInput
             style={styles.notesArea}
-            placeholder={"- Why does she spit up after every feed?\n- Is her soft spot normal size?\n- When should we start solids?"}
+            placeholder="Add any notes, observations, or questions..."
             placeholderTextColor={colors.textTertiary}
-            value={doctorQuestions}
-            onChangeText={setDoctorQuestions}
+            value={notes}
+            onChangeText={setNotes}
             multiline
             textAlignVertical="top"
             maxLength={1000}
+            inputAccessoryViewID={KEYBOARD_DONE_ID}
           />
-        </View>
-
-        {/* ── Section 5: AI Doctor Visit Scribe ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Feather name="mic" size={18} color={colors.primary[500]} />
-            <Text style={styles.sectionTitle}>Record Appointment</Text>
-          </View>
-          <Text style={styles.sectionSub}>
-            Let the AI listen to your doctor's visit and organize the key takeaways for you.
-          </Text>
-
-          <Pressable
-            style={[styles.recordButton, isRecording && styles.recordButtonActive]}
-            onPress={handleRecordPress}
-          >
-            <View style={[styles.recordDot, isRecording && styles.recordDotActive]} />
-            <Text style={[styles.recordText, isRecording && styles.recordTextActive]}>
-              {isRecording ? 'Stop Recording' : 'Start Recording'}
-            </Text>
-          </Pressable>
-
-          {isRecording && (
-            <View style={styles.recordingIndicator}>
-              <View style={styles.recordingPulse} />
-              <Text style={styles.recordingLabel}>Listening...</Text>
-            </View>
-          )}
-
-          {showScribeMockup && (
-            <View style={[styles.scribeCard, shadows.md]}>
-              <View style={styles.scribeHeader}>
-                <Feather name="zap" size={16} color={colors.primary[600]} />
-                <Text style={styles.scribeTitle}>{SCRIBE_MOCKUP.title}</Text>
-              </View>
-              <Text style={styles.scribeDate}>{SCRIBE_MOCKUP.date}</Text>
-
-              {SCRIBE_MOCKUP.sections.map((section, idx) => (
-                <View key={idx} style={styles.scribeSection}>
-                  <Text style={styles.scribeSectionTitle}>{section.heading}</Text>
-                  {section.items.map((item, i) => (
-                    <View key={i} style={styles.scribeItem}>
-                      <View style={styles.scribeBullet} />
-                      <Text style={styles.scribeItemText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
-
-              <View style={styles.scribeFooter}>
-                <Feather name="lock" size={12} color={colors.textTertiary} />
-                <Text style={styles.scribeFooterText}>
-                  AI-generated summary — always verify with your doctor
-                </Text>
-              </View>
-            </View>
-          )}
         </View>
 
         {/* Save Button */}
@@ -804,8 +603,37 @@ export default function HealthLogScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* Episode link chip */}
+      {linkedEpisodeId && (
+        <View style={styles.episodeLinkBar}>
+          <Feather name="link" size={14} color={colors.secondary[500]} />
+          <Text style={styles.episodeLinkText}>
+            Linked to: {activeEpisodes.find((e) => e.id === linkedEpisodeId)?.title ?? 'Episode'}
+          </Text>
+          <Pressable onPress={() => setLinkedEpisodeId(null)} hitSlop={8}>
+            <Feather name="x" size={14} color={colors.textTertiary} />
+          </Pressable>
+        </View>
+      )}
+
+      {/* Episode picker — show if not already linked and there are active episodes */}
+      {!linkedEpisodeId && activeEpisodes.length > 0 && (
+        <View style={styles.episodePickerRow}>
+          {activeEpisodes.slice(0, 3).map((ep) => (
+            <Pressable
+              key={ep.id}
+              style={styles.episodePickerChip}
+              onPress={() => setLinkedEpisodeId(ep.id)}
+            >
+              <Feather name="link" size={12} color={colors.secondary[500]} />
+              <Text style={styles.episodePickerText}>{ep.title}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       {/* History Bottom Sheet */}
-      <HistorySheet visible={showHistory} onClose={() => setShowHistory(false)} />
+      <HistorySheet visible={showHistory} onClose={() => setShowHistory(false)} logs={babyLogs} />
 
       <InsightToast
         visible={showToast}
@@ -815,6 +643,7 @@ export default function HealthLogScreen() {
         onDismiss={() => setShowToast(false)}
         autoDismissMs={2000}
       />
+      <KeyboardDoneBar />
     </View>
   );
 }
@@ -1000,12 +829,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
-  },
-  sectionSub: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-    marginBottom: spacing.md,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
   },
   // Temperature
   tempRow: {
@@ -1196,90 +1019,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.primary[600],
   },
-  // AI Suggest
-  aiSuggestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.base,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.primary[200],
-  },
-  aiSuggestText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[600],
-  },
-  aiQuestionsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing.base,
-    marginBottom: spacing.base,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary[400],
-    ...shadows.sm,
-  },
-  aiQuestionsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  aiQuestionsTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[700],
-  },
-  aiQuestionsHint: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    fontStyle: 'italic',
-    marginBottom: spacing.md,
-  },
-  aiQuestionRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[100],
-  },
-  aiQuestionBullet: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  aiQuestionBulletText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[600],
-  },
-  aiQuestionText: {
-    flex: 1,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
-  },
-  aiQuestionsFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  aiQuestionsFooterText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    fontStyle: 'italic',
-  },
   notesArea: {
     borderWidth: 1.5,
     borderColor: colors.neutral[200],
@@ -1290,124 +1029,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     minHeight: 120,
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
-  },
-  // Record button
-  recordButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius['2xl'],
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.primary[300],
-    ...shadows.sm,
-  },
-  recordButtonActive: {
-    backgroundColor: colors.error,
-    borderColor: colors.error,
-  },
-  recordDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.error,
-  },
-  recordDotActive: {
-    backgroundColor: colors.textInverse,
-  },
-  recordText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[600],
-  },
-  recordTextActive: {
-    color: colors.textInverse,
-  },
-  recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  recordingPulse: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.error,
-  },
-  recordingLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.error,
-    fontWeight: typography.fontWeight.medium,
-  },
-  scribeCard: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary[500],
-  },
-  scribeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  scribeTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  scribeDate: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    marginBottom: spacing.lg,
-  },
-  scribeSection: {
-    marginBottom: spacing.base,
-  },
-  scribeSectionTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.primary[700],
-    marginBottom: spacing.sm,
-  },
-  scribeItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  scribeBullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.primary[400],
-    marginTop: 7,
-  },
-  scribeItemText: {
-    flex: 1,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
-  },
-  scribeFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral[100],
-  },
-  scribeFooterText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    fontStyle: 'italic',
   },
   // Save
   saveButton: {
@@ -1423,5 +1044,44 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textInverse,
+  },
+  // Episode linking
+  episodeLinkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.secondary[50],
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  episodeLinkText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.secondary[600],
+  },
+  episodePickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  episodePickerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.neutral[100],
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  episodePickerText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
   },
 });

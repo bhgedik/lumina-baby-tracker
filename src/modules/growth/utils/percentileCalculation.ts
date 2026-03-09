@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Percentile Calculation Utility
+// Sprouty — Percentile Calculation Utility
 // Linear interpolation against WHO growth curves
 // ============================================================
 

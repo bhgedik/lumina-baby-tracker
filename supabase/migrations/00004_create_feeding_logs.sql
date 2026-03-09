@@ -1,4 +1,4 @@
--- Nodd: Feeding logs (breast, bottle, solid, snack)
+-- Sprouty: Feeding logs (breast, bottle, solid, snack)
 CREATE TABLE feeding_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

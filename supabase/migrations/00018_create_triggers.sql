@@ -1,4 +1,4 @@
--- Nodd: Event triggers for milestone checks and AI pipeline
+-- Sprouty: Event triggers for milestone checks and AI pipeline
 
 -- Notify on feeding log insert (for milestone/intervention checks)
 CREATE OR REPLACE FUNCTION notify_log_insert()

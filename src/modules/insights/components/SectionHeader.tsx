@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Section Header
+// Sprouty — Section Header
 // Reusable section divider with icon, title, count badge,
 // and optional collapse toggle
 // ============================================================

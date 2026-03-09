@@ -36,6 +36,18 @@ export const VETERAN_RULES: VeteranRule[] = [
       severity: 'info',
       category: 'feeding',
       source: 'Pediatric Nursing Best Practices',
+      visual_guide: {
+        type: 'step_by_step',
+        media_url: 'https://placeholder.sprouty.app/guides/nasal-aspirator',
+        action_text: 'How to safely use a nasal aspirator',
+        steps: [
+          { step: 1, instruction: 'Lay baby on their back with head slightly tilted', icon: 'user' },
+          { step: 2, instruction: 'Put 1-2 saline drops in each nostril, wait 30 sec', icon: 'droplet' },
+          { step: 3, instruction: 'Place aspirator tip at nostril entrance — never deep inside', icon: 'alert-circle' },
+          { step: 4, instruction: 'Gently suction one nostril at a time', icon: 'wind' },
+          { step: 5, instruction: 'Wait 5 minutes, then retry feeding', icon: 'clock' },
+        ],
+      },
     },
   },
 
@@ -53,6 +65,16 @@ export const VETERAN_RULES: VeteranRule[] = [
       severity: 'info',
       category: 'routine',
       source: 'NICU Discharge Best Practices',
+      visual_guide: {
+        type: 'step_by_step',
+        media_url: 'https://placeholder.sprouty.app/guides/cotton-hat-method',
+        action_text: 'Cotton hat method after bath',
+        steps: [
+          { step: 1, instruction: 'Pat head gently with a soft towel — never rub', icon: 'droplet' },
+          { step: 2, instruction: 'Place a dry 100% cotton hat on baby\'s head', icon: 'shield' },
+          { step: 3, instruction: 'Check hat after 10 minutes — replace if damp', icon: 'clock' },
+        ],
+      },
     },
   },
   {
@@ -101,6 +123,13 @@ export const VETERAN_RULES: VeteranRule[] = [
       severity: 'info',
       category: 'medication',
       source: 'Pediatric Nursing Administration Standards',
+      visual_guide: {
+        type: 'video_link',
+        media_url: 'https://placeholder.sprouty.app/videos/oral-syringe-technique',
+        action_text: 'Watch: Oral syringe technique',
+        thumbnail_icon: 'play-circle',
+        duration_label: '1:30',
+      },
     },
   },
 
@@ -118,6 +147,16 @@ export const VETERAN_RULES: VeteranRule[] = [
       severity: 'info',
       category: 'skin_care',
       source: 'Dermatology Best Practices',
+      visual_guide: {
+        type: 'step_by_step',
+        media_url: 'https://placeholder.sprouty.app/guides/diaper-rash-dry-first',
+        action_text: 'Dry-first diaper rash technique',
+        steps: [
+          { step: 1, instruction: 'Clean area with warm water and soft cloth', icon: 'droplet' },
+          { step: 2, instruction: 'Pat completely dry — or air dry for 2-3 minutes', icon: 'wind' },
+          { step: 3, instruction: 'Apply thin layer of barrier cream on dry skin only', icon: 'shield' },
+        ],
+      },
     },
   },
 
@@ -135,6 +174,12 @@ export const VETERAN_RULES: VeteranRule[] = [
       severity: 'info',
       category: 'sleep',
       source: 'The Lullaby Trust / Red Nose Safe Sleep',
+      visual_guide: {
+        type: 'illustration',
+        media_url: 'https://placeholder.sprouty.app/illustrations/tog-scale',
+        action_text: 'TOG scale visual reference',
+        thumbnail_icon: 'thermometer',
+      },
     },
   },
 

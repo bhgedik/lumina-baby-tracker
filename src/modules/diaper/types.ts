@@ -18,6 +18,7 @@ export interface DiaperSummary {
   wet_count: number;
   dirty_count: number;
   both_count: number;
+  dry_count: number;
   has_rash_today: boolean;
   last_change_at: ISO8601 | null;
   hours_since_last_change: number | null;

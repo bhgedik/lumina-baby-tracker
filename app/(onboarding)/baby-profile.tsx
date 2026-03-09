@@ -1,16 +1,17 @@
 // ============================================================
-// Sprout — Baby Profile (Step 2 of 4)
-// Collects baby name, DOB/due date, gender, feeding method
-// Supports pregnancy mode + locale-aware date formatting
+// Sprouty — Baby Profile (Quiz Step 1 of 3)
+// Collects baby name, DOB/due date, gender, feeding method,
+// and gestational age (absorbed from gestational-age screen)
 // ============================================================
 
-import { useState, useMemo } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Platform, Switch, KeyboardAvoidingView } from 'react-native';
+import { useState, useMemo, useRef } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Platform, Switch, KeyboardAvoidingView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
-import { StepIndicator } from '../../src/shared/components/StepIndicator';
+import { QuizProgressBar } from '../../src/shared/components/QuizProgressBar';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
 import { useDateFormat } from '../../src/shared/hooks/useDateFormat';
 import type { Gender, PrimaryFeedingMethod } from '../../src/shared/types/common';
@@ -32,6 +33,30 @@ export default function BabyProfileScreen() {
   const [feedingMethod, setFeedingMethod] = useState<PrimaryFeedingMethod | null>(store.feedingMethod);
   const [isPregnant, setIsPregnant] = useState(store.isPregnant);
 
+  // Gestational age (absorbed from gestational-age.tsx)
+  const [wasPreterm, setWasPreterm] = useState<boolean | null>(store.wasPreterm);
+  const [gestationalWeeks, setGestationalWeeks] = useState<number | null>(store.gestationalWeeks);
+
+  const pregnantWeekOptions = Array.from({ length: 42 }, (_, i) => i + 1); // 1-42
+  const pretermWeekOptions = Array.from({ length: 19 }, (_, i) => i + 22); // 22-40
+
+  const [nameFocused, setNameFocused] = useState(false);
+  const nameFocusAnim = useRef(new Animated.Value(0)).current;
+  const [dateFocused, setDateFocused] = useState(false);
+  const dateFocusAnim = useRef(new Animated.Value(0)).current;
+
+  const animateFocus = (anim: Animated.Value, focused: boolean) => {
+    Animated.timing(anim, { toValue: focused ? 1 : 0, duration: 200, useNativeDriver: false }).start();
+  };
+  const nameBorderColor = nameFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.neutral[100], colors.primary[400]],
+  });
+  const dateBorderColor = dateFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.neutral[100], colors.primary[400]],
+  });
+
   const dateIsValid = useMemo(() => {
     const iso = toISO(dateDisplay);
     if (!iso || iso.length !== 10) return false;
@@ -40,20 +65,26 @@ export default function BabyProfileScreen() {
   }, [dateDisplay, toISO]);
 
   const canContinue = isPregnant
-    ? dateDisplay.length >= 10 && dateIsValid
-    : name.trim().length > 0 && dateDisplay.length >= 10 && dateIsValid && gender !== null && feedingMethod !== null;
+    ? dateDisplay.length >= 10 && dateIsValid && gestationalWeeks !== null
+    : name.trim().length > 0 && dateDisplay.length >= 10 && dateIsValid && wasPreterm !== null && (!wasPreterm || gestationalWeeks !== null);
 
   const handleContinue = () => {
     const isoDate = toISO(dateDisplay);
     store.setBabyProfile({
       babyName: name.trim(),
       dateOfBirth: isPregnant ? '' : isoDate,
-      gender: gender!,
-      feedingMethod: feedingMethod!,
+      gender: gender ?? 'other',
+      feedingMethod: feedingMethod ?? 'mixed',
       isPregnant,
       dueDate: isPregnant ? isoDate : '',
     });
-    router.push('/(onboarding)/gestational-age');
+    // Save gestational age data
+    if (isPregnant) {
+      store.setGestationalAge({ wasPreterm: false, gestationalWeeks });
+    } else {
+      store.setGestationalAge({ wasPreterm: wasPreterm!, gestationalWeeks: wasPreterm ? gestationalWeeks : null });
+    }
+    router.push('/(onboarding)/parent-profile');
   };
 
   const handleDateChange = (text: string) => {
@@ -84,7 +115,7 @@ export default function BabyProfileScreen() {
           </Pressable>
 
           {/* Progress */}
-          <StepIndicator currentStep={2} />
+          <QuizProgressBar currentStep={1} totalSteps={3} />
 
           <Text style={styles.title}>Your Little One</Text>
           <Text style={styles.subtitle}>Tell us about your baby</Text>
@@ -108,32 +139,51 @@ export default function BabyProfileScreen() {
           {/* Name */}
           <View style={styles.section}>
             <Text style={styles.label}>{isPregnant ? 'Have you decided on a name yet?' : "Baby's name"}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={isPregnant ? 'Optional — You can add this later' : "What's their name?"}
-              placeholderTextColor={colors.textTertiary}
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              autoFocus
-            />
+            <Animated.View
+              style={[
+                styles.softInput,
+                { borderColor: nameBorderColor },
+                nameFocused && styles.softInputFocused,
+              ]}
+            >
+              <TextInput
+                style={styles.softInputField}
+                placeholder={isPregnant ? 'Optional — You can add this later' : "What's their name?"}
+                placeholderTextColor={colors.neutral[300]}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoFocus
+                onFocus={() => { setNameFocused(true); animateFocus(nameFocusAnim, true); }}
+                onBlur={() => { setNameFocused(false); animateFocus(nameFocusAnim, false); }}
+              />
+            </Animated.View>
           </View>
 
           {/* Date */}
           <View style={styles.section}>
             <Text style={styles.label}>{isPregnant ? 'Estimated due date' : 'Date of birth'}</Text>
-            <View style={styles.inputWithIcon}>
-              <Feather name="calendar" size={18} color={colors.textTertiary} style={styles.inputIcon} />
+            <Animated.View
+              style={[
+                styles.softInput,
+                styles.softInputWithIcon,
+                { borderColor: dateBorderColor },
+                dateFocused && styles.softInputFocused,
+              ]}
+            >
+              <Feather name="calendar" size={18} color={dateFocused ? colors.primary[500] : colors.neutral[300]} />
               <TextInput
-                style={styles.inputInner}
+                style={styles.softInputFieldInner}
                 placeholder={DATE_PLACEHOLDER}
-                placeholderTextColor={colors.textTertiary}
+                placeholderTextColor={colors.neutral[300]}
                 value={dateDisplay}
                 onChangeText={handleDateChange}
                 keyboardType="number-pad"
                 maxLength={10}
+                onFocus={() => { setDateFocused(true); animateFocus(dateFocusAnim, true); }}
+                onBlur={() => { setDateFocused(false); animateFocus(dateFocusAnim, false); }}
               />
-            </View>
+            </Animated.View>
           </View>
 
           {/* Gender — hidden when pregnant */}
@@ -206,6 +256,76 @@ export default function BabyProfileScreen() {
             </View>
           )}
 
+          {/* Gestational age — pregnancy weeks or preterm question */}
+          {isPregnant ? (
+            <View style={styles.section}>
+              <Text style={styles.label}>How many weeks along are you?</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={gestationalWeeks}
+                  onValueChange={(value) => setGestationalWeeks(value as number)}
+                  style={Platform.OS === 'ios' ? styles.pickerIOS : styles.pickerAndroid}
+                  itemStyle={styles.pickerItem}
+                >
+                  <Picker.Item label="Select week..." value={null} color={colors.textTertiary} />
+                  {pregnantWeekOptions.map((w) => (
+                    <Picker.Item key={w} label={`Week ${w}`} value={w} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.section}>
+              <Text style={styles.label}>Was your baby born before 37 weeks?</Text>
+              <View style={styles.pretermRow}>
+                <Pressable
+                  style={[styles.pretermCard, shadows.sm, wasPreterm === true && styles.pretermCardSelected]}
+                  onPress={() => setWasPreterm(true)}
+                >
+                  <Feather name="alert-circle" size={20} color={wasPreterm === true ? colors.secondary[600] : colors.textTertiary} />
+                  <Text style={[styles.pretermLabel, wasPreterm === true && styles.pretermLabelSelected]}>Yes, born early</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.pretermCard, shadows.sm, wasPreterm === false && styles.pretermCardSelected]}
+                  onPress={() => { setWasPreterm(false); setGestationalWeeks(null); }}
+                >
+                  <Feather name="check-circle" size={20} color={wasPreterm === false ? colors.primary[600] : colors.textTertiary} />
+                  <Text style={[styles.pretermLabel, wasPreterm === false && styles.pretermLabelSelected]}>No, full term</Text>
+                </Pressable>
+              </View>
+
+              {wasPreterm && (
+                <>
+                  <Text style={[styles.label, { marginTop: spacing.base }]}>At how many weeks was your baby born?</Text>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={gestationalWeeks}
+                      onValueChange={(value) => setGestationalWeeks(value as number)}
+                      style={Platform.OS === 'ios' ? styles.pickerIOS : styles.pickerAndroid}
+                      itemStyle={styles.pickerItem}
+                    >
+                      <Picker.Item label="Select week..." value={null} color={colors.textTertiary} />
+                      {pretermWeekOptions.map((w) => (
+                        <Picker.Item key={w} label={`Week ${w}`} value={w} />
+                      ))}
+                    </Picker>
+                  </View>
+                  {gestationalWeeks !== null && gestationalWeeks < 37 && (
+                    <View style={[styles.infoBox, shadows.sm]}>
+                      <View style={styles.infoHeader}>
+                        <Feather name="info" size={16} color={colors.primary[600]} />
+                        <Text style={styles.infoTitle}>Corrected Age Enabled</Text>
+                      </View>
+                      <Text style={styles.infoText}>
+                        We'll adjust by {40 - gestationalWeeks} weeks for all developmental milestones, sleep windows, and growth charts until 24 months corrected.
+                      </Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
           {/* Continue */}
           <Pressable
             style={[styles.button, shadows.sm, !canContinue && styles.buttonDisabled]}
@@ -241,30 +361,41 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: typography.fontSize.base, color: colors.textSecondary, marginBottom: spacing.xl },
   section: { marginBottom: spacing.xl },
   label: { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary, marginBottom: spacing.md },
-  input: {
+  softInput: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.base,
-    fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  inputWithIcon: {
+  softInputFocused: {
+    shadowColor: colors.primary[500],
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  softInputField: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.base + 2,
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textPrimary,
+  },
+  softInputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.lg,
   },
-  inputIcon: { marginRight: spacing.sm },
-  inputInner: {
+  softInputFieldInner: {
     flex: 1,
-    paddingVertical: spacing.base,
+    paddingVertical: spacing.base + 2,
+    paddingLeft: spacing.sm,
     fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
     color: colors.textPrimary,
   },
   pregnancyToggle: {
@@ -333,6 +464,48 @@ const styles = StyleSheet.create({
   feedingLabelSelected: { color: colors.secondary[600] },
   feedingDescription: { fontSize: typography.fontSize.sm, color: colors.textSecondary },
   hint: { fontSize: typography.fontSize.xs, color: colors.textTertiary, marginTop: spacing.sm },
+  pretermRow: { flexDirection: 'row', gap: spacing.md },
+  pretermCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.base,
+    borderWidth: 1.5,
+    borderColor: colors.neutral[100],
+  },
+  pretermCardSelected: {
+    borderColor: colors.primary[400],
+    backgroundColor: colors.primary[50],
+  },
+  pretermLabel: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.textSecondary },
+  pretermLabelSelected: { color: colors.primary[700] },
+  pickerContainer: {
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius['2xl'],
+    overflow: 'hidden',
+    ...shadows.soft,
+  },
+  pickerIOS: { height: 200 },
+  pickerAndroid: { height: 56, paddingHorizontal: spacing.md },
+  pickerItem: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textPrimary,
+  },
+  infoBox: {
+    marginTop: spacing.base,
+    backgroundColor: colors.primary[50],
+    padding: spacing.base,
+    borderRadius: borderRadius.xl,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary[500],
+  },
+  infoHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  infoTitle: { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.primary[700] },
+  infoText: { fontSize: typography.fontSize.sm, color: colors.primary[800], lineHeight: 20 },
   button: {
     flexDirection: 'row',
     backgroundColor: colors.primary[500],

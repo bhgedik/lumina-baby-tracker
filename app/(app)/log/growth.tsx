@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Growth Log Screen
+// Sprouty — Growth Log Screen
 // Educational card-based layout: Weight, Length, Head Circumference
 // With Nurse's Tips teaching mothers how to measure at home
 // ============================================================
@@ -21,6 +21,7 @@ import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { useGrowthStore } from '../../../src/stores/growthStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -76,7 +77,7 @@ const METRICS: MetricInfo[] = [
     iconColor: colors.primary[600],
     metricPlaceholder: '3.5',
     imperialPlaceholder: '7.7',
-    tipTitle: "Nurse's Tip: How to weigh at home",
+    tipTitle: "Lumina's Tip: How to weigh at home",
     tipBody: 'Weigh yourself holding your baby, then weigh yourself alone. Subtract the difference!\n\nFor best accuracy, weigh at the same time of day (before a feed works well) and in just a dry diaper.',
   },
   {
@@ -87,7 +88,7 @@ const METRICS: MetricInfo[] = [
     iconColor: colors.secondary[500],
     metricPlaceholder: '50.5',
     imperialPlaceholder: '19.9',
-    tipTitle: "Nurse's Tip: How to measure length",
+    tipTitle: "Lumina's Tip: How to measure length",
     tipBody: 'Lay your baby flat on a firm surface. Gently stretch one leg straight and mark where the heel rests.\n\nMark the top of the head too, then measure between the two marks with a tape measure. Having a helper makes this much easier!',
   },
   {
@@ -98,7 +99,7 @@ const METRICS: MetricInfo[] = [
     iconColor: colors.warning,
     metricPlaceholder: '35.0',
     imperialPlaceholder: '13.8',
-    tipTitle: "Nurse's Tip: How to measure the head",
+    tipTitle: "Lumina's Tip: How to measure the head",
     tipBody: 'Use a soft, flexible measuring tape. Wrap it snugly around the widest part of the head — just above the eyebrows and ears, around the back where it sticks out the most.\n\nTake 2–3 measurements and use the largest one. This is more accurate than you\'d think!',
   },
 ];
@@ -248,6 +249,7 @@ export default function GrowthLogScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* Intro */}
         <Text style={styles.introText}>
@@ -348,6 +350,7 @@ export default function GrowthLogScreen() {
                   onChangeText={setter}
                   keyboardType="decimal-pad"
                   maxLength={6}
+                  inputAccessoryViewID={KEYBOARD_DONE_ID}
                 />
                 <Text style={styles.unitText}>{unit}</Text>
               </View>
@@ -391,6 +394,7 @@ export default function GrowthLogScreen() {
             multiline
             textAlignVertical="top"
             maxLength={500}
+            inputAccessoryViewID={KEYBOARD_DONE_ID}
           />
         </View>
 
@@ -415,6 +419,7 @@ export default function GrowthLogScreen() {
         onDismiss={() => setShowToast(false)}
         autoDismissMs={2000}
       />
+      <KeyboardDoneBar />
     </View>
   );
 }

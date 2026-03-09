@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Pulse Card
+// Sprouty — Pulse Card
 // Dynamic daily summary hero card showing domain status
 // at a glance with colored dots and summary
 // ============================================================

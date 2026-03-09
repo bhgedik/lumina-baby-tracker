@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Dynamic Lottie Icon
+// Sprouty — Dynamic Lottie Icon
 // Animated illustrations for Quick Log cards, driven by baby data
 // Playback speed/progress responds to time-since-last-event & age
 // ============================================================

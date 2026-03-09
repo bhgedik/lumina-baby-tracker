@@ -72,9 +72,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Link>
 
-          <Link href="/(auth)/join-family" style={styles.inviteLink}>
-            <Text style={styles.inviteLinkText}>I have an invite code</Text>
-          </Link>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -165,14 +162,5 @@ const styles = StyleSheet.create({
     color: colors.primary[500],
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
-  },
-  inviteLink: {
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-  },
-  inviteLinkText: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
   },
 });

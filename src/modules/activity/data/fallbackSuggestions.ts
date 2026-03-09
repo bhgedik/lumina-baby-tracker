@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Fallback Activity Suggestions (Offline / Timeout)
+// Sprouty — Fallback Activity Suggestions (Offline / Timeout)
 // Static, age-bucketed suggestions used when AI is unavailable
 // ============================================================
 

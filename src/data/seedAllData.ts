@@ -1,6 +1,7 @@
 // ============================================================
-// Nodd — Seed Data Generators
-// Generates realistic demo data for all tracking domains
+// Sprouty — Seed Data Generators
+// Generates 30 days of realistic demo data for all tracking
+// domains, simulating a mother with ~75% logging completion
 // ============================================================
 
 import { generateUUID } from '../stores/createSyncedStore';
@@ -8,30 +9,59 @@ import type { Baby } from '../modules/baby/types';
 import type { FeedingLog } from '../modules/feeding/types';
 import type { SleepLog } from '../modules/sleep/types';
 import type { DiaperLog } from '../modules/diaper/types';
-import type { MoodEntry, MoodEmoji } from '../stores/motherMoodStore';
-import type { SymptomEntry, WeightEntry, BodyArea, SeverityLevel } from '../stores/motherWellnessStore';
 import type { PrimaryFeedingMethod } from '../shared/types/common';
+
+// ─── Constants ───
+
+const SEED_DAYS = 30;
+
+// Per-day completeness factors — averages to 0.75 (75%)
+// Index 0 = oldest day (30 days ago), index 29 = today
+const DAILY_COMPLETENESS: number[] = [
+  0.5, 0.0, 0.8, 0.8, 0.8, 1.0, 0.8, 0.8, 0.6, 1.0,
+  0.8, 1.0, 0.8, 1.0, 0.8, 0.0, 0.8, 1.0, 0.8, 0.8,
+  1.0, 0.6, 0.8, 1.0, 0.6, 0.8, 0.0, 1.0, 0.8, 1.0,
+];
+
+// Typical newborn feed times (every 2-3 hours)
+const FEED_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
+
+// Nap templates: [startHour, durationMinutes]
+const NAP_TEMPLATES: [number, number][] = [
+  [9, 55],   // Morning nap ~55 min
+  [13, 70],  // Afternoon nap ~70 min
+  [17, 40],  // Late nap ~40 min
+];
+
+// Diaper change times
+const DIAPER_HOURS = [1, 4, 7, 10, 13, 16, 19];
+const DIAPER_TYPES: ('wet' | 'dirty' | 'both')[] = [
+  'wet', 'dirty', 'wet', 'both', 'wet', 'dirty', 'wet',
+];
 
 // ─── Helpers ───
 
-function todayAt(hours: number, minutes: number = 0): Date {
+/** Simple seeded pseudo-random using a day offset for determinism */
+function seededRand(dayOffset: number, slot: number): number {
+  const x = Math.sin(dayOffset * 127.1 + slot * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function dateAt(daysAgo: number, hours: number, minutes: number = 0): Date {
   const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
   d.setHours(hours, minutes, 0, 0);
   return d;
 }
 
-function yesterdayAt(hours: number, minutes: number = 0): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  d.setHours(hours, minutes, 0, 0);
-  return d;
-}
-
-function daysAgo(days: number, hours: number = 12, minutes: number = 0): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  d.setHours(hours, minutes, 0, 0);
-  return d;
+/** Pick `count` items from an array using seeded randomness */
+function pickN<T>(items: T[], count: number, daySeed: number): T[] {
+  if (count >= items.length) return [...items];
+  if (count <= 0) return [];
+  // Shuffle with seed, then take first `count`
+  const indexed = items.map((item, i) => ({ item, sort: seededRand(daySeed, i * 13) }));
+  indexed.sort((a, b) => a.sort - b.sort);
+  return indexed.slice(0, count).map((x) => x.item);
 }
 
 // ─── Feeding ───
@@ -42,48 +72,59 @@ export function generateSeedFeedingData(
 ): FeedingLog[] {
   const logs: FeedingLog[] = [];
   const now = new Date();
+  let sideToggle = 0;
 
-  // 8 feeds spread across today, every 2-3 hours starting from midnight
-  const feedTimes = [0, 3, 6, 8, 11, 14, 17, 20];
-  let side: 'left' | 'right' = 'left';
+  for (let dayIdx = 0; dayIdx < SEED_DAYS; dayIdx++) {
+    const daysAgo = SEED_DAYS - 1 - dayIdx;
+    const completeness = DAILY_COMPLETENESS[dayIdx];
+    if (completeness === 0) continue;
 
-  for (let i = 0; i < feedTimes.length; i++) {
-    const hour = feedTimes[i];
-    const startDate = todayAt(hour, Math.floor(Math.random() * 30));
+    const feedCount = Math.round(FEED_HOURS.length * completeness);
+    const selectedHours = pickN(FEED_HOURS, feedCount, daysAgo);
 
-    // Only include feeds that are in the past
-    if (startDate > now) continue;
+    for (const hour of selectedHours) {
+      const minuteOffset = Math.floor(seededRand(daysAgo, hour) * 30);
+      const startDate = dateAt(daysAgo, hour, minuteOffset);
 
-    const durationMin = 15 + Math.floor(Math.random() * 11); // 15-25 min
-    const endDate = new Date(startDate.getTime() + durationMin * 60 * 1000);
+      // Skip future entries
+      if (startDate > now) continue;
 
-    const isBreast = feedingMethod === 'breast_only' ||
-      (feedingMethod === 'mixed' && i % 2 === 0);
+      const durationMin = 15 + Math.floor(seededRand(daysAgo, hour + 100) * 15); // 15-30 min
+      const endDate = new Date(startDate.getTime() + durationMin * 60 * 1000);
 
-    const log: FeedingLog = {
-      id: generateUUID(),
-      baby_id: baby.id,
-      family_id: baby.family_id,
-      logged_by: 'seed-data',
-      type: isBreast ? 'breast' : 'bottle',
-      started_at: startDate.toISOString(),
-      ended_at: endDate.toISOString(),
-      breast_side: isBreast ? side : null,
-      left_duration_seconds: isBreast && side === 'left' ? (8 + Math.floor(Math.random() * 8)) * 60 : null,
-      right_duration_seconds: isBreast && side === 'right' ? (8 + Math.floor(Math.random() * 8)) * 60 : null,
-      bottle_amount_ml: !isBreast ? 90 + Math.floor(Math.random() * 61) : null, // 90-150ml
-      bottle_content: !isBreast ? 'formula' : null,
-      bottle_temperature: !isBreast ? 'warm' : null,
-      solid_foods: null,
-      notes: null,
-      baby_response: null,
-      photo_url: null,
-      created_at: startDate.toISOString(),
-      updated_at: startDate.toISOString(),
-    };
+      const isBreast =
+        feedingMethod === 'breast_only' ||
+        (feedingMethod === 'mixed' && sideToggle % 2 === 0);
 
-    logs.push(log);
-    side = side === 'left' ? 'right' : 'left';
+      const side = sideToggle % 2 === 0 ? 'left' as const : 'right' as const;
+      const sideDuration = (8 + Math.floor(seededRand(daysAgo, hour + 200) * 10)) * 60; // 8-18 min in seconds
+
+      const log: FeedingLog = {
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: 'seed-data',
+        type: isBreast ? 'breast' : 'bottle',
+        started_at: startDate.toISOString(),
+        ended_at: endDate.toISOString(),
+        breast_side: isBreast ? side : null,
+        left_duration_seconds: isBreast && side === 'left' ? sideDuration : null,
+        right_duration_seconds: isBreast && side === 'right' ? sideDuration : null,
+        bottle_amount_ml: !isBreast ? 80 + Math.floor(seededRand(daysAgo, hour + 300) * 80) : null, // 80-160ml
+        bottle_content: !isBreast ? (feedingMethod === 'formula_only' ? 'formula' : 'breast_milk') : null,
+        bottle_temperature: !isBreast ? 'warm' : null,
+        solid_foods: null,
+        sensitivity_notes: null,
+        notes: null,
+        baby_response: seededRand(daysAgo, hour + 400) > 0.8 ? 'fussy' : 'good',
+        photo_url: null,
+        created_at: startDate.toISOString(),
+        updated_at: startDate.toISOString(),
+      };
+
+      logs.push(log);
+      sideToggle++;
+    }
   }
 
   return logs;
@@ -95,74 +136,78 @@ export function generateSeedSleepData(baby: Baby): SleepLog[] {
   const logs: SleepLog[] = [];
   const now = new Date();
 
-  // Night sleep: ~10pm yesterday to ~6am today (480 min)
-  const nightStart = yesterdayAt(22, 0);
-  const nightEnd = todayAt(6, 0);
-  logs.push({
-    id: generateUUID(),
-    baby_id: baby.id,
-    family_id: baby.family_id,
-    logged_by: 'seed-data',
-    type: 'night',
-    started_at: nightStart.toISOString(),
-    ended_at: nightEnd.toISOString(),
-    duration_minutes: 480,
-    method: null,
-    location: 'crib',
-    quality: null,
-    night_wakings: 2,
-    room_temperature_celsius: null,
-    notes: null,
-    created_at: nightStart.toISOString(),
-    updated_at: nightEnd.toISOString(),
-  });
+  for (let dayIdx = 0; dayIdx < SEED_DAYS; dayIdx++) {
+    const daysAgo = SEED_DAYS - 1 - dayIdx;
+    const completeness = DAILY_COMPLETENESS[dayIdx];
+    if (completeness === 0) continue;
 
-  // Nap 1: 9am–10am (60 min)
-  const nap1Start = todayAt(9, 0);
-  const nap1End = todayAt(10, 0);
-  if (nap1End <= now) {
-    logs.push({
-      id: generateUUID(),
-      baby_id: baby.id,
-      family_id: baby.family_id,
-      logged_by: 'seed-data',
-      type: 'nap',
-      started_at: nap1Start.toISOString(),
-      ended_at: nap1End.toISOString(),
-      duration_minutes: 60,
-      method: null,
-      location: 'crib',
-      quality: null,
-      night_wakings: null,
-      room_temperature_celsius: null,
-      notes: null,
-      created_at: nap1Start.toISOString(),
-      updated_at: nap1End.toISOString(),
-    });
-  }
+    // Night sleep (always included if day is not skipped)
+    const nightVariation = Math.floor(seededRand(daysAgo, 50) * 60) - 30; // -30 to +30 min
+    const nightStartHour = 21 + (seededRand(daysAgo, 51) > 0.5 ? 1 : 0); // 9pm or 10pm
+    const nightStart = dateAt(daysAgo + 1, nightStartHour, 30 + Math.floor(seededRand(daysAgo, 52) * 30));
+    const nightDuration = 420 + nightVariation + Math.floor(seededRand(daysAgo, 53) * 60); // 390-510 min (~6.5-8.5h)
+    const nightEnd = new Date(nightStart.getTime() + nightDuration * 60 * 1000);
+    const wakings = 1 + Math.floor(seededRand(daysAgo, 54) * 3); // 1-3 wakings
 
-  // Nap 2: 1pm–2:15pm (75 min)
-  const nap2Start = todayAt(13, 0);
-  const nap2End = todayAt(14, 15);
-  if (nap2End <= now) {
-    logs.push({
-      id: generateUUID(),
-      baby_id: baby.id,
-      family_id: baby.family_id,
-      logged_by: 'seed-data',
-      type: 'nap',
-      started_at: nap2Start.toISOString(),
-      ended_at: nap2End.toISOString(),
-      duration_minutes: 75,
-      method: null,
-      location: 'crib',
-      quality: null,
-      night_wakings: null,
-      room_temperature_celsius: null,
-      notes: null,
-      created_at: nap2Start.toISOString(),
-      updated_at: nap2End.toISOString(),
-    });
+    if (nightEnd <= now) {
+      logs.push({
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: 'seed-data',
+        type: 'night',
+        started_at: nightStart.toISOString(),
+        ended_at: nightEnd.toISOString(),
+        duration_minutes: nightDuration,
+        method: seededRand(daysAgo, 55) > 0.5 ? 'nursed' : null,
+        location: 'crib',
+        quality: Math.ceil(seededRand(daysAgo, 56) * 3) + 2 as 1 | 2 | 3 | 4 | 5, // 3-5
+        night_wakings: wakings,
+        room_temperature_celsius: null,
+        notes: null,
+        created_at: nightStart.toISOString(),
+        updated_at: nightEnd.toISOString(),
+      });
+    }
+
+    // Naps — based on completeness
+    const napCount = Math.max(0, Math.round(NAP_TEMPLATES.length * completeness) - 1); // 0-3 naps (night counts as 1)
+    const selectedNaps = pickN(NAP_TEMPLATES, napCount, daysAgo + 1000);
+
+    for (const [napHour, baseDuration] of selectedNaps) {
+      const napMinuteOffset = Math.floor(seededRand(daysAgo, napHour * 7) * 20);
+      const napStart = dateAt(daysAgo, napHour, napMinuteOffset);
+
+      if (napStart > now) continue;
+
+      const durationVariation = Math.floor(seededRand(daysAgo, napHour * 7 + 1) * 20) - 10; // -10 to +10 min
+      const napDuration = Math.max(20, baseDuration + durationVariation);
+      const napEnd = new Date(napStart.getTime() + napDuration * 60 * 1000);
+
+      if (napEnd > now) continue;
+
+      const methods = ['nursed', 'rocked', 'held', 'self_soothed', 'patted'] as const;
+      const locations = ['crib', 'bassinet', 'carrier', 'stroller'] as const;
+
+      logs.push({
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: 'seed-data',
+        type: 'nap',
+        started_at: napStart.toISOString(),
+        ended_at: napEnd.toISOString(),
+        duration_minutes: napDuration,
+        method: methods[Math.floor(seededRand(daysAgo, napHour * 7 + 2) * methods.length)],
+        location: locations[Math.floor(seededRand(daysAgo, napHour * 7 + 3) * locations.length)],
+        quality: null,
+        night_wakings: null,
+        room_temperature_celsius: null,
+        notes: null,
+        created_at: napStart.toISOString(),
+        updated_at: napEnd.toISOString(),
+      });
+    }
   }
 
   return logs;
@@ -174,110 +219,47 @@ export function generateSeedDiaperData(baby: Baby): DiaperLog[] {
   const logs: DiaperLog[] = [];
   const now = new Date();
 
-  // 7 diapers spread across today: 4 wet, 2 dirty, 1 both
-  const schedule: { hour: number; type: 'wet' | 'dirty' | 'both' }[] = [
-    { hour: 1, type: 'wet' },
-    { hour: 4, type: 'dirty' },
-    { hour: 7, type: 'wet' },
-    { hour: 10, type: 'both' },
-    { hour: 13, type: 'wet' },
-    { hour: 16, type: 'dirty' },
-    { hour: 19, type: 'wet' },
-  ];
+  for (let dayIdx = 0; dayIdx < SEED_DAYS; dayIdx++) {
+    const daysAgo = SEED_DAYS - 1 - dayIdx;
+    const completeness = DAILY_COMPLETENESS[dayIdx];
+    if (completeness === 0) continue;
 
-  for (const entry of schedule) {
-    const logTime = todayAt(entry.hour, Math.floor(Math.random() * 30));
-    if (logTime > now) continue;
+    const diaperCount = Math.round(DIAPER_HOURS.length * completeness);
+    const selectedIndices = pickN(
+      DIAPER_HOURS.map((_, i) => i),
+      diaperCount,
+      daysAgo + 2000,
+    );
 
-    const isDirty = entry.type === 'dirty' || entry.type === 'both';
+    for (const idx of selectedIndices) {
+      const hour = DIAPER_HOURS[idx];
+      const minuteOffset = Math.floor(seededRand(daysAgo, hour * 11) * 30);
+      const logTime = dateAt(daysAgo, hour, minuteOffset);
 
-    logs.push({
-      id: generateUUID(),
-      baby_id: baby.id,
-      family_id: baby.family_id,
-      logged_by: 'seed-data',
-      logged_at: logTime.toISOString(),
-      type: entry.type,
-      stool_color: isDirty ? 'yellow' : null,
-      stool_consistency: isDirty ? 'seedy' : null,
-      has_rash: false,
-      notes: null,
-      created_at: logTime.toISOString(),
-      updated_at: logTime.toISOString(),
-    });
+      if (logTime > now) continue;
+
+      const type = DIAPER_TYPES[idx];
+      const isDirty = type === 'dirty' || type === 'both';
+
+      const stoolColors = ['yellow', 'green', 'brown'] as const;
+      const consistencies = ['seedy', 'soft', 'liquid'] as const;
+
+      logs.push({
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: 'seed-data',
+        logged_at: logTime.toISOString(),
+        type,
+        stool_color: isDirty ? stoolColors[Math.floor(seededRand(daysAgo, hour * 11 + 1) * stoolColors.length)] : null,
+        stool_consistency: isDirty ? consistencies[Math.floor(seededRand(daysAgo, hour * 11 + 2) * consistencies.length)] : null,
+        has_rash: seededRand(daysAgo, hour * 11 + 3) > 0.92, // ~8% chance of rash
+        notes: null,
+        created_at: logTime.toISOString(),
+        updated_at: logTime.toISOString(),
+      });
+    }
   }
 
   return logs;
-}
-
-// ─── Mood ───
-
-export function generateSeedMoodData(): MoodEntry[] {
-  const moods: MoodEmoji[] = ['good', 'okay', 'good', 'struggling', 'okay', 'good', 'okay'];
-  const entries: MoodEntry[] = [];
-
-  for (let i = 0; i < moods.length; i++) {
-    const dayOffset = moods.length - 1 - i; // 6 days ago → today
-    const loggedAt = daysAgo(dayOffset, 9, 0).getTime();
-
-    entries.push({
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + i,
-      mood: moods[i],
-      loggedAt,
-      notes: moods[i] === 'struggling' ? 'Rough night, very tired' : null,
-    });
-  }
-
-  return entries;
-}
-
-// ─── Wellness (Symptoms + Weight) ───
-
-export function generateSeedWellnessData(): {
-  symptoms: SymptomEntry[];
-  weights: WeightEntry[];
-} {
-  const symptoms: SymptomEntry[] = [
-    {
-      id: Date.now().toString(36) + 'sw1',
-      bodyArea: 'back' as BodyArea,
-      symptom: 'Lower back pain',
-      severity: 3 as SeverityLevel,
-      notes: 'Worse after sitting for a long time',
-      loggedAt: daysAgo(2, 10).getTime(),
-    },
-    {
-      id: Date.now().toString(36) + 'sw2',
-      bodyArea: 'breast' as BodyArea,
-      symptom: 'Breast tenderness',
-      severity: 2 as SeverityLevel,
-      notes: null,
-      loggedAt: daysAgo(1, 14).getTime(),
-    },
-    {
-      id: Date.now().toString(36) + 'sw3',
-      bodyArea: 'head' as BodyArea,
-      symptom: 'Headache',
-      severity: 2 as SeverityLevel,
-      notes: 'Mild, probably dehydration',
-      loggedAt: daysAgo(0, 8).getTime(),
-    },
-  ];
-
-  const weights: WeightEntry[] = [
-    {
-      id: Date.now().toString(36) + 'wt1',
-      weightKg: 72,
-      loggedAt: daysAgo(7, 8).getTime(),
-      notes: null,
-    },
-    {
-      id: Date.now().toString(36) + 'wt2',
-      weightKg: 71.2,
-      loggedAt: daysAgo(0, 8).getTime(),
-      notes: null,
-    },
-  ];
-
-  return { symptoms, weights };
 }

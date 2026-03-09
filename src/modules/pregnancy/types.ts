@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Pregnancy Module Types
+// Sprouty — Pregnancy Module Types
 // ============================================================
 
 export interface PrepSuggestion {

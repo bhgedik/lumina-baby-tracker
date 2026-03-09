@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Units-Aware Date Format Hook
+// Sprouty — Units-Aware Date Format Hook
 // Imperial → MM/DD/YYYY | Metric → DD/MM/YYYY
 // Falls back to device locale when no preference is set
 // ============================================================

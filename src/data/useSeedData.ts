@@ -1,26 +1,20 @@
 // ============================================================
-// Nodd — Seed Data Hook
-// Seeds all tracking domains with demo data on first visit
+// Sprouty — Seed Data Hook
+// Seeds all tracking domains with 30-day demo data
+// Checks store contents directly instead of flags
 // ============================================================
 
 import { useEffect, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBabyStore } from '../stores/babyStore';
 import { useFeedingStore } from '../stores/feedingStore';
 import { useSleepStore } from '../stores/sleepStore';
 import { useDiaperStore } from '../stores/diaperStore';
-import { useMotherMoodStore } from '../stores/motherMoodStore';
-import { useMotherWellnessStore } from '../stores/motherWellnessStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
 import {
   generateSeedFeedingData,
   generateSeedSleepData,
   generateSeedDiaperData,
-  generateSeedMoodData,
-  generateSeedWellnessData,
 } from './seedAllData';
-
-const FLAG_PREFIX = '@nodd/';
 
 export function useSeedData(): void {
   const babies = useBabyStore((s) => s.babies);
@@ -28,8 +22,9 @@ export function useSeedData(): void {
   const feedingHydrated = useFeedingStore((s) => s.isHydrated);
   const sleepHydrated = useSleepStore((s) => s.isHydrated);
   const diaperHydrated = useDiaperStore((s) => s.isHydrated);
-  const moodHydrated = useMotherMoodStore((s) => s.isHydrated);
-  const wellnessHydrated = useMotherWellnessStore((s) => s.isHydrated);
+  const feedingItems = useFeedingStore((s) => s.items);
+  const sleepItems = useSleepStore((s) => s.items);
+  const diaperItems = useDiaperStore((s) => s.items);
   const feedingMethod = useOnboardingStore((s) => s.feedingMethod) ?? 'mixed';
 
   const seededRef = useRef(false);
@@ -37,100 +32,45 @@ export function useSeedData(): void {
   useEffect(() => {
     if (seededRef.current) return;
 
-    const allHydrated = feedingHydrated && sleepHydrated && diaperHydrated && moodHydrated && wellnessHydrated;
+    const allHydrated = feedingHydrated && sleepHydrated && diaperHydrated;
     if (!allHydrated) return;
 
     const baby = activeBabyId
       ? babies.find((b) => b.id === activeBabyId)
       : babies[0];
 
-    if (!baby || baby.is_pregnant) return;
+    if (!baby || (baby.is_pregnant && baby.due_date)) return;
+
+    // Check if this baby already has data in any store
+    const hasFeedingData = feedingItems.some((i) => i.baby_id === baby.id);
+    const hasSleepData = sleepItems.some((i) => i.baby_id === baby.id);
+    const hasDiaperData = diaperItems.some((i) => i.baby_id === baby.id);
+
+    if (hasFeedingData && hasSleepData && hasDiaperData) return;
 
     seededRef.current = true;
 
-    (async () => {
-      // Feeding
-      const hasFeedingData = useFeedingStore.getState().items.some((i) => i.baby_id === baby.id);
-      if (!hasFeedingData) {
-        const feedingFlag = `${FLAG_PREFIX}feeding-seeded:${baby.id}`;
-        const feedingSeeded = await AsyncStorage.getItem(feedingFlag);
-        if (!feedingSeeded) {
-          const logs = generateSeedFeedingData(baby, feedingMethod);
-          const addItem = useFeedingStore.getState().addItem;
-          for (const log of logs) addItem(log);
-          await AsyncStorage.setItem(feedingFlag, 'true');
-        }
-      }
+    const feedingStore = useFeedingStore.getState();
+    const sleepStore = useSleepStore.getState();
+    const diaperStore = useDiaperStore.getState();
 
-      // Sleep
-      const hasSleepData = useSleepStore.getState().items.some((i) => i.baby_id === baby.id);
-      if (!hasSleepData) {
-        const sleepFlag = `${FLAG_PREFIX}sleep-seeded:${baby.id}`;
-        const sleepSeeded = await AsyncStorage.getItem(sleepFlag);
-        if (!sleepSeeded) {
-          const logs = generateSeedSleepData(baby);
-          const addItem = useSleepStore.getState().addItem;
-          for (const log of logs) addItem(log);
-          await AsyncStorage.setItem(sleepFlag, 'true');
-        }
-      }
+    if (!hasFeedingData) {
+      const logs = generateSeedFeedingData(baby, feedingMethod);
+      for (const log of logs) feedingStore.addItem(log);
+    }
 
-      // Diapers
-      const hasDiaperData = useDiaperStore.getState().items.some((i) => i.baby_id === baby.id);
-      if (!hasDiaperData) {
-        const diaperFlag = `${FLAG_PREFIX}diaper-seeded:${baby.id}`;
-        const diaperSeeded = await AsyncStorage.getItem(diaperFlag);
-        if (!diaperSeeded) {
-          const logs = generateSeedDiaperData(baby);
-          const addItem = useDiaperStore.getState().addItem;
-          for (const log of logs) addItem(log);
-          await AsyncStorage.setItem(diaperFlag, 'true');
-        }
-      }
+    if (!hasSleepData) {
+      const logs = generateSeedSleepData(baby);
+      for (const log of logs) sleepStore.addItem(log);
+    }
 
-      // Mood — set entries directly to preserve historical timestamps
-      const moodStore = useMotherMoodStore.getState();
-      if (moodStore.entries.length === 0) {
-        const moodFlag = `${FLAG_PREFIX}mood-seeded:${baby.id}`;
-        const moodSeeded = await AsyncStorage.getItem(moodFlag);
-        if (!moodSeeded) {
-          const entries = generateSeedMoodData();
-          useMotherMoodStore.setState({
-            entries: [...moodStore.entries, ...entries],
-          });
-          // Persist manually since we bypassed logMood
-          AsyncStorage.setItem(
-            '@sprout/mother-mood',
-            JSON.stringify({ entries: [...moodStore.entries, ...entries] }),
-          ).catch(() => {});
-          await AsyncStorage.setItem(moodFlag, 'true');
-        }
-      }
-
-      // Wellness — set state directly to preserve historical timestamps
-      const wellnessStore = useMotherWellnessStore.getState();
-      if (wellnessStore.symptoms.length === 0 && wellnessStore.weights.length === 0) {
-        const wellnessFlag = `${FLAG_PREFIX}wellness-seeded:${baby.id}`;
-        const wellnessSeeded = await AsyncStorage.getItem(wellnessFlag);
-        if (!wellnessSeeded) {
-          const { symptoms, weights } = generateSeedWellnessData();
-          const newSymptoms = [...wellnessStore.symptoms, ...symptoms];
-          const newWeights = [...wellnessStore.weights, ...weights];
-          useMotherWellnessStore.setState({
-            symptoms: newSymptoms,
-            weights: newWeights,
-          });
-          // Persist manually since we bypassed logSymptom/logWeight
-          AsyncStorage.setItem(
-            '@sprout/mother-wellness',
-            JSON.stringify({ symptoms: newSymptoms, weights: newWeights }),
-          ).catch(() => {});
-          await AsyncStorage.setItem(wellnessFlag, 'true');
-        }
-      }
-    })();
+    if (!hasDiaperData) {
+      const logs = generateSeedDiaperData(baby);
+      for (const log of logs) diaperStore.addItem(log);
+    }
   }, [
-    feedingHydrated, sleepHydrated, diaperHydrated, moodHydrated, wellnessHydrated,
+    feedingHydrated, sleepHydrated, diaperHydrated,
     babies, activeBabyId, feedingMethod,
+    feedingItems, sleepItems, diaperItems,
   ]);
 }

@@ -1591,3 +1591,198 @@ export const SURPRISE_POOL: PrepSuggestion[] = [
     source: 'static',
   },
 ];
+
+// ============================================================
+// Weekly Development — summary + rich full article per week
+// Used by PregnancyInsightsGrid "Baby This Week" card
+// and the Insights screen hero card
+// ============================================================
+
+export interface WeeklyDev {
+  summary: string;
+  fullArticle: string;
+}
+
+export const WEEKLY_DEVELOPMENT: Record<number, WeeklyDev> = {
+  4: {
+    summary: 'The neural tube is forming — the beginning of baby\'s brain and spinal cord.',
+    fullArticle: 'At just four weeks, your baby is the size of a poppy seed, but incredible things are happening. The neural tube — which will become the brain and spinal cord — is one of the first structures to form. This is why folic acid is so important in early pregnancy.\n\nThe embryo has implanted into the uterine wall and the placenta is starting to develop, creating the lifeline that will nourish your baby for the months ahead. Cells are dividing at a breathtaking pace, laying the groundwork for every organ system.\n\nYou may not feel very different yet, but your body is already working overtime. Rising hCG levels are supporting the pregnancy, and progesterone is helping to maintain the uterine lining. It is a quiet but powerful beginning.',
+  },
+  5: {
+    summary: 'Baby\'s heart is beginning to beat for the very first time.',
+    fullArticle: 'This is a milestone week — your baby\'s tiny heart begins to beat, pumping blood through a circulatory system that is forming at remarkable speed. The heart starts as a simple tube that folds and divides into chambers, beating about 100 to 160 times per minute.\n\nThe embryo now has three distinct layers: the ectoderm (which will become skin and nervous system), the mesoderm (muscles, bones, and circulatory system), and the endoderm (lungs, liver, and digestive system). Each layer is busy differentiating into specialized cells.\n\nAlthough your baby is only about 2 millimeters long, the foundations for the face, ears, and eyes are beginning to take shape. The placenta and umbilical cord are working to deliver essential nutrients.',
+  },
+  6: {
+    summary: 'Tiny arm and leg buds are starting to appear.',
+    fullArticle: 'Week six brings visible progress — small arm and leg buds are emerging from your baby\'s body, the very beginnings of the limbs that will one day reach for you. The jaw, cheeks, and chin are also taking early shape.\n\nInside, the lungs, liver, and kidneys are beginning to develop. The intestines are growing so rapidly that they temporarily extend into the umbilical cord before migrating back into the abdomen in a few weeks. The brain is also growing quickly, with distinct sections forming.\n\nYou might start experiencing morning sickness around now, which — despite its name — can happen at any time of day. This is driven by rapidly rising hormone levels and is actually associated with a healthy pregnancy. Staying hydrated and eating small, frequent meals can help.',
+  },
+  7: {
+    summary: 'Baby\'s brain is growing rapidly, producing about 100 new cells every minute.',
+    fullArticle: 'Your baby\'s brain is the star this week, generating neurons at an astonishing rate of about 100 new cells per minute. These neurons will eventually form the complex networks that control everything from breathing to personality.\n\nThe face is becoming more defined — dark spots mark where the eyes and nostrils will be, and the mouth and inner ear are forming. Tiny hands are starting to emerge at the ends of the arm buds, though the fingers are still webbed together.\n\nBaby is now about the size of a blueberry and has doubled in size from last week. The umbilical cord is fully formed and working, providing oxygen and nutrients while carrying away waste. Movement is beginning, though it is far too early for you to feel it.',
+  },
+  8: {
+    summary: 'Fingers and toes are forming, and baby is starting to move.',
+    fullArticle: 'Your baby\'s fingers and toes are separating from their webbed beginnings, and tiny wrists, elbows, and ankles are forming. The upper lip and nose have taken shape, giving baby a distinctly human profile.\n\nThe nervous system is branching out rapidly, and your baby is beginning to make spontaneous movements — gentle twitches and wiggles that are the earliest form of motor development. These movements help the muscles and joints develop properly, even though you will not feel them for several more weeks.\n\nInternally, the intestines are forming, the heart now has four distinct chambers, and the liver is producing red blood cells. At roughly the size of a raspberry, your baby has all the essential organs in their earliest forms.',
+  },
+  9: {
+    summary: 'Baby\'s essential organs are all in place and beginning to function.',
+    fullArticle: 'By week nine, all of your baby\'s essential organs are in place — the heart, brain, kidneys, liver, and lungs are all formed and beginning to function. From this point forward, these organs will continue to mature and grow.\n\nYour baby is starting to look unmistakably human. The tail that was present in earlier weeks has disappeared, the eyelids have formed (though they will remain fused shut for several more months), and the ears are taking their final shape on the outside of the head.\n\nMuscles are developing throughout the body, allowing for more coordinated movements. Your baby may be flexing newly formed limbs, practicing the movements that will become stronger and more deliberate over the coming months.',
+  },
+  10: {
+    summary: 'Baby has graduated from embryo to fetus — a major milestone!',
+    fullArticle: 'This week marks a significant transition — your baby officially graduates from embryo to fetus. This milestone means that the critical period of organ formation is complete, and the focus shifts to growth and maturation.\n\nYour baby\'s vital organs are all in place and many are beginning to function. The stomach is producing digestive juices, the kidneys are producing urine, and the liver is making red blood cells. The brain is growing rapidly, producing about 250,000 new neurons every minute.\n\nExternally, the fingers and toes are fully separated, nails are beginning to grow, and fine hair called lanugo is appearing. Baby can now bend their limbs, and if you could peek inside, you might catch them swallowing amniotic fluid or making tiny fist movements.',
+  },
+  11: {
+    summary: 'Tooth buds and nail beds are forming. Baby can open and close their fists.',
+    fullArticle: 'Your baby is becoming more active by the day. Tooth buds for the future baby teeth are forming beneath the gums, and tiny nail beds are developing on fingers and toes. Baby can now open and close their fists — one of the first voluntary movements.\n\nThe head still makes up about half of the total body length, but the body is starting to catch up. The torso is lengthening, and the bones are beginning to harden from soft cartilage into solid bone, a process called ossification that will continue well after birth.\n\nThe diaphragm is forming, which means baby will soon start practicing breathing movements by inhaling and exhaling amniotic fluid. This rehearsal is essential for preparing the lungs for their first real breath at birth.',
+  },
+  12: {
+    summary: 'Reflexes are kicking in — baby can curl their toes and make sucking movements.',
+    fullArticle: 'Week twelve is a celebration-worthy milestone — you have reached the end of the first trimester. Your baby\'s reflexes are now developing, and they can curl their toes, make sucking movements with their mouth, and even respond to touch on their skin.\n\nThe digestive system is practicing contractions needed to push food through the intestines, and the bone marrow is beginning to produce white blood cells, the foundation of the immune system. The pituitary gland is starting to produce hormones.\n\nAt about the size of a lime, your baby is fully formed in miniature. From this point forward, the primary job is growing bigger and stronger. Many parents feel a wave of relief and renewed energy as they enter the second trimester, often called the golden period of pregnancy.',
+  },
+  13: {
+    summary: 'Baby\'s vocal cords are developing. Fingerprints are forming.',
+    fullArticle: 'Welcome to the second trimester. Your baby\'s vocal cords are developing this week — the very cords that will produce their first cry at birth. Meanwhile, unique fingerprints are forming on tiny fingertips, creating patterns that will be theirs alone for life.\n\nThe intestines, which had been growing inside the umbilical cord due to limited space, are now migrating back into the abdominal cavity. The pancreas is beginning to produce insulin, and the spleen is taking over the production of red blood cells from the liver.\n\nYour baby is about the size of a peach and is becoming increasingly active, stretching, kicking, and flexing. While you may not feel these movements yet, they are becoming more coordinated and purposeful each day.',
+  },
+  14: {
+    summary: 'Baby can now make facial expressions like squinting and frowning.',
+    fullArticle: 'Your baby\'s facial muscles are now developed enough to allow expressions — squinting, frowning, and grimacing are all part of the daily routine. These movements are reflexive for now, but they are essential practice for the emotional expressions that will come later.\n\nThe roof of the mouth is fully formed, and baby is actively swallowing amniotic fluid, which helps the digestive system develop. The thyroid gland is producing hormones, and baby\'s body is beginning to grow fine, downy hair called lanugo that helps regulate body temperature.\n\nAt the size of a lemon, your baby\'s proportions are shifting — the body is growing faster than the head, creating a more balanced silhouette. The neck is elongating, and the chin is lifting off the chest, giving baby a more upright posture.',
+  },
+  15: {
+    summary: 'Baby is practicing breathing movements, inhaling amniotic fluid.',
+    fullArticle: 'Your baby is now practicing the rhythmic breathing movements that will be essential at birth. By inhaling and exhaling amniotic fluid, the lungs and diaphragm get the workout they need to prepare for that first breath of air.\n\nThe skeletal system continues to harden, and this week you might be able to see your baby\'s skeleton on an ultrasound. The legs are now longer than the arms, and the body proportions are becoming more baby-like. Taste buds are forming, and your baby may be able to detect different flavors in the amniotic fluid.\n\nMany parents begin to feel a surge of energy as the second trimester settles in. The nausea and fatigue of the first trimester often ease, making this a wonderful time to prepare and plan.',
+  },
+  16: {
+    summary: 'Baby\'s skeletal system is hardening from cartilage to bone.',
+    fullArticle: 'Your baby\'s skeletal system is undergoing a remarkable transformation this week. What started as soft, flexible cartilage is now hardening into bone — a process that will continue throughout childhood. The muscles are getting stronger too, and baby is making more deliberate movements.\n\nThe circulatory system is fully functional, with the heart pumping about 25 quarts of blood per day. The eyes are sensitive to light even through closed eyelids, and if you were to shine a flashlight at your belly, baby might turn away from the brightness.\n\nSometime in the next few weeks, you may begin to feel the first flutters of movement, often described as bubbles, butterflies, or gentle taps. First-time parents may not recognize these sensations until closer to week 20, and that is perfectly normal.',
+  },
+  17: {
+    summary: 'Baby can hear your heartbeat and may startle at loud noises.',
+    fullArticle: 'Your baby\'s hearing is developing rapidly this week. The tiny bones of the middle ear are hardening, allowing baby to hear sounds for the first time — your heartbeat, the rush of blood through your body, and your voice. Loud, sudden noises may even cause a startle reflex.\n\nFat stores are beginning to develop beneath the skin, which will help with temperature regulation and energy after birth. The sweat glands are also forming. Baby\'s movements are becoming stronger and more coordinated, with stretching, turning, and kicking becoming part of the daily routine.\n\nThis is a beautiful time to begin talking, reading, or singing to your baby. Research shows that babies can recognize familiar voices and songs after birth, and these early auditory experiences help shape brain development.',
+  },
+  18: {
+    summary: 'Baby is yawning, hiccupping, and rolling around actively.',
+    fullArticle: 'Your baby is full of personality this week — yawning, hiccupping, stretching, and rolling around in their cozy space. These movements are not just adorable; they are crucial for muscle development and joint flexibility.\n\nThe nervous system is maturing rapidly, and myelin — a protective coating — is beginning to form around the nerves. This insulation allows nerve signals to travel faster and more efficiently, improving coordination. The fingerprints and toe prints are now complete and totally unique.\n\nIf you are having a girl, the fallopian tubes and uterus are now in their final position. If a boy, the genitals may be visible on ultrasound. At about the size of a bell pepper, your baby weighs around 200 grams and is becoming increasingly active.',
+  },
+  19: {
+    summary: 'A waxy coating called vernix is forming to protect baby\'s skin.',
+    fullArticle: 'This week, a creamy white substance called vernix caseosa begins to coat your baby\'s skin. This waxy layer protects the delicate skin from the amniotic fluid and will help ease the journey through the birth canal. Some babies are born with traces of vernix still visible.\n\nThe brain is designating specialized areas for the senses — smell, taste, hearing, vision, and touch each have their own developing region. The nerve cells connecting these sensory areas are growing more complex every day.\n\nBaby\'s movements may be strong enough for you to feel now, especially if this is not your first pregnancy. You might notice patterns — active times and quiet times — as baby begins to establish their own rhythms. Enjoy these early flutters; they will grow into unmistakable kicks.',
+  },
+  20: {
+    summary: 'Halfway there! Baby can now swallow and has taste buds.',
+    fullArticle: 'Congratulations — you have reached the halfway mark! Your baby can now swallow amniotic fluid and has functional taste buds, meaning they may be getting their first taste of the foods you eat. Studies suggest that babies develop flavor preferences based on what their mothers eat during pregnancy.\n\nBaby is now about the size of a banana, measuring roughly 25 centimeters from head to heel. The skin is thickening and developing layers, and the legs have reached their final proportions relative to the body. The echocardiogram can detect all four chambers of the heart.\n\nThe mid-pregnancy anatomy scan typically happens around this time, giving you a detailed look at your baby\'s development. This ultrasound checks the brain, heart, kidneys, spine, and limbs, and may reveal whether you are having a boy or girl.',
+  },
+  21: {
+    summary: 'Baby\'s movements are getting stronger — you may feel kicks.',
+    fullArticle: 'Your baby\'s movements are becoming more powerful and deliberate this week. You may feel kicks, punches, rolls, and even somersaults as baby takes full advantage of the space available. Many parents find these movements deeply reassuring and begin to notice patterns in their baby\'s active and quiet times.\n\nThe bone marrow has fully taken over red blood cell production from the liver and spleen. The digestive system is practicing by absorbing small amounts of sugar from swallowed amniotic fluid. The skin is still thin and translucent but is beginning to develop the layers it will need for life outside.\n\nYour baby is now about the size of a carrot and weighs around 360 grams. While there is still plenty of room to move, the uterus is expanding steadily, and you may notice your center of gravity shifting.',
+  },
+  22: {
+    summary: 'Baby\'s eyes have formed, though the irises still lack pigment.',
+    fullArticle: 'Your baby\'s eyes are fully formed this week, complete with eyelids and eyelashes, though the irises do not yet have their final color — that pigment develops later and may continue to change after birth. The eyes can perceive light and dark even through closed lids.\n\nThe inner ear has developed to the point where baby now has a sense of balance. This is why you might notice more rolling and turning — baby is discovering orientation and learning which way is up. The lips are becoming more defined, and the gums are developing the ridges where teeth will eventually emerge.\n\nBaby is now about the size of a papaya, and the pancreas is maturing, producing the hormones that baby will need. The lungs are developing but are not yet ready for breathing air — that maturation will continue for several more weeks.',
+  },
+  23: {
+    summary: 'Baby can hear your voice and may respond to music.',
+    fullArticle: 'This is a wonderful week for bonding — your baby can now hear your voice clearly and may respond to familiar sounds. Some parents notice that baby kicks or moves in response to music, conversation, or other sounds. Research shows that babies recognize their mother\'s voice at birth, partly because of these weeks of listening.\n\nThe lungs are developing rapidly, producing a substance called surfactant that will help the air sacs inflate after birth. Blood vessels in the lungs are also growing to prepare for oxygen exchange. The skin is reddish and wrinkled due to a faster rate of skin production relative to fat accumulation.\n\nYour baby weighs about 500 grams now and is beginning to look more proportional. The face is fully formed with all the features in place, and the body is catching up in size to the head. Regular movement patterns may become noticeable.',
+  },
+  24: {
+    summary: 'Baby\'s lungs are developing surfactant, preparing for breathing.',
+    fullArticle: 'Week 24 is considered a milestone in neonatal medicine — this is the point at which survival outside the womb becomes possible with intensive medical support. The lungs are producing surfactant, the crucial substance that prevents the air sacs from collapsing between breaths.\n\nYour baby\'s face is almost fully formed, with eyebrows, eyelashes, and a full head of hair (though the hair has no pigment yet). The inner ear is fully developed, giving baby a mature sense of balance. This means baby can now tell when they are upside down — which happens often.\n\nThe brain is growing rapidly, and the cortex — the outer layer responsible for conscious thought — is developing its characteristic folds and grooves. Baby is now about the size of an ear of corn and weighs roughly 600 grams.',
+  },
+  25: {
+    summary: 'Baby is gaining body fat and starting to look more like a newborn.',
+    fullArticle: 'Your baby is filling out this week, adding body fat that smooths out the wrinkled skin and gives them the round, soft appearance of a newborn. This fat is not just cosmetic — it is essential for temperature regulation after birth.\n\nThe nostrils are beginning to open, and baby is practicing breathing movements more regularly. The capillaries beneath the skin are filling with blood, giving the skin a pinkish hue regardless of what the final skin tone will be. The spine is strengthening, with 33 rings, 150 joints, and about 1,000 ligaments.\n\nBaby\'s hands are now fully dexterous — they can form a fist, grasp the umbilical cord, and explore their face. The startle reflex (Moro reflex) is developing, and you might notice sudden jolts of movement when there is a loud noise or sudden change.',
+  },
+  26: {
+    summary: 'Baby\'s eyes are opening for the first time.',
+    fullArticle: 'A beautiful milestone this week — your baby\'s eyes are opening for the first time. After being fused shut since early pregnancy, the eyelids separate, and baby can now open and close their eyes, blink, and respond to light. If you shine a flashlight at your belly, baby may turn toward or away from it.\n\nThe immune system is getting a boost as antibodies transfer from you to your baby through the placenta, building the foundation for immunity in the early months after birth. The lungs continue to mature, and the air sacs are branching out into their final tree-like structure.\n\nYour baby weighs about 760 grams and is around 35 centimeters long. The brain wave patterns now show active sleep cycles, including REM sleep, which means your baby may be dreaming. The nervous system is mature enough to control some body functions independently.',
+  },
+  27: {
+    summary: 'Baby now has regular sleep and wake cycles.',
+    fullArticle: 'Your baby has established regular sleep and wake cycles, and you may notice patterns in their activity — perhaps they are most active in the evening when you are trying to rest. These cycles are an important sign of brain maturation.\n\nThe lungs, while not fully mature, have developed enough that with medical support, a baby born at this stage would have a very good chance of survival. The brain is extremely active, with the cerebral cortex developing its complex network of connections. Baby can cough, hiccup, and even cry silently.\n\nAs you enter the final weeks of the second trimester, your baby weighs about 875 grams and measures roughly 36 centimeters. The retinas have developed their layers, improving light perception, and the taste buds are fully functional. Welcome to the home stretch — the third trimester begins next week.',
+  },
+  28: {
+    summary: 'Baby can blink, dream during REM sleep, and see light.',
+    fullArticle: 'Welcome to the third trimester! Your baby can now blink their eyes, see light filtering through the uterine wall, and is spending significant time in REM sleep — the phase associated with dreaming. Brain activity is becoming increasingly complex.\n\nThe brain is adding billions of neurons and developing the folds and grooves that increase surface area, a hallmark of human intelligence. The muscular and nervous systems are mature enough for coordinated breathing movements, and baby is practicing by rhythmically inhaling and exhaling amniotic fluid.\n\nYour baby weighs over a kilogram now and is about 37 centimeters long. The bones are fully developed but still soft and pliable, which will help during delivery. The adrenal glands are producing hormones that will trigger milk production in your body after birth.',
+  },
+  29: {
+    summary: 'Baby\'s brain is developing rapidly, adding billions of neurons.',
+    fullArticle: 'Your baby\'s brain is undergoing a period of explosive growth this week, adding billions of neurons and forming the complex connections that will support learning, memory, and personality. The head is growing larger to accommodate this rapid brain development.\n\nThe muscles and lungs are continuing to mature, and baby\'s movements may feel stronger and more deliberate — elbows, knees, and feet can create visible bumps on your belly. The bones are absorbing calcium to harden, so making sure you get enough calcium in your diet is important.\n\nBaby is becoming more sensitive to stimuli — sound, light, taste, and smell are all functional. Some babies develop a preference for certain foods based on what flavors come through in the amniotic fluid. At about 38 centimeters and 1.1 kilograms, your baby is growing quickly.',
+  },
+  30: {
+    summary: 'Baby is getting stronger — those kicks are unmistakable now.',
+    fullArticle: 'There is no mistaking your baby\'s movements now — kicks, rolls, and stretches are strong enough to take your breath away and may even be visible from the outside. Some babies are more active than others, and that is perfectly normal. What matters is that you feel consistent movement.\n\nThe bone marrow has completely taken over red blood cell production, and baby\'s body is producing its own blood supply. The wrinkled skin is smoothing out as more fat accumulates beneath it. The lanugo (fine body hair) is beginning to disappear as baby builds enough fat to regulate temperature.\n\nYour baby is now about 39 centimeters long and weighs around 1.3 kilograms. The amniotic fluid volume has peaked and will gradually decrease as baby takes up more space. Baby\'s eyes can focus on objects close to their face, preparing for that first gaze at you.',
+  },
+  31: {
+    summary: 'Baby\'s five senses are all working. They can track light.',
+    fullArticle: 'All five of your baby\'s senses are now functional. They can see light filtering through the uterine wall and track it with their eyes, hear your voice and other sounds, taste the amniotic fluid, smell through developing nasal passages, and feel touch all over their body.\n\nThe brain is processing information from all these senses simultaneously, building the neural pathways that will help baby understand the world after birth. The pupils can now dilate and constrict in response to light, and the brain\'s visual processing centers are active.\n\nBaby weighs about 1.5 kilograms and is nearly 41 centimeters long. The lungs and digestive tract are nearly mature, and baby is continuing to gain weight rapidly. Most babies are in a head-down position by now, though some will continue to shift for several more weeks.',
+  },
+  32: {
+    summary: 'Baby is practicing breathing and has toenails.',
+    fullArticle: 'Your baby\'s lungs are maturing rapidly this week, practicing breathing movements regularly to prepare for that first real breath. Toenails have grown in, and fingernails may already extend past the fingertips — some babies are born with tiny scratches from their own nails.\n\nThe skin has transitioned from red and transparent to opaque and soft, with enough fat beneath it to appear smooth and rounded. Hair on the head is getting thicker, though the final color may change multiple times after birth. The skeletal system is fully developed but the bones remain soft and flexible.\n\nAt about 42 centimeters and 1.7 kilograms, your baby is gaining roughly 200 grams per week. Space is getting tighter, so movements may feel less like somersaults and more like pushes and stretches. This is completely normal.',
+  },
+  33: {
+    summary: 'Baby\'s bones are hardening, except for the skull, which stays flexible.',
+    fullArticle: 'Your baby\'s bones are continuing to harden, with one important exception — the skull remains flexible with gaps between the plates called fontanelles. This design allows the head to compress slightly during delivery, making birth possible. The fontanelles will gradually close during the first two years of life.\n\nThe immune system is receiving a final surge of antibodies from you through the placenta, building the passive immunity that will protect baby during the first months after birth. The lungs are nearly ready, producing plenty of surfactant to keep the air sacs open.\n\nYour baby weighs about 1.9 kilograms and is roughly 43 centimeters long. The pupils react to light, the coordination between sucking and swallowing is improving, and baby is spending most of their time in sleep — important for brain development.',
+  },
+  34: {
+    summary: 'Baby\'s lungs are nearly mature. The vernix is thickening.',
+    fullArticle: 'The lungs have reached a critical stage of maturity this week — if born now, most babies could breathe on their own with minimal support. The vernix caseosa (the waxy coating) is thickening, providing extra protection for the skin during these final weeks.\n\nYour baby\'s central nervous system and lungs are the last major organs to fully mature. The fat layers continue to fill out, rounding baby\'s cheeks and body. Baby can now turn their head from side to side and may be responding to familiar voices by moving or becoming still.\n\nAt about 45 centimeters and 2.1 kilograms, your baby is getting closer to birth weight. The fingernails have reached the fingertips, and the eyes have developed enough to distinguish between light and dark. Most babies are settling into their final birth position.',
+  },
+  35: {
+    summary: 'Baby is settling into position, likely head-down.',
+    fullArticle: 'Most babies are now settling into a head-down position in preparation for birth. This is called the cephalic presentation, and it is the ideal position for delivery. If your baby is still breech (bottom-down), there is still time for them to turn, and your provider may suggest exercises or techniques to encourage it.\n\nThe kidneys are fully developed and the liver is functional, processing waste products. The physical development is essentially complete — the remaining weeks are devoted to gaining weight, building fat stores, and putting the finishing touches on brain and lung maturation.\n\nYour baby weighs about 2.4 kilograms and is nearly 46 centimeters long. The arms and legs have filled out with muscle and fat, and the skin is smooth and soft. Baby\'s grasping reflex is strong — they can grip firmly enough to hold your finger at birth.',
+  },
+  36: {
+    summary: 'Baby is shedding the lanugo (fine body hair) and vernix.',
+    fullArticle: 'Your baby is shedding the fine lanugo hair that covered their body for warmth, as well as some of the vernix coating. Much of this is swallowed along with amniotic fluid and will form part of baby\'s first bowel movement (meconium) after birth.\n\nThe immune system has received its final boost of antibodies from you, and the digestive system is ready to process breast milk or formula. The sucking muscles are strong and coordinated, and baby has been practicing swallowing amniotic fluid for months.\n\nAt about 47 centimeters and 2.6 kilograms, your baby is nearly at full birth weight. The skull bones are still not fused, allowing flexibility for the journey through the birth canal. Baby is likely engaged (head-down in the pelvis), and you may feel increased pressure in your lower abdomen.',
+  },
+  37: {
+    summary: 'Baby is considered early term and could arrive anytime.',
+    fullArticle: 'Your baby is now considered early term, meaning they could arrive any day and would be perfectly healthy. All major organs are functioning well, and baby is spending these final weeks adding the last layers of fat and fine-tuning brain development.\n\nThe lungs are fully mature and ready for breathing. The immune system is strong, fortified by your antibodies. The digestive system has been practicing for weeks and is ready to process food. Baby can regulate their own body temperature and has the sucking reflex needed for feeding.\n\nAt roughly 48 centimeters and 2.8 kilograms, your baby is filling nearly all the available space in the uterus. Movements may feel different — less rolling and more pushing — as baby settles into position. Nesting instincts may be kicking in for you, too.',
+  },
+  38: {
+    summary: 'Baby\'s organs are fully mature and ready for life outside.',
+    fullArticle: 'All of your baby\'s organs are fully mature and ready for life outside the womb. The lungs are producing plenty of surfactant, the liver and kidneys are functioning well, and the brain has enough neural connections to support all essential functions.\n\nBaby continues to gain about 30 grams per day, building the fat stores that will provide energy and warmth after birth. The skin has a healthy layer of fat beneath it, giving baby a plump, rounded appearance. The toenails have reached the tips of the toes.\n\nYour baby weighs about 3 kilograms and is approximately 49 centimeters long. The grasp reflex is strong, the sucking and swallowing coordination is perfected, and baby is ready to meet the world. You may notice increased Braxton Hicks contractions as your body prepares.',
+  },
+  39: {
+    summary: 'Baby is full term! Brain and lungs continue to develop.',
+    fullArticle: 'Your baby is officially full term! While all organs are functional, the brain and lungs are still making important last-minute refinements. The brain will continue developing rapidly after birth, but these final days in the womb add crucial neural connections.\n\nThe chest is becoming more prominent as baby builds the muscles needed for breathing. The antibodies crossing the placenta are providing immunity against common illnesses, and baby\'s intestines are filled with meconium — the dark, sticky first stool that will be passed within the first day or two after birth.\n\nAt approximately 50 centimeters and 3.2 kilograms, your baby is at typical birth size. The head may have dropped lower into the pelvis (called lightening), which can make breathing easier for you but add more pressure to your bladder. The finish line is right here.',
+  },
+  40: {
+    summary: 'Baby is ready to meet you — any day now!',
+    fullArticle: 'This is it — your due date week. Your baby is fully developed and ready to meet the world. At about 51 centimeters and 3.4 kilograms, they have spent nine months growing from a single cell into a complete human being with trillions of cells, functional organs, and a unique personality waiting to unfold.\n\nBaby\'s skull bones are designed to overlap slightly during delivery, making the journey through the birth canal smoother. The immune system is primed with your antibodies, and the digestive system is ready for its first feeding. The umbilical cord, which has been the lifeline for months, is about 50 centimeters long.\n\nWhether your baby arrives today, this week, or keeps you waiting a bit longer, they will come when they are ready. Only about 5% of babies arrive on their due date. Trust your body, trust your baby, and know that the most incredible chapter of your life is about to begin.',
+  },
+  41: {
+    summary: 'Baby is taking their time. Everything is still perfectly fine.',
+    fullArticle: 'Your baby is taking their time, and that is perfectly okay. Going past your due date is very common, especially with first pregnancies. Your provider will be monitoring things closely to make sure everything remains healthy and safe for both of you.\n\nBaby continues to gain weight and practice breathing and sucking movements. The placenta is still providing excellent nourishment, and amniotic fluid levels are being checked regularly. The brain continues to develop, adding connections that will support learning and development after birth.\n\nTry to stay comfortable and patient during this waiting period. Gentle walking, warm baths, and spending time doing things you enjoy can help pass the time. Soon you will be holding your baby in your arms, and this waiting will become a distant memory.',
+  },
+};
+
+// ============================================================
+// Body Changes by Trimester
+// Used by PregnancyInsightsGrid "Body Changes" card
+// ============================================================
+
+export const BODY_CHANGES_BY_TRIMESTER: Record<1 | 2 | 3, string[]> = {
+  1: [
+    'Morning sickness and food aversions are very common right now.',
+    'Fatigue is your body\'s way of saying it\'s working hard.',
+    'Breast tenderness is one of the earliest pregnancy signs.',
+    'Heightened sense of smell is driven by rising hormones.',
+    'Frequent bathroom trips are normal — your uterus is growing.',
+  ],
+  2: [
+    'Round ligament pain may cause sharp twinges in your lower belly.',
+    'The "pregnancy glow" comes from increased blood volume.',
+    'Braxton Hicks contractions may start — these are practice runs.',
+    'Your belly button may start to pop outward.',
+    'Leg cramps at night are common — try stretching before bed.',
+  ],
+  3: [
+    'Shortness of breath is normal as baby pushes against your diaphragm.',
+    'Swollen ankles and feet are very common in the third trimester.',
+    'Back pain is common as your center of gravity shifts.',
+    'Nesting instincts may kick in — go with it!',
+    'Trouble sleeping is normal — try pillows between your knees.',
+  ],
+};

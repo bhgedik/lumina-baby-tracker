@@ -1,108 +1,605 @@
 // ============================================================
-// Sprout — Dashboard Home Screen
-// Veteran nurse shift-handoff: Recovery → Baby → Nurse Insight
-// Pregnancy → Postpartum transition via "I Had My Baby!" flow
+// Sprouty — AI-First Home Screen (Command Center)
+// Greeting → Omni-Input → 6-button action grid
+// Intent router: data logging | medical queries | data queries
 // ============================================================
 
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Animated,
+  ScrollView,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
-import { ActiveTimerBar } from '../../../src/shared/components/ActiveTimerBar';
+import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
+import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { CelebrationModal } from '../../../src/shared/components/CelebrationModal';
 import { PrepDashboard } from '../../../src/modules/pregnancy/components/PrepDashboard';
-import { WellnessQuickEntry } from '../../../src/modules/wellness/components/WellnessQuickEntry';
+import { ChatSheet } from '../../../src/modules/insights/components/ChatSheet';
+import { FeedingSheet } from '../../../src/modules/feeding/components/FeedingSheet';
+import { SleepSheet } from '../../../src/modules/sleep/components/SleepSheet';
+import { DiaperSheet } from '../../../src/modules/diaper/components/DiaperSheet';
+
 import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
 import { useBabyStore } from '../../../src/stores/babyStore';
+import { useFeedingStore } from '../../../src/stores/feedingStore';
+import { useDiaperStore } from '../../../src/stores/diaperStore';
+import { useSleepStore } from '../../../src/stores/sleepStore';
+import { useHealthStore } from '../../../src/stores/healthStore';
+import { useAuthStore } from '../../../src/stores/authStore';
 import { useDateFormat } from '../../../src/shared/hooks/useDateFormat';
-import type { PetDomain } from '../../../src/shared/utils/petState';
-import type { FeedingSummary } from '../../../src/modules/feeding/types';
-import type { SleepSummary } from '../../../src/modules/sleep/types';
-import type { DiaperSummary } from '../../../src/modules/diaper/types';
-import { DynamicLottieIcon } from '../../../src/shared/components/DynamicLottieIcon';
+import { useSeedData } from '../../../src/data/useSeedData';
+import { generateUUID } from '../../../src/stores/createSyncedStore';
+import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { parseLogInput } from '../../../src/modules/logging/services/parseLogInputService';
+import type { ParsedLogAction } from '../../../src/modules/logging/types';
+import type { FeedingLog } from '../../../src/modules/feeding/types';
+import type { SleepLog } from '../../../src/modules/sleep/types';
+import type { HealthLog } from '../../../src/modules/health/types';
+import type { GrowthLog } from '../../../src/modules/growth/types';
+import type { Baby } from '../../../src/modules/baby/types';
+import type { DiaperType } from '../../../src/shared/types/common';
+import { useGrowthStore } from '../../../src/stores/growthStore';
+import { calculatePercentile, resolveSex } from '../../../src/modules/growth/utils/percentileCalculation';
 
-const SERIF_FONT = Platform.select({
-  ios: 'Georgia',
-  android: 'serif',
-  default: 'serif',
-});
+// ── Pixel-perfect design tokens ─────────────────────────────
+const UI = {
+  bg: '#F7F4F0',
+  text: '#3D3D3D',
+  textSecondary: '#5C5C5C',  // body text — readable on cream
+  textMuted: '#8A8A8A',      // small labels, captions
+  accent: '#8BA88E',
+  card: '#FFFFFF',
+  logBg: '#F0EAE1',
+  secondary: '#F17C4C',
+};
 
-const LOG_TYPES = [
-  { id: 'feeding', label: 'Feeding', color: colors.secondary[400], bg: '#FEF5F0', route: '/(app)/log/feeding' },
-  { id: 'sleep', label: 'Sleep', color: colors.primary[400], bg: '#F0F5F2', route: '/(app)/log/sleep' },
-  { id: 'diaper', label: 'Diaper', color: colors.warning, bg: '#FFF8EE', route: '/(app)/log/diaper' },
-  { id: 'growth', label: 'Growth', color: colors.success, bg: '#F0F8F0', route: '/(app)/log/growth' },
-  { id: 'health', label: 'Health', color: colors.error, bg: '#FFF0F0', route: '/(app)/log/health' },
-  { id: 'activity', label: 'Activity', color: colors.info, bg: '#F0F5F2', route: '/(app)/log/activity' },
-] as const;
+const SOFT_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.05,
+  shadowRadius: 12,
+  elevation: 2,
+};
 
-const PET_DOMAINS = new Set<string>(['feeding', 'sleep', 'diaper']);
+// ── Action grid — split into primary (daily) and secondary (occasional) ──
+const PRIMARY_ACTIONS = [
+  { id: 'feeding', label: 'Feed', icon: 'coffee' as const, bg: '#F5F0E8', tint: '#A08B6E', route: '/(app)/log/feeding' },
+  { id: 'sleep', label: 'Sleep', icon: 'moon' as const, bg: '#EDF3EE', tint: '#6B8E6F', route: '/(app)/log/sleep' },
+  { id: 'diaper', label: 'Diaper', icon: 'droplet' as const, bg: '#F3EFE8', tint: '#A0927D', route: '/(app)/log/diaper' },
+  { id: 'activity', label: 'Activity', icon: 'smile' as const, bg: '#F2EDE6', tint: '#9A8872', route: '/(app)/log/activity' },
+];
 
-function getTileData(
-  id: string,
-  feedingSummary: FeedingSummary | null,
-  sleepSummary: SleepSummary | null,
-  diaperSummary: DiaperSummary | null,
-  lastFedAgo: string | null,
-  lastSleepAgo: string | null,
-): { hero: string; subtitle: string } {
-  switch (id) {
-    case 'feeding': {
-      if (!feedingSummary || feedingSummary.total_feeds === 0)
-        return { hero: '\u2014', subtitle: 'Tap to log' };
-      const parts: string[] = [`${feedingSummary.total_feeds} feeds`];
-      if (feedingSummary.total_bottle_ml > 0) parts.push(`${feedingSummary.total_bottle_ml}ml`);
-      return { hero: lastFedAgo ?? 'Just now', subtitle: parts.join(' \u00B7 ') };
+const SECONDARY_ACTIONS = [
+  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', icon: 'trending-up' as const, tint: '#6B8E6F', route: '/(app)/log/growth' },
+  { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', icon: 'thermometer' as const, tint: '#A88978', route: '/(app)/health' },
+];
+
+// ── Simulator / dev detection ────────────────────────────────
+// __DEV__ is true in development builds (simulator/emulator).
+// In production builds on real devices, this is false.
+const IS_SIMULATOR = __DEV__;
+
+const MOCK_TRANSCRIPTIONS = [
+  'I just changed a dirty diaper',
+  'Baby had 120ml of formula',
+  'She fell asleep at 2pm',
+  'He just woke up from a nap',
+  'Fed on the left side for 10 minutes',
+  'Changed a wet diaper',
+];
+
+// ── Intent detection patterns ────────────────────────────────
+
+const LOGGING_PATTERNS = [
+  // Diaper
+  { pattern: /(?:changed?\s+(?:a\s+)?(?:wet|dirty|poopy|soiled)\s+diaper|(?:wet|dirty|poopy)\s+diaper|diaper\s+change)/i, type: 'diaper' as const },
+  { pattern: /(?:just\s+)?(?:had\s+)?(?:a\s+)?(?:poop|pooped|poo)/i, type: 'diaper_dirty' as const },
+  // Feeding
+  { pattern: /(?:fed|nursed|breastfee?d|gave\s+(?:a\s+)?bottle|drank\s+\d+\s*(?:ml|oz)|finished\s+(?:a\s+)?feed|bottle|formula|ate)/i, type: 'feed' as const },
+  { pattern: /(?:just\s+)?(?:had\s+)?(?:\d+\s*(?:ml|oz)\s+(?:of\s+)?(?:milk|formula|breast\s*milk))/i, type: 'feed_amount' as const },
+  // Sleep
+  { pattern: /(?:fell\s+asleep|went\s+to\s+sleep|(?:just\s+)?(?:started|began)\s+(?:a\s+)?(?:nap|sleeping)|put\s+(?:down|to\s+bed|to\s+sleep))/i, type: 'sleep_start' as const },
+  { pattern: /(?:woke\s+up|just\s+(?:woke|awake)|finished\s+(?:a\s+)?nap|napped\s+for)/i, type: 'sleep_end' as const },
+  // Growth (requires number + unit to distinguish from questions)
+  { pattern: /(?:weigh(?:s|ed)?\s+\d|(?:\d+\.?\d*\s*(?:kg|lbs?|pounds?|grams?|g)\b)|(?:\d+\.?\d*\s*(?:cm|in(?:ches)?)\s*(?:tall|long))|head\s+(?:circumference|circ))/i, type: 'growth' as const },
+];
+
+const DATA_QUERY_PATTERNS = [
+  /(?:show|display|see|view|how\s+(?:much|many)|what\s+(?:was|were)|look\s+at|give\s+me)\s+(?:.*?)(?:log|chart|data|history|trend|record|stat|summary|graph|report)/i,
+  /(?:last|past|previous)\s+(?:\d+\s+)?(?:day|week|month)s?\s+(?:of\s+)?(?:feed|sleep|diaper|growth|weight)/i,
+  /(?:how\s+(?:much|many|long))\s+(?:did|has|does)\s+(?:\w+\s+)?(?:eat|feed|sleep|nap|poop|wet)/i,
+  /(?:average|total)\s+(?:feed|sleep|diaper|milk|intake)/i,
+];
+
+type IntentType = 'log' | 'medical' | 'data_query';
+
+interface IntentResult {
+  type: IntentType;
+  subType?: string;
+  confidence: number;
+}
+
+function classifyIntent(text: string): IntentResult {
+  const lower = text.toLowerCase().trim();
+
+  // Check for data logging patterns
+  for (const { pattern, type } of LOGGING_PATTERNS) {
+    if (pattern.test(lower)) {
+      return { type: 'log', subType: type, confidence: 0.9 };
     }
-    case 'sleep': {
-      if (!sleepSummary || (sleepSummary.total_sleep_hours === 0 && sleepSummary.nap_count === 0))
-        return { hero: '\u2014', subtitle: 'Tap to log' };
-      const parts: string[] = [`${sleepSummary.total_sleep_hours.toFixed(1)}h total`];
-      if (sleepSummary.nap_count > 0) parts.push(`${sleepSummary.nap_count} nap${sleepSummary.nap_count > 1 ? 's' : ''}`);
-      return { hero: lastSleepAgo ?? 'Just now', subtitle: parts.join(' \u00B7 ') };
+  }
+
+  // Check for data query patterns
+  for (const pattern of DATA_QUERY_PATTERNS) {
+    if (pattern.test(lower)) {
+      return { type: 'data_query', confidence: 0.85 };
     }
+  }
+
+  // Default: treat as medical/care question for Lumina
+  return { type: 'medical', confidence: 0.7 };
+}
+
+// ── AI Command Center: execute parsed log actions ────────────
+
+function executeLogAction(
+  parsed: ParsedLogAction,
+  baby: Baby,
+  loggedBy: string,
+  feedingMethod: string,
+): { success: boolean; toastMsg: string } {
+  const now = new Date().toISOString();
+
+  switch (parsed.action_type) {
     case 'diaper': {
-      if (!diaperSummary || diaperSummary.total_changes === 0)
-        return { hero: '\u2014', subtitle: 'Tap to log' };
-      const parts: string[] = [];
-      if (diaperSummary.wet_count > 0) parts.push(`${diaperSummary.wet_count} wet`);
-      if (diaperSummary.dirty_count > 0) parts.push(`${diaperSummary.dirty_count} dirty`);
-      if (parts.length === 0) parts.push(`${diaperSummary.total_changes} changes`);
-      const h = diaperSummary.hours_since_last_change;
-      const hero = h != null ? (h < 1 ? 'Just now' : `${h.toFixed(0)}h ago`) : '\u2014';
-      return { hero, subtitle: parts.join(' \u00B7 ') };
+      const diaperType: DiaperType = parsed.diaper?.type ?? 'wet';
+      useDiaperStore.getState().quickLog(baby.id, baby.family_id, loggedBy, diaperType);
+      return { success: true, toastMsg: parsed.summary };
     }
-    case 'growth':
-      return { hero: '\u2014', subtitle: 'Tap to log' };
-    case 'health':
-      return { hero: 'All good', subtitle: 'No flags' };
-    case 'activity':
-      return { hero: '\u2014', subtitle: 'Tap to log' };
+
+    case 'feeding': {
+      const f = parsed.feeding;
+      const feedType = f?.type ?? (feedingMethod === 'formula_only' ? 'bottle' : 'breast');
+      const durationSecs = f?.duration_minutes ? f.duration_minutes * 60 : null;
+      const log: FeedingLog = {
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: loggedBy,
+        type: feedType,
+        started_at: now,
+        ended_at: now,
+        breast_side: f?.breast_side ?? (feedType === 'breast' ? 'both' : null),
+        left_duration_seconds: f?.breast_side === 'left' ? durationSecs : (f?.breast_side === 'both' && durationSecs ? Math.round(durationSecs / 2) : null),
+        right_duration_seconds: f?.breast_side === 'right' ? durationSecs : (f?.breast_side === 'both' && durationSecs ? Math.round(durationSecs / 2) : null),
+        bottle_amount_ml: f?.amount_ml ?? null,
+        bottle_content: f?.bottle_content ?? null,
+        bottle_temperature: null,
+        solid_foods: null,
+        sensitivity_notes: null,
+        notes: null,
+        baby_response: null,
+        photo_url: null,
+        created_at: now,
+        updated_at: now,
+      };
+      useFeedingStore.getState().addItem(log);
+      return { success: true, toastMsg: parsed.summary };
+    }
+
+    case 'sleep': {
+      const s = parsed.sleep;
+      if (s?.event === 'start') {
+        useSleepStore.getState().startSleep(s.type ?? 'nap');
+        return { success: true, toastMsg: parsed.summary };
+      }
+      if (s?.event === 'end') {
+        const sleepLog = useSleepStore.getState().endSleep();
+        if (sleepLog) {
+          const filledLog: SleepLog = { ...sleepLog, baby_id: baby.id, family_id: baby.family_id, logged_by: loggedBy };
+          useSleepStore.getState().addItem(filledLog);
+        }
+        return { success: true, toastMsg: parsed.summary };
+      }
+      if (s?.event === 'completed' && s.duration_minutes) {
+        const endedAt = new Date();
+        const startedAt = new Date(endedAt.getTime() - s.duration_minutes * 60000);
+        const log: SleepLog = {
+          id: generateUUID(),
+          baby_id: baby.id,
+          family_id: baby.family_id,
+          logged_by: loggedBy,
+          type: s.type ?? 'nap',
+          started_at: startedAt.toISOString(),
+          ended_at: endedAt.toISOString(),
+          duration_minutes: s.duration_minutes,
+          method: null,
+          location: null,
+          quality: null,
+          night_wakings: null,
+          room_temperature_celsius: null,
+          notes: null,
+          created_at: now,
+          updated_at: now,
+        };
+        useSleepStore.getState().addItem(log);
+        return { success: true, toastMsg: parsed.summary };
+      }
+      return { success: false, toastMsg: '' };
+    }
+
+    case 'health': {
+      const h = parsed.health;
+      const log: HealthLog = {
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: loggedBy,
+        logged_at: now,
+        type: h?.type ?? 'symptom',
+        temperature_celsius: h?.temperature_celsius ?? null,
+        temperature_method: null,
+        medication_name: h?.medication_name ?? null,
+        medication_dose: null,
+        symptoms: h?.symptoms ?? null,
+        doctor_name: null,
+        diagnosis: null,
+        notes: null,
+        attachments: null,
+        episode_id: null,
+        created_at: now,
+        updated_at: now,
+      };
+      useHealthStore.getState().addHealthLog(log);
+      return { success: true, toastMsg: parsed.summary };
+    }
+
+    case 'growth': {
+      const g = parsed.growth;
+      if (!g?.weight_grams && !g?.height_cm && !g?.head_circumference_cm) {
+        return { success: false, toastMsg: '' };
+      }
+
+      const birthDate = new Date(baby.date_of_birth);
+      const nowDate = new Date();
+      const ageMonths = (nowDate.getTime() - birthDate.getTime()) / (30.44 * 24 * 60 * 60 * 1000);
+      const sex = resolveSex(baby.gender);
+
+      const wPerc = g.weight_grams ? calculatePercentile(sex, 'weight', ageMonths, g.weight_grams) : null;
+      const hPerc = g.height_cm ? calculatePercentile(sex, 'length', ageMonths, g.height_cm) : null;
+      const headPerc = g.head_circumference_cm ? calculatePercentile(sex, 'head', ageMonths, g.head_circumference_cm) : null;
+
+      const growthLog: GrowthLog = {
+        id: generateUUID(),
+        baby_id: baby.id,
+        family_id: baby.family_id,
+        logged_by: loggedBy,
+        measured_at: now,
+        weight_grams: g.weight_grams ?? null,
+        height_cm: g.height_cm ?? null,
+        head_circumference_cm: g.head_circumference_cm ?? null,
+        weight_percentile: wPerc,
+        height_percentile: hPerc,
+        head_percentile: headPerc,
+        chart_type: 'who',
+        notes: null,
+        created_at: now,
+        updated_at: now,
+      };
+      useGrowthStore.getState().addItem(growthLog);
+
+      // Rich toast with percentile: "6.5 kg (P45)"
+      const parts: string[] = [];
+      if (g.weight_grams) parts.push(`${(g.weight_grams / 1000).toFixed(1)} kg${wPerc != null ? ` (P${Math.round(wPerc)})` : ''}`);
+      if (g.height_cm) parts.push(`${g.height_cm.toFixed(1)} cm${hPerc != null ? ` (P${Math.round(hPerc)})` : ''}`);
+      if (g.head_circumference_cm) parts.push(`Head ${g.head_circumference_cm.toFixed(1)} cm${headPerc != null ? ` (P${Math.round(headPerc)})` : ''}`);
+
+      return { success: true, toastMsg: parts.join(' · ') || parsed.summary };
+    }
+
     default:
-      return { hero: '\u2014', subtitle: 'Tap to log' };
+      return { success: false, toastMsg: '' };
   }
 }
 
+// ── Helpers ──────────────────────────────────────────────────
+
+function getAffirmation(babyName: string | null, ageDays: number | null): string {
+  // Day 0 — baby born today
+  if (ageDays === 0) {
+    return babyName
+      ? `Welcome to the world, ${babyName}! Take it one moment at a time.`
+      : 'Welcome to the world, little one! Take it one moment at a time.';
+  }
+  // Older baby — time-of-day affirmations (postpartum-appropriate only)
+  const hour = new Date().getHours();
+  if (hour < 5) return "You're not alone in this. We're here.";
+  if (hour < 12) return "Take a deep breath, you're doing great.";
+  if (hour < 17) return "You're doing an amazing job today.";
+  if (hour < 21) return "You've earned some rest. You're doing beautifully.";
+  return 'Rest when you can. Tomorrow is a new day.';
+}
+
+// ── Voice recording state (visual mock) ──────────────────────
+
+function VoiceRecordingOverlay({ onCancel, onFinish }: { onCancel: () => void; onFinish: () => void }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.3, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulseAnim]);
+
+  return (
+    <View style={styles.voiceOverlay}>
+      <View style={styles.voiceContent}>
+        <Animated.View
+          style={[styles.voiceGlow, { transform: [{ scale: pulseAnim }] }]}
+        >
+          <View style={styles.voiceMicCircle}>
+            <Feather name="mic" size={28} color="#FFF" />
+          </View>
+        </Animated.View>
+        <Text style={styles.voiceLabel}>{IS_SIMULATOR ? 'Simulating...' : 'Listening...'}</Text>
+        <Text style={styles.voiceHint}>
+          {IS_SIMULATOR
+            ? 'Mock mode — will auto-transcribe in 2s'
+            : 'Speak naturally — e.g. "I changed a dirty diaper"'}
+        </Text>
+        <View style={styles.voiceButtonRow}>
+          <Pressable style={styles.voiceCancelButton} onPress={onCancel}>
+            <Text style={styles.voiceCancelText}>Cancel</Text>
+          </Pressable>
+          <Pressable style={styles.voiceFinishButton} onPress={onFinish}>
+            <Feather name="check" size={16} color="#FFF" />
+            <Text style={styles.voiceFinishText}>Finish</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────
+
 export default function HomeScreen() {
+  useSeedData();
   const router = useRouter();
   const {
+    greeting,
+    parentName,
     babyName,
+    babyAge,
     isPregnant,
     dueDate,
     gestationalInfo,
-    petStates,
-    feedingSummary,
-    sleepSummary,
-    diaperSummary,
-    lastFedAgo,
-    lastSleepAgo,
-    babyAge,
+    feedingMethod,
   } = useDashboardData();
 
-  const babyAgeMonths = babyAge ? babyAge.days / 30.44 : 0;
+  // Sheet props — hook-level subscriptions
+  const activeBaby = useBabyStore((s) => s.getActiveBaby());
+  const session = useAuthStore((s) => s.session);
+  const loggedBy = session?.user?.id ?? '';
+  const babyAgeMonths = babyAge ? Math.floor(babyAge.days / 30.44) : 0;
+
+  // ── Timer subscriptions for live grid buttons ──
+  const feedingTimer = useFeedingStore((s) => s.activeTimer);
+  const sleepTimer = useSleepStore((s) => s.activeTimer);
+  const [timerElapsed, setTimerElapsed] = useState(0);
+
+  useEffect(() => {
+    const active = feedingTimer ?? sleepTimer;
+    if (!active) { setTimerElapsed(0); return; }
+
+    const tick = () => {
+      if (feedingTimer?.pausedAt) {
+        setTimerElapsed(feedingTimer.accumulatedSeconds);
+      } else {
+        const base = feedingTimer ? feedingTimer.accumulatedSeconds : 0;
+        const running = Math.floor((Date.now() - active.startedAt) / 1000);
+        setTimerElapsed(base + running);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [feedingTimer, sleepTimer]);
+
+  const [showNurseChat, setShowNurseChat] = useState(false);
+  const [showFeedingSheet, setShowFeedingSheet] = useState(false);
+  const [showSleepSheet, setShowSleepSheet] = useState(false);
+  const [showDiaperSheet, setShowDiaperSheet] = useState(false);
+  const [smartText, setSmartText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
+  // ── AI Command Center: two-tier intent processing ──
+  // Shared processor used by both text submit and voice transcription
+  const processInput = useCallback(async (text: string) => {
+    const baby = useBabyStore.getState().getActiveBaby();
+    const session = useAuthStore.getState().session;
+    const loggedBy = session?.user?.id ?? '';
+
+    // ── TIER 1: Fast regex path (no network, instant) ──
+    const regexIntent = classifyIntent(text);
+
+    // Data queries — explicit regex match, route immediately
+    if (regexIntent.type === 'data_query') {
+      router.push('/(app)/(tabs)/insights' as any);
+      return;
+    }
+    // NOTE: 'medical' is the default fallback (confidence 0.7) for anything
+    // the regex can't classify. We do NOT short-circuit here — let the AI
+    // parser handle it in Tier 2. Only truly obvious medical questions
+    // (e.g. "is this rash normal?") should go to chat, and the AI parser
+    // will route those via intent='medical' in its response.
+
+    // Simple diaper quicklog — regex is plenty, skip AI
+    if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('diaper') && baby) {
+      const diaperType = regexIntent.subType === 'diaper_dirty' ? 'dirty' : 'wet';
+      useDiaperStore.getState().quickLog(baby.id, baby.family_id, loggedBy, diaperType);
+      setToastMsg(`${diaperType === 'dirty' ? 'Dirty' : 'Wet'} diaper logged!`);
+      setShowToast(true);
+      return;
+    }
+
+    // No baby context — can't log, open chat instead
+    if (!baby) {
+      if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('diaper')) {
+        router.push('/(app)/log/diaper' as any);
+      } else if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('feed')) {
+        router.push('/(app)/log/feeding' as any);
+      } else if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('sleep')) {
+        router.push('/(app)/log/sleep' as any);
+      } else if (regexIntent.type === 'log' && regexIntent.subType === 'growth') {
+        router.push('/(app)/log/growth' as any);
+      } else {
+        setShowNurseChat(true);
+      }
+      return;
+    }
+
+    // ── TIER 2: AI parse for complex inputs ──
+    const result = await parseLogInput(text, feedingMethod);
+
+    if (result.error || !result.parsed) {
+      // Offline/error fallback: use regex with basic field construction
+      if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('feed')) {
+        const now = new Date().toISOString();
+        const feedType = feedingMethod === 'formula_only' ? 'bottle' : 'breast';
+        const log: FeedingLog = {
+          id: generateUUID(),
+          baby_id: baby.id,
+          family_id: baby.family_id,
+          logged_by: loggedBy,
+          type: feedType,
+          started_at: now,
+          ended_at: now,
+          breast_side: feedType === 'breast' ? 'both' : null,
+          left_duration_seconds: null,
+          right_duration_seconds: null,
+          bottle_amount_ml: null,
+          bottle_content: null,
+          bottle_temperature: null,
+          solid_foods: null,
+          sensitivity_notes: null,
+          notes: text,
+          baby_response: null,
+          photo_url: null,
+          created_at: now,
+          updated_at: now,
+        };
+        useFeedingStore.getState().addItem(log);
+        setToastMsg('Feed logged!');
+        setShowToast(true);
+        return;
+      }
+      if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('sleep')) {
+        router.push('/(app)/log/sleep' as any);
+        return;
+      }
+      if (regexIntent.type === 'log' && regexIntent.subType === 'growth') {
+        router.push('/(app)/log/growth' as any);
+        return;
+      }
+      // Can't parse offline — open chat for help
+      setShowNurseChat(true);
+      return;
+    }
+
+    // Route non-log intents from AI
+    const parsed = result.parsed;
+    if (parsed.intent === 'medical') {
+      setShowNurseChat(true);
+      return;
+    }
+    if (parsed.intent === 'data_query') {
+      router.push('/(app)/(tabs)/insights' as any);
+      return;
+    }
+
+    // Execute the parsed log action
+    const { success, toastMsg: msg } = executeLogAction(parsed, baby, loggedBy, feedingMethod);
+    if (success) {
+      setToastMsg(msg);
+      setShowToast(true);
+    } else if (parsed.action_type === 'sleep') {
+      router.push('/(app)/log/sleep' as any);
+    } else {
+      setShowNurseChat(true);
+    }
+  }, [feedingMethod, router]);
+
+  const handleSmartSubmit = useCallback(() => {
+    const text = smartText.trim();
+    if (!text) return;
+    setSmartText('');
+    processInput(text);
+  }, [smartText, processInput]);
+
+  const mockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const processTranscription = useCallback((text: string) => {
+    setSmartText(text);
+    setTimeout(() => {
+      setSmartText('');
+      processInput(text);
+    }, 50);
+  }, [processInput]);
+
+  const handleMicPress = useCallback(() => {
+    if (IS_SIMULATOR) {
+      // Mock mode: show recording UI for 2s, then inject random transcription
+      setIsRecording(true);
+      mockTimerRef.current = setTimeout(() => {
+        setIsRecording(false);
+        const mock = MOCK_TRANSCRIPTIONS[Math.floor(Math.random() * MOCK_TRANSCRIPTIONS.length)];
+        processTranscription(mock);
+      }, 2000);
+    } else {
+      // Real device: show recording overlay for actual audio capture
+      setIsRecording(true);
+    }
+  }, [processTranscription]);
+
+  const handleCancelRecording = useCallback(() => {
+    if (mockTimerRef.current) {
+      clearTimeout(mockTimerRef.current);
+      mockTimerRef.current = null;
+    }
+    setIsRecording(false);
+  }, []);
+
+  const handleFinishRecording = useCallback(() => {
+    if (mockTimerRef.current) {
+      // Simulator: finish early — inject mock immediately
+      clearTimeout(mockTimerRef.current);
+      mockTimerRef.current = null;
+      setIsRecording(false);
+      const mock = MOCK_TRANSCRIPTIONS[Math.floor(Math.random() * MOCK_TRANSCRIPTIONS.length)];
+      processTranscription(mock);
+    } else {
+      // Real device: TODO — transcribe actual audio
+      setIsRecording(false);
+      setShowNurseChat(true);
+    }
+  }, [processTranscription]);
 
   // Celebration + birth capture state
   const [showCelebration, setShowCelebration] = useState(false);
@@ -139,7 +636,7 @@ export default function HomeScreen() {
     updateBaby(baby.id, { is_pregnant: false, date_of_birth: iso });
   };
 
-  // Pregnancy mode — show prep dashboard (ring + tips + "I Had My Baby!" button)
+  // ── Pregnancy mode ──
   if (isPregnant && dueDate) {
     const safeGestationalInfo = {
       week: gestationalInfo?.week ?? 4,
@@ -148,165 +645,560 @@ export default function HomeScreen() {
     };
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <PrepDashboard
-          babyName={babyName || 'your little one'}
-          dueDate={dueDate}
-          gestationalInfo={safeGestationalInfo}
-          onBabyArrivedPress={handleBabyArrivedPress}
-        />
-
-        <CelebrationModal
-          visible={showCelebration}
-          onContinue={handleCelebrationContinue}
-        />
-
-        {/* Birth date capture */}
-        <BottomSheet
-          visible={showBirthSheet}
-          onClose={() => setShowBirthSheet(false)}
-          title="Congratulations!"
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
-          <Text style={styles.sheetSubtitle}>
-            When did your little one arrive?
-          </Text>
+          <PrepDashboard
+            babyName={babyName || 'your little one'}
+            dueDate={dueDate}
+            gestationalInfo={safeGestationalInfo}
+            onBabyArrivedPress={handleBabyArrivedPress}
+            onJournal={() => setShowNurseChat(true)}
+            onAskLumina={() => setShowNurseChat(true)}
+          />
+
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* Voice recording overlay */}
+        {isRecording && (
+          <VoiceRecordingOverlay onCancel={handleCancelRecording} onFinish={handleFinishRecording} />
+        )}
+
+        {/* AI Chat */}
+        <ChatSheet
+          visible={showNurseChat}
+          onClose={() => setShowNurseChat(false)}
+          insight={null}
+          babyName={babyName}
+          babyAgeDays={null}
+          feedingMethod={feedingMethod}
+          isPregnant
+        />
+
+        <CelebrationModal visible={showCelebration} onContinue={handleCelebrationContinue} />
+        <BottomSheet visible={showBirthSheet} onClose={() => setShowBirthSheet(false)} title="Congratulations!">
+          <Text style={styles.sheetSubtitle}>When did your little one arrive?</Text>
           <View style={styles.sheetDateRow}>
-            <Feather name="calendar" size={18} color={colors.textTertiary} style={styles.sheetDateIcon} />
+            <Feather name="calendar" size={18} color={UI.textMuted} style={styles.sheetDateIcon} />
             <TextInput
               style={styles.sheetDateInput}
               placeholder={DATE_PLACEHOLDER}
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={UI.textMuted}
               value={birthDateDisplay}
               onChangeText={(t) => setBirthDateDisplay(formatDateInput(t))}
               keyboardType="number-pad"
               maxLength={10}
               autoFocus
+              inputAccessoryViewID={KEYBOARD_DONE_ID}
             />
           </View>
           <Pressable
-            style={[styles.sheetConfirmButton, shadows.sm, !birthDateValid && styles.sheetConfirmDisabled]}
+            style={[styles.sheetConfirmButton, !birthDateValid && styles.sheetConfirmDisabled]}
             onPress={handleConfirmBirth}
             disabled={!birthDateValid}
           >
-            <Feather name="heart" size={18} color={colors.textInverse} />
+            <Feather name="heart" size={18} color="#FFF" />
             <Text style={styles.sheetConfirmText}>Welcome Baby</Text>
           </Pressable>
         </BottomSheet>
+
+        <InsightToast
+          visible={showToast}
+          title="Logged!"
+          body={toastMsg}
+          severity="info"
+          onDismiss={() => setShowToast(false)}
+          autoDismissMs={3000}
+        />
+        <KeyboardDoneBar />
       </SafeAreaView>
     );
   }
 
-  // Postpartum — Quick Log grid
+  // ── Postpartum — AI-first layout ──
+  const affirmation = getAffirmation(babyName, babyAge?.days ?? null);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ActiveTimerBar />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Quick Log</Text>
-        <Text style={styles.subtitle}>What would you like to track?</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        {/* ── Greeting ── */}
+        <View style={styles.greetingBlock}>
+          <Text style={styles.greetingTitle}>
+            {greeting}{parentName ? `, ${parentName}` : ''}.
+          </Text>
+          {babyAge && babyName && (
+            <Text style={styles.greetingAge}>{babyName} is {babyAge.display}</Text>
+          )}
+          {babyAge && !babyName && (
+            <Text style={styles.greetingAge}>{babyAge.display}</Text>
+          )}
+          <Text style={styles.greetingAffirmation}>{affirmation}</Text>
+        </View>
 
-        <WellnessQuickEntry onNavigate={() => router.push('/(app)/log/mood' as any)} />
+        {/* ── Ask Lumina Banner ── */}
+        <Pressable style={styles.luminaBanner} onPress={() => setShowNurseChat(true)}>
+          <View style={styles.luminaIconWrap}>
+            <Feather name="message-circle" size={20} color={colors.primary[600]} />
+          </View>
+          <View style={styles.luminaTextGroup}>
+            <Text style={styles.luminaTitle}>Ask Lumina</Text>
+            <Text style={styles.luminaSubtitle}>
+              {babyName ? `Ask anything about ${babyName}...` : 'Your AI parenting companion'}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={colors.primary[400]} />
+        </Pressable>
 
-        <View style={styles.grid}>
-          {LOG_TYPES.map((type) => {
-            const isPet = PET_DOMAINS.has(type.id);
-            const pet = isPet ? petStates[type.id as PetDomain] : null;
-            const illustrationColor = pet ? pet.iconColor : type.color;
-            const { hero, subtitle } = getTileData(
-              type.id, feedingSummary, sleepSummary, diaperSummary, lastFedAgo, lastSleepAgo,
-            );
-            const hasData = hero !== '\u2014';
+        {/* ── Calendar & History ── */}
+        <Pressable
+          style={styles.calendarBanner}
+          onPress={() => router.push('/(app)/calendar' as any)}
+        >
+          <View style={styles.calendarIconWrap}>
+            <Feather name="calendar" size={18} color={UI.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.calendarTitle}>Calendar & History</Text>
+            <Text style={styles.calendarSubtitle}>View today's timeline and past logs</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={UI.textMuted} />
+        </Pressable>
+
+        {/* ── Primary Actions (2×2 grid) ── */}
+        <View style={styles.actionGrid}>
+          {PRIMARY_ACTIONS.map((action) => {
+            const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
+            const isSleepLive = action.id === 'sleep' && !!sleepTimer;
+            const isLive = isFeedingLive || isSleepLive;
+            const liveColor = isFeedingLive ? '#5E8A72' : '#6B5B8A';
+
+            const liveSub = isFeedingLive
+              ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
+              : isSleepLive
+              ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap')
+              : null;
+
             return (
-              <TouchableOpacity
-                key={type.id}
-                style={[styles.card, shadows.soft, { backgroundColor: type.bg }]}
-                onPress={() => router.push(type.route as any)}
-                activeOpacity={0.85}
+              <Pressable
+                key={action.id}
+                style={[
+                  styles.actionButton,
+                  isLive && { borderWidth: 1.5, borderColor: liveColor + '40' },
+                ]}
+                onPress={() => {
+                  if (action.id === 'feeding') setShowFeedingSheet(true);
+                  else if (action.id === 'sleep') setShowSleepSheet(true);
+                  else if (action.id === 'diaper') setShowDiaperSheet(true);
+                  else router.push(action.route as any);
+                }}
+                accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
               >
-                {/* Illustration — top right float */}
-                <View style={styles.illustrationWrap}>
-                  <DynamicLottieIcon
-                    type={type.id as any}
-                    size={52}
-                    hoursSinceLastEvent={
-                      type.id === 'feeding' ? feedingSummary?.hours_since_last_feed :
-                      type.id === 'diaper' ? diaperSummary?.hours_since_last_change :
-                      undefined
-                    }
-                    babyAgeMonths={type.id === 'growth' ? babyAgeMonths : undefined}
-                  />
+                <View style={[
+                  styles.actionIconWrap,
+                  { backgroundColor: action.bg },
+                  isLive && { borderWidth: 2, borderColor: liveColor },
+                ]}>
+                  <Feather name={action.icon} size={24} color={isLive ? liveColor : action.tint} />
                 </View>
-
-                {/* Label */}
-                <Text style={[styles.cardLabel, { color: illustrationColor }]}>{type.label}</Text>
-
-                {/* Hero stat */}
-                <Text style={[styles.cardHero, !hasData && styles.cardHeroEmpty]}>
-                  {hero}
-                </Text>
-
-                {/* Subtitle */}
-                <Text style={styles.cardSubtitle} numberOfLines={1}>
-                  {subtitle}
-                </Text>
-              </TouchableOpacity>
+                <View>
+                  <Text style={[styles.actionLabel, { color: isLive ? liveColor : action.tint }]}>
+                    {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                  </Text>
+                  {isLive && liveSub && (
+                    <Text style={styles.actionLiveSub}>{liveSub}</Text>
+                  )}
+                </View>
+              </Pressable>
             );
           })}
         </View>
+
+        {/* ── Secondary Actions (Health & Growth) ── */}
+        <View style={styles.secondarySection}>
+          <Text style={styles.secondarySectionTitle}>Health & Growth</Text>
+          {SECONDARY_ACTIONS.map((action) => (
+            <Pressable
+              key={action.id}
+              style={styles.secondaryRow}
+              onPress={() => router.push(action.route as any)}
+              accessibilityLabel={`Log ${action.label}`}
+            >
+              <View style={[styles.secondaryIcon, { backgroundColor: action.tint + '15' }]}>
+                <Feather name={action.icon} size={20} color={action.tint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.secondaryLabel}>{action.label}</Text>
+                <Text style={styles.secondarySubtitle}>{action.subtitle}</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={UI.textMuted} />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
+
+      {/* Voice recording overlay */}
+      {isRecording && (
+        <VoiceRecordingOverlay onCancel={handleCancelRecording} onFinish={handleFinishRecording} />
+      )}
+
+      {/* AI Chat (opened by medical/care queries) */}
+      <ChatSheet
+        visible={showNurseChat}
+        onClose={() => setShowNurseChat(false)}
+        insight={null}
+        babyName={babyName}
+        babyAgeDays={babyAge?.days ?? null}
+        feedingMethod={feedingMethod}
+      />
+
+      {/* Quick Action Sheets */}
+      <FeedingSheet
+        visible={showFeedingSheet}
+        onClose={() => setShowFeedingSheet(false)}
+        babyId={activeBaby?.id ?? ''}
+        familyId={activeBaby?.family_id ?? ''}
+        loggedBy={loggedBy}
+        feedingMethod={feedingMethod}
+        knownAllergies={activeBaby?.known_allergies ?? []}
+        babyAgeMonths={babyAgeMonths}
+        onTimerStarted={() => {
+          setToastMsg('Feeding timer started!');
+          setShowToast(true);
+        }}
+        onLogged={(msg) => {
+          setToastMsg(msg);
+          setShowToast(true);
+        }}
+      />
+      <SleepSheet
+        visible={showSleepSheet}
+        onClose={() => setShowSleepSheet(false)}
+        babyId={activeBaby?.id ?? ''}
+        familyId={activeBaby?.family_id ?? ''}
+        loggedBy={loggedBy}
+        onTimerStarted={() => {
+          setToastMsg('Sleep timer started!');
+          setShowToast(true);
+        }}
+        onLogged={(msg) => {
+          setToastMsg(msg);
+          setShowToast(true);
+        }}
+      />
+      <DiaperSheet
+        visible={showDiaperSheet}
+        onClose={() => setShowDiaperSheet(false)}
+        babyId={activeBaby?.id ?? ''}
+        familyId={activeBaby?.family_id ?? ''}
+        loggedBy={loggedBy}
+        onLogged={(_, msg) => {
+          setToastMsg(msg);
+          setShowToast(true);
+        }}
+      />
+
+      {/* Quick action toast */}
+      <InsightToast
+        visible={showToast}
+        title="Logged!"
+        body={toastMsg}
+        severity="info"
+        onDismiss={() => setShowToast(false)}
+        autoDismissMs={3000}
+      />
+      <KeyboardDoneBar />
     </SafeAreaView>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.base, paddingBottom: 100 },
-  title: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, paddingHorizontal: spacing.sm },
-  subtitle: { fontSize: typography.fontSize.base, color: colors.textSecondary, paddingHorizontal: spacing.sm, marginBottom: spacing.lg },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  card: {
-    width: '47%',
-    borderRadius: borderRadius['3xl'],
-    padding: spacing.lg,
-    paddingTop: spacing.base,
-    minHeight: 140,
-    overflow: 'hidden',
+  container: {
+    flex: 1,
+    backgroundColor: UI.bg,
   },
-  illustrationWrap: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.xs,
-    marginTop: -spacing.xs,
-    marginRight: -spacing.sm,
+  scrollView: {
+    flex: 1,
   },
-  cardLabel: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    textTransform: 'uppercase',
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.base,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+
+  // ── Greeting ──
+  greetingBlock: {
+    gap: 6,
+    marginBottom: 20,
+  },
+  greetingTitle: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: UI.text,
+    letterSpacing: -0.3,
+    lineHeight: 34,
+  },
+  greetingAge: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: UI.textSecondary,
+    letterSpacing: 0.2,
+    marginTop: 2,
+  },
+  greetingAffirmation: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: UI.textSecondary,
+    letterSpacing: 0.1,
+    lineHeight: 24,
+    marginTop: 4,
+  },
+
+  // ── Ask Lumina Banner ──
+  luminaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius['2xl'],
+    padding: 14,
+    gap: 12,
+    marginBottom: 14,
+    ...SOFT_SHADOW,
+  },
+  luminaIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: UI.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  luminaTextGroup: {
+    flex: 1,
+  },
+  luminaTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary[700],
+    marginBottom: 1,
+  },
+  luminaSubtitle: {
+    fontSize: 13,
+    color: colors.primary[600],
+  },
+
+  // ── Calendar Banner ──
+  calendarBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: UI.card,
+    borderRadius: borderRadius['2xl'],
+    padding: 14,
+    gap: 12,
+    marginBottom: 20,
+    ...SOFT_SHADOW,
+  },
+  calendarIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: UI.logBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: UI.text,
+    marginBottom: 1,
+  },
+  calendarSubtitle: {
+    fontSize: 12,
+    color: UI.textMuted,
+  },
+
+  // ── Primary Action Grid (2×2) ──
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 14,
+    marginBottom: 24,
+  },
+  actionButton: {
+    width: '47.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: UI.card,
+    borderRadius: borderRadius['2xl'],
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    gap: 14,
+    ...SOFT_SHADOW,
+  },
+  actionIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  actionLiveSub: {
+    fontSize: 11,
+    color: '#8A8A8A',
+    marginTop: 1,
+  },
+
+  // ── Secondary Actions (Health & Growth) ──
+  secondarySection: {
+    flex: 1,
+    marginBottom: 8,
+  },
+  secondarySectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: UI.textMuted,
     letterSpacing: 0.8,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
-  cardHero: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+  secondaryRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: UI.card,
+    borderRadius: borderRadius['2xl'],
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    gap: 14,
+    marginBottom: 10,
+    minHeight: 72,
+    ...SOFT_SHADOW,
+  },
+  secondaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: UI.text,
     marginBottom: 2,
   },
-  cardHeroEmpty: {
-    color: colors.textTertiary,
+  secondarySubtitle: {
+    fontSize: 13,
+    color: UI.textMuted,
   },
-  cardSubtitle: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+
+  // ── Voice Recording Overlay ──
+  voiceOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(247, 244, 240, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
   },
-  // Birth date capture BottomSheet
+  voiceContent: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  voiceGlow: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(139, 168, 142, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceMicCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: UI.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: UI.text,
+    marginTop: 8,
+  },
+  voiceHint: {
+    fontSize: 14,
+    color: UI.textSecondary,
+    textAlign: 'center',
+    maxWidth: 260,
+    lineHeight: 20,
+  },
+  voiceButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  voiceCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: UI.logBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceCancelText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: UI.text,
+  },
+  voiceFinishButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: UI.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  voiceFinishText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // ── Birth date sheet (kept) ──
   sheetSubtitle: {
     fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    color: UI.textSecondary,
     marginBottom: spacing.xl,
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
   sheetDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: UI.bg,
     borderRadius: borderRadius.xl,
     borderWidth: 1.5,
     borderColor: colors.neutral[200],
@@ -320,21 +1212,22 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.base,
     fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
+    color: UI.text,
   },
   sheetConfirmButton: {
     flexDirection: 'row',
-    backgroundColor: colors.secondary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: UI.accent,
+    borderRadius: 999,
     paddingVertical: spacing.base,
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
+    ...SOFT_SHADOW,
   },
   sheetConfirmDisabled: { opacity: 0.4 },
   sheetConfirmText: {
-    color: colors.textInverse,
+    color: '#FFFFFF',
     fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: '600',
   },
 });

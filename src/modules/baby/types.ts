@@ -21,7 +21,7 @@ export interface Profile extends Timestamps {
   family_id: UUID;
   email: string;
   display_name: string;
-  role: 'primary' | 'partner' | 'caregiver';
+  role: 'primary';
   experience_level: 'first_time' | 'experienced';
   delivery_method: 'vaginal' | 'c_section' | null;
   avatar_url: string | null;
@@ -33,7 +33,6 @@ export interface NotificationPreferences {
   feeding_reminders: boolean;
   milestone_alerts: boolean;
   ai_insights: boolean;
-  wellness_checkins: boolean;
   quiet_hours_start: string;
   quiet_hours_end: string;
 }

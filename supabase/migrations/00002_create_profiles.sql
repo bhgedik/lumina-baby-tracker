@@ -1,4 +1,4 @@
--- Nodd: Caregiver profiles (linked to auth.users)
+-- Sprouty: Caregiver profiles (linked to auth.users)
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   family_id UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,

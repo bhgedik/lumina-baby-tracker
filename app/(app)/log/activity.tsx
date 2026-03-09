@@ -1,5 +1,5 @@
 // ============================================================
-// Nodd — Play & Bonding Screen
+// Sprouty — Play & Bonding Screen
 // Warm, plush activity logger: Tummy Time, Fresh Air,
 // + AI-powered Reading, Sensory Play, Music & Sound cards
 // ============================================================
@@ -19,8 +19,10 @@ import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useCorrectedAge } from '../../../src/modules/baby/hooks/useCorrectedAge';
+import { ChatSheet } from '../../../src/modules/insights/components/ChatSheet';
 import {
   fetchActivitySuggestions,
   type ActivitySuggestions,
@@ -209,14 +211,18 @@ export default function ActivityLogScreen() {
   const [aiSuggestions, setAiSuggestions] = useState<ActivitySuggestions | null>(null);
   const [aiLoading, setAiLoading] = useState(true);
 
-  // Selections for the 3 new sections
-  const [selectedReading, setSelectedReading] = useState<string[]>([]);
+  // Selections for activity sections
   const [selectedSensory, setSelectedSensory] = useState<string[]>([]);
   const [selectedMusic, setSelectedMusic] = useState<string[]>([]);
 
-  // Notes & toast
-  const [notes, setNotes] = useState('');
+  // ChatSheet for book ideas
+  const [showChat, setShowChat] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
+
+  // Toast
   const [showToast, setShowToast] = useState(false);
+  const [toastTitle, setToastTitle] = useState('Activity Logged');
+  const [toastBody, setToastBody] = useState('Great bonding session!');
 
   // Fetch AI suggestions on mount
   useEffect(() => {
@@ -240,17 +246,37 @@ export default function ActivityLogScreen() {
     );
   };
 
-  const canSave =
-    tummyMinutes.trim() !== '' ||
-    outsideMinutes.trim() !== '' ||
-    selectedReading.length > 0 ||
-    selectedSensory.length > 0 ||
-    selectedMusic.length > 0;
-
-  const handleSave = () => {
-    // TODO: Save to activity store when implemented
+  const showInlineToast = (title: string, body: string) => {
+    setToastTitle(title);
+    setToastBody(body);
     setShowToast(true);
-    setTimeout(() => router.back(), 1500);
+  };
+
+  const handleLogTummy = () => {
+    showInlineToast('Tummy Time Logged', `${tummyMinutes} min`);
+    setTummyMinutes('');
+  };
+
+  const handleLogOutside = () => {
+    showInlineToast('Fresh Air Logged', `${outsideMinutes} min`);
+    setOutsideMinutes('');
+  };
+
+  const handleLogSensory = () => {
+    showInlineToast('Sensory Play Logged', 'Great exploration!');
+    setSelectedSensory([]);
+  };
+
+  const handleLogMusic = () => {
+    showInlineToast('Music & Sound Logged', 'Wonderful sounds!');
+    setSelectedMusic([]);
+  };
+
+  const handleGetBookIdeas = () => {
+    setChatInitialMessage(
+      `What are the best books for a ${effectiveAgeMonths}-month-old baby? I'd love age-appropriate recommendations for ${babyName || 'my baby'}.`
+    );
+    setShowChat(true);
   };
 
   const headerLeft = useCallback(
@@ -289,6 +315,7 @@ export default function ActivityLogScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* ── AI Play Suggestion ── */}
         <View style={[styles.suggestionCard, shadows.soft]}>
@@ -305,7 +332,7 @@ export default function ActivityLogScreen() {
           <View style={styles.suggestionFooter}>
             <Feather name="zap" size={11} color={colors.textTertiary} />
             <Text style={styles.suggestionFooterText}>
-              Age-appropriate suggestion from your nurse
+              Age-appropriate suggestion from Lumina
             </Text>
           </View>
         </View>
@@ -347,6 +374,7 @@ export default function ActivityLogScreen() {
                 onChangeText={(v) => setTummyMinutes(v.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={3}
+                inputAccessoryViewID={KEYBOARD_DONE_ID}
               />
             </View>
           </View>
@@ -356,7 +384,7 @@ export default function ActivityLogScreen() {
             onPress={() => setTummyTipExpanded((p) => !p)}
           >
             <Feather name="heart" size={13} color={colors.primary[500]} />
-            <Text style={styles.tipToggleText}>Nurse's Tip</Text>
+            <Text style={styles.tipToggleText}>Lumina's Tip</Text>
             <Feather
               name={tummyTipExpanded ? 'chevron-up' : 'chevron-down'}
               size={14}
@@ -370,6 +398,13 @@ export default function ActivityLogScreen() {
                 Start with 2–3 minutes at a time and build up gradually. If baby fusses, that's okay — try again later. Every little bit counts.
               </Text>
             </View>
+          )}
+
+          {tummyMinutes !== '' && (
+            <Pressable style={styles.inlineLogButton} onPress={handleLogTummy}>
+              <Feather name="check" size={16} color="#FFFFFF" />
+              <Text style={styles.inlineLogText}>Log {tummyMinutes} min</Text>
+            </Pressable>
           )}
         </View>
 
@@ -423,33 +458,35 @@ export default function ActivityLogScreen() {
               </Text>
             </View>
           )}
+
+          {outsideMinutes !== '' && (
+            <Pressable style={styles.inlineLogButton} onPress={handleLogOutside}>
+              <Feather name="check" size={16} color="#FFFFFF" />
+              <Text style={styles.inlineLogText}>Log {outsideMinutes} min</Text>
+            </Pressable>
+          )}
         </View>
 
-        {/* ── Card 3: Reading ── */}
-        <View style={[styles.activityCard, shadows.sm]}>
+        {/* ── Card 3: Reading (Inspiration) ── */}
+        <View style={[styles.activityCard, styles.inspirationCard, shadows.sm]}>
           <View style={styles.cardHeader}>
             <View style={[styles.cardIconWrap, { backgroundColor: '#E8F5F2' }]}>
               <Feather name="book-open" size={20} color={READING_COLOR} />
             </View>
             <View style={styles.cardTitleWrap}>
-              <Text style={styles.cardTitle}>Reading</Text>
-              <Text style={styles.cardSubtitle}>Books that match where they are right now</Text>
+              <Text style={styles.cardTitle}>Building {babyName || 'Baby'}'s First Library</Text>
+              <Text style={styles.cardSubtitle}>It's never too early for stories</Text>
             </View>
           </View>
-
-          <Text style={styles.durationLabel}>Try one of these today</Text>
-          {aiLoading ? renderSkeletons() : (
-            aiSuggestions?.reading.map((book) => (
-              <SuggestionChip
-                key={book.title}
-                label={book.title}
-                reason={book.reason}
-                isSelected={selectedReading.includes(book.title)}
-                onPress={() => toggleSelection(book.title, setSelectedReading)}
-                accentColor={READING_COLOR}
-              />
-            ))
-          )}
+          <Text style={styles.inspirationBody}>
+            Discover our favorite books for this age, or just tell a story
+            from your imagination — your voice is the best story there is!
+          </Text>
+          <Pressable style={styles.inspirationButton} onPress={handleGetBookIdeas}>
+            <Feather name="book" size={16} color={READING_COLOR} />
+            <Text style={styles.inspirationButtonText}>Get Book Ideas</Text>
+            <Feather name="arrow-right" size={16} color={READING_COLOR} />
+          </Pressable>
         </View>
 
         {/* ── Card 4: Sensory Play ── */}
@@ -477,6 +514,13 @@ export default function ActivityLogScreen() {
                 accentColor={SENSORY_COLOR}
               />
             ))
+          )}
+
+          {selectedSensory.length > 0 && (
+            <Pressable style={styles.inlineLogButton} onPress={handleLogSensory}>
+              <Feather name="check" size={16} color="#FFFFFF" />
+              <Text style={styles.inlineLogText}>Log Activity</Text>
+            </Pressable>
           )}
         </View>
 
@@ -506,35 +550,14 @@ export default function ActivityLogScreen() {
               />
             ))
           )}
-        </View>
 
-        {/* ── Notes ── */}
-        <View style={styles.notesSection}>
-          <View style={styles.notesHeader}>
-            <Feather name="edit-3" size={15} color={colors.textTertiary} />
-            <Text style={styles.notesLabel}>Notes</Text>
-          </View>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="How did it go? Any new reactions? (optional)"
-            placeholderTextColor={colors.textTertiary}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            textAlignVertical="top"
-            maxLength={500}
-          />
+          {selectedMusic.length > 0 && (
+            <Pressable style={styles.inlineLogButton} onPress={handleLogMusic}>
+              <Feather name="check" size={16} color="#FFFFFF" />
+              <Text style={styles.inlineLogText}>Log Activity</Text>
+            </Pressable>
+          )}
         </View>
-
-        {/* Save Button */}
-        <Pressable
-          style={[styles.saveButton, shadows.sm, !canSave && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave}
-        >
-          <Feather name="check" size={20} color={colors.textInverse} />
-          <Text style={styles.saveButtonText}>Save Activity</Text>
-        </Pressable>
 
         {/* Encouragement footer */}
         <Text style={styles.footerText}>
@@ -545,14 +568,28 @@ export default function ActivityLogScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      <ChatSheet
+        visible={showChat}
+        onClose={() => {
+          setShowChat(false);
+          setChatInitialMessage(undefined);
+        }}
+        insight={null}
+        babyName={babyName}
+        babyAgeDays={age?.chronological.days ?? null}
+        feedingMethod={baby?.primary_feeding_method ?? 'unknown'}
+        initialMessage={chatInitialMessage}
+      />
+
       <InsightToast
         visible={showToast}
-        title="Activity Logged"
-        body="Great bonding session!"
+        title={toastTitle}
+        body={toastBody}
         severity="info"
         onDismiss={() => setShowToast(false)}
         autoDismissMs={2000}
       />
+      <KeyboardDoneBar />
     </View>
   );
 }
@@ -806,51 +843,50 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[200],
   },
 
-  // Notes
-  notesSection: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  notesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  notesLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
-  },
-  notesInput: {
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    borderRadius: borderRadius.xl,
-    padding: spacing.base,
-    fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    minHeight: 80,
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
-  },
-
-  // Save button
-  saveButton: {
+  // ── Inline Log Button ──
+  inlineLogButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    height: 56,
     backgroundColor: colors.primary[500],
     borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    alignSelf: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.4,
-  },
-  saveButtonText: {
-    fontSize: typography.fontSize.md,
+  inlineLogText: {
+    fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.textInverse,
+    color: '#FFFFFF',
+  },
+
+  // ── Inspiration Card (Reading) ──
+  inspirationCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: READING_COLOR,
+  },
+  inspirationBody: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
+    marginBottom: spacing.base,
+  },
+  inspirationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: '#E8F5F2',
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  inspirationButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: READING_COLOR,
   },
 
   // Footer

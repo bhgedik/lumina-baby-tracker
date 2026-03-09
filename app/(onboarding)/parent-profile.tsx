@@ -1,32 +1,48 @@
 // ============================================================
-// Sprout — Parent Profile (Step 1 of 4)
+// Sprouty — Parent Profile (Quiz Step 2 of 3)
 // Collects parent name, experience level
 // ============================================================
 
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Platform, KeyboardAvoidingView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
-import { StepIndicator } from '../../src/shared/components/StepIndicator';
+import { QuizProgressBar } from '../../src/shared/components/QuizProgressBar';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
 
 export default function ParentProfileScreen() {
   const router = useRouter();
   const store = useOnboardingStore();
 
+  const babyName = store.babyName;
   const [parentName, setParentName] = useState(store.parentName);
   const [experienceLevel, setExperienceLevel] = useState<'first_time' | 'experienced' | null>(store.experienceLevel);
+  const [nameFocused, setNameFocused] = useState(false);
+  const focusAnim = useRef(new Animated.Value(0)).current;
 
-  const canContinue = parentName.trim().length > 0 && experienceLevel !== null;
+  const handleNameFocus = () => {
+    setNameFocused(true);
+    Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+  };
+  const handleNameBlur = () => {
+    setNameFocused(false);
+    Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+  };
+  const animatedBorderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.neutral[100], colors.primary[400]],
+  });
+
+  const canContinue = parentName.trim().length > 0;
 
   const handleContinue = () => {
     store.setParentProfile({
       parentName: parentName.trim(),
-      experienceLevel: experienceLevel!,
+      experienceLevel: experienceLevel ?? 'first_time',
     });
-    router.push('/(onboarding)/baby-profile');
+    router.push('/(onboarding)/challenge');
   };
 
   return (
@@ -47,23 +63,33 @@ export default function ParentProfileScreen() {
           </Pressable>
 
           {/* Progress */}
-          <StepIndicator currentStep={1} />
+          <QuizProgressBar currentStep={2} totalSteps={3} />
 
-          <Text style={styles.title}>About You</Text>
-          <Text style={styles.subtitle}>Let's start with a little about you</Text>
+          <Text style={styles.title}>And who's the lucky parent?</Text>
+          <Text style={styles.subtitle}>Nice to meet {babyName ? `${babyName}'s` : 'your'} family</Text>
 
           {/* Name */}
           <View style={styles.section}>
             <Text style={styles.label}>What should we call you?</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Your name"
-              placeholderTextColor={colors.textTertiary}
-              value={parentName}
-              onChangeText={setParentName}
-              autoCapitalize="words"
-              autoFocus
-            />
+            <Animated.View
+              style={[
+                styles.nameInputWrap,
+                { borderColor: animatedBorderColor },
+                nameFocused && styles.nameInputWrapFocused,
+              ]}
+            >
+              <TextInput
+                style={styles.nameInput}
+                placeholder="Your name"
+                placeholderTextColor={colors.neutral[300]}
+                value={parentName}
+                onChangeText={setParentName}
+                autoCapitalize="words"
+                autoFocus
+                onFocus={handleNameFocus}
+                onBlur={handleNameBlur}
+              />
+            </Animated.View>
           </View>
 
           {/* Experience */}
@@ -161,15 +187,29 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: typography.fontSize.base, color: colors.textSecondary, marginBottom: spacing.xl },
   section: { marginBottom: spacing.xl },
   label: { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary, marginBottom: spacing.md },
-  input: {
+  nameInputWrap: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.base,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  nameInputWrapFocused: {
+    shadowColor: colors.primary[500],
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  nameInput: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.base + 2,
     fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
     color: colors.textPrimary,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
   },
   optionGroup: { gap: spacing.md },
   optionCard: {

@@ -26,6 +26,7 @@ export interface FeedingLog extends Timestamps {
   bottle_temperature: 'warm' | 'room' | 'cold' | null;
   solid_foods: SolidFoodEntry[] | null;
   notes: string | null;
+  sensitivity_notes: string | null;
   baby_response: BabyResponse | null;
   photo_url: string | null;
 }
