@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Log Screen
+// Lumina — Growth Log Screen
 // Educational card-based layout: Weight, Length, Head Circumference
 // With Nurse's Tips teaching mothers how to measure at home
 // ============================================================
@@ -20,7 +20,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
-import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { useGrowthStore } from '../../../src/stores/growthStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
@@ -411,13 +411,10 @@ export default function GrowthLogScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      <InsightToast
+      <LuminaWhisper
         visible={showToast}
-        title="Growth Logged"
-        body="Measurements saved successfully."
-        severity="info"
+        message={'\u2728 Growth measurements saved.'}
         onDismiss={() => setShowToast(false)}
-        autoDismissMs={2000}
       />
       <KeyboardDoneBar />
     </View>

@@ -1,7 +1,7 @@
 // ============================================================
-// Sprouty — Stacked Sleep Chart
+// Lumina — Stacked Sleep Chart
 // 7-day stacked bar chart: nap (lighter) + night (darker)
-// Shows total 24h sleep per day
+// Proper Y-axis, zero-baseline, proportional bar heights
 // ============================================================
 
 import React, { useMemo } from 'react';
@@ -11,13 +11,14 @@ import type { StackedSleepDay } from '../hooks/useInsightsChartData';
 
 const VIEWBOX_W = 320;
 const VIEWBOX_H = 180;
-const PAD = { top: 12, right: 16, bottom: 28, left: 32 };
+const PAD = { top: 12, right: 12, bottom: 28, left: 36 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const NIGHT_COLOR = '#6B8E6F';  // Darker sage
-const NAP_COLOR = '#B5CCB8';    // Lighter sage
-const GRID_COLOR = '#E8E4DF';
+const NIGHT_COLOR = '#6B8E6F';
+const NAP_COLOR = '#B5CCB8';
+const AXIS_COLOR = '#C8C2B8';
+const GRID_COLOR = '#EAE6E0';
 const LABEL_COLOR = '#8A8A8A';
 
 interface StackedSleepChartProps {
@@ -38,10 +39,10 @@ export function StackedSleepChart({ data, hasData }: StackedSleepChartProps) {
   const { maxVal, scaleY, yTicks } = useMemo(() => {
     const allVals = data.map((d) => d.napHours + d.nightHours);
     const max = Math.max(1, ...allVals);
-    const roundedMax = Math.ceil(max); // round up to whole hour
+    const step = max <= 6 ? 2 : max <= 12 ? 3 : 5;
+    const roundedMax = Math.ceil(max / step) * step;
 
     const ticks: number[] = [];
-    const step = Math.max(1, Math.ceil(roundedMax / 4));
     for (let v = 0; v <= roundedMax; v += step) ticks.push(v);
 
     return {
@@ -51,14 +52,15 @@ export function StackedSleepChart({ data, hasData }: StackedSleepChartProps) {
     };
   }, [data]);
 
+  const baselineY = PAD.top + PLOT_H;
   const barWidth = (PLOT_W / data.length) * 0.55;
 
   return (
     <View>
       <View style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
         <Svg width="100%" height="100%" viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}>
-          {/* Grid lines */}
-          {yTicks.map((val) => (
+          {/* Dashed grid lines (skip 0) */}
+          {yTicks.filter((v) => v > 0).map((val) => (
             <Line
               key={`grid-${val}`}
               x1={PAD.left}
@@ -67,28 +69,47 @@ export function StackedSleepChart({ data, hasData }: StackedSleepChartProps) {
               y2={scaleY(val)}
               stroke={GRID_COLOR}
               strokeWidth={0.5}
+              strokeDasharray="4,3"
             />
           ))}
 
-          {/* Stacked bars */}
+          {/* Baseline (x-axis at 0) */}
+          <Line
+            x1={PAD.left}
+            y1={baselineY}
+            x2={VIEWBOX_W - PAD.right}
+            y2={baselineY}
+            stroke={AXIS_COLOR}
+            strokeWidth={1}
+          />
+
+          {/* Y-axis line */}
+          <Line
+            x1={PAD.left}
+            y1={PAD.top}
+            x2={PAD.left}
+            y2={baselineY}
+            stroke={AXIS_COLOR}
+            strokeWidth={0.5}
+          />
+
+          {/* Stacked bars — grounded on baseline */}
           {data.map((day, i) => {
             const x = PAD.left + (i + 0.5) * (PLOT_W / data.length) - barWidth / 2;
             const total = day.napHours + day.nightHours;
             if (total <= 0) return null;
 
-            const totalH = (total / maxVal) * PLOT_H;
             const nightH = (day.nightHours / maxVal) * PLOT_H;
             const napH = (day.napHours / maxVal) * PLOT_H;
-
-            const baseY = PAD.top + PLOT_H;
+            const totalH = nightH + napH;
 
             return (
               <React.Fragment key={i}>
-                {/* Night sleep (bottom) */}
+                {/* Night sleep (bottom segment) */}
                 {day.nightHours > 0 && (
                   <Rect
                     x={x}
-                    y={baseY - totalH}
+                    y={baselineY - nightH}
                     width={barWidth}
                     height={nightH}
                     rx={day.napHours > 0 ? 0 : 3}
@@ -96,28 +117,16 @@ export function StackedSleepChart({ data, hasData }: StackedSleepChartProps) {
                     opacity={0.9}
                   />
                 )}
-                {/* Nap (top) */}
+                {/* Nap (top segment, stacked above night) */}
                 {day.napHours > 0 && (
                   <Rect
                     x={x}
-                    y={baseY - napH}
+                    y={baselineY - totalH}
                     width={barWidth}
                     height={napH}
                     rx={3}
                     fill={NAP_COLOR}
                     opacity={0.85}
-                  />
-                )}
-                {/* Round top corners of bottom segment when no nap */}
-                {day.nightHours > 0 && day.napHours <= 0 && (
-                  <Rect
-                    x={x}
-                    y={baseY - nightH}
-                    width={barWidth}
-                    height={nightH}
-                    rx={3}
-                    fill={NIGHT_COLOR}
-                    opacity={0.9}
                   />
                 )}
               </React.Fragment>
@@ -131,7 +140,7 @@ export function StackedSleepChart({ data, hasData }: StackedSleepChartProps) {
               <SvgText
                 key={`xl-${i}`}
                 x={x}
-                y={VIEWBOX_H - 8}
+                y={VIEWBOX_H - 6}
                 fontSize={9}
                 fill={LABEL_COLOR}
                 textAnchor="middle"

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Play & Bonding Screen
+// Lumina — Play & Bonding Screen
 // Warm, plush activity logger: Tummy Time, Fresh Air,
 // + AI-powered Reading, Sensory Play, Music & Sound cards
 // ============================================================
@@ -18,7 +18,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
-import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useCorrectedAge } from '../../../src/modules/baby/hooks/useCorrectedAge';
@@ -103,7 +103,7 @@ const TUMMY_PRESETS = [
   { value: '2', label: '2 min' },
   { value: '5', label: '5 min' },
   { value: '10', label: '10 min' },
-  { value: '15', label: '15+' },
+  { value: '15', label: '15 min' },
 ];
 
 const OUTSIDE_PRESETS = [
@@ -160,14 +160,16 @@ function SuggestionChip({
       onPress={onPress}
     >
       <View style={styles.aiChipHeader}>
-        <Feather
-          name={isSelected ? 'check-circle' : 'circle'}
-          size={16}
-          color={isSelected ? accentColor : colors.textTertiary}
-        />
+        <View style={[
+          styles.aiChipCheck,
+          isSelected && { backgroundColor: accentColor, borderColor: accentColor },
+        ]}>
+          {isSelected && <Feather name="check" size={12} color="#FFFFFF" />}
+        </View>
         <Text style={[styles.aiChipTitle, isSelected && { color: accentColor }]} numberOfLines={2}>
           {label}
         </Text>
+        <Feather name="chevron-right" size={14} color={isSelected ? accentColor : colors.neutral[300]} />
       </View>
       <Text style={styles.aiChipReason} numberOfLines={2}>{reason}</Text>
       {product ? (
@@ -219,10 +221,9 @@ export default function ActivityLogScreen() {
   const [showChat, setShowChat] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
 
-  // Toast
-  const [showToast, setShowToast] = useState(false);
-  const [toastTitle, setToastTitle] = useState('Activity Logged');
-  const [toastBody, setToastBody] = useState('Great bonding session!');
+  // Whisper
+  const [showWhisper, setShowWhisper] = useState(false);
+  const [whisperMsg, setWhisperMsg] = useState('');
 
   // Fetch AI suggestions on mount
   useEffect(() => {
@@ -246,29 +247,28 @@ export default function ActivityLogScreen() {
     );
   };
 
-  const showInlineToast = (title: string, body: string) => {
-    setToastTitle(title);
-    setToastBody(body);
-    setShowToast(true);
+  const showWhisperToast = (msg: string) => {
+    setWhisperMsg(msg);
+    setShowWhisper(true);
   };
 
   const handleLogTummy = () => {
-    showInlineToast('Tummy Time Logged', `${tummyMinutes} min`);
+    showWhisperToast(`\u2728 Tummy time saved. ${tummyMinutes} min.`);
     setTummyMinutes('');
   };
 
   const handleLogOutside = () => {
-    showInlineToast('Fresh Air Logged', `${outsideMinutes} min`);
+    showWhisperToast(`\u2728 Fresh air tracked. ${outsideMinutes} min.`);
     setOutsideMinutes('');
   };
 
   const handleLogSensory = () => {
-    showInlineToast('Sensory Play Logged', 'Great exploration!');
+    showWhisperToast('\u2728 Sensory play saved.');
     setSelectedSensory([]);
   };
 
   const handleLogMusic = () => {
-    showInlineToast('Music & Sound Logged', 'Wonderful sounds!');
+    showWhisperToast('\u2728 Music session saved.');
     setSelectedMusic([]);
   };
 
@@ -303,7 +303,7 @@ export default function ActivityLogScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Play & Bonding',
+          title: 'Play Time',
           headerTintColor: colors.primary[600],
           headerBackTitle: 'Home',
           headerLeft,
@@ -329,6 +329,15 @@ export default function ActivityLogScreen() {
             </View>
           </View>
           <Text style={styles.suggestionTip}>{suggestion.tip}</Text>
+          <View style={styles.suggestionActions}>
+            <Pressable
+              style={styles.suggestionLogButton}
+              onPress={() => showWhisperToast(`\u2728 ${suggestion.activity} saved.`)}
+            >
+              <Feather name="plus" size={14} color={colors.primary[600]} />
+              <Text style={styles.suggestionLogText}>Log Activity</Text>
+            </Pressable>
+          </View>
           <View style={styles.suggestionFooter}>
             <Feather name="zap" size={11} color={colors.textTertiary} />
             <Text style={styles.suggestionFooterText}>
@@ -581,13 +590,10 @@ export default function ActivityLogScreen() {
         initialMessage={chatInitialMessage}
       />
 
-      <InsightToast
-        visible={showToast}
-        title={toastTitle}
-        body={toastBody}
-        severity="info"
-        onDismiss={() => setShowToast(false)}
-        autoDismissMs={2000}
+      <LuminaWhisper
+        visible={showWhisper}
+        message={whisperMsg}
+        onDismiss={() => setShowWhisper(false)}
       />
       <KeyboardDoneBar />
     </View>
@@ -658,6 +664,26 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
+  },
+  suggestionActions: {
+    marginTop: spacing.md,
+  },
+  suggestionLogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.base,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+  },
+  suggestionLogText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.primary[600],
   },
   suggestionFooter: {
     flexDirection: 'row',
@@ -792,9 +818,18 @@ const styles = StyleSheet.create({
   },
   aiChipHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.sm,
     marginBottom: 4,
+  },
+  aiChipCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.neutral[300],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   aiChipTitle: {
     flex: 1,
@@ -806,14 +841,14 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
     lineHeight: typography.fontSize.xs * typography.lineHeight.relaxed,
-    marginLeft: 24,
+    marginLeft: 30,
   },
   aiChipProductRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
     marginTop: 4,
-    marginLeft: 24,
+    marginLeft: 30,
   },
   aiChipProduct: {
     fontSize: typography.fontSize.xs,

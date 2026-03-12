@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — AI-First Home Screen (Command Center)
+// Lumina — AI-First Home Screen (Command Center)
 // Greeting → Omni-Input → 6-button action grid
 // Intent router: data logging | medical queries | data queries
 // ============================================================
@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
 import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
@@ -38,7 +38,7 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { useDateFormat } from '../../../src/shared/hooks/useDateFormat';
 import { useSeedData } from '../../../src/data/useSeedData';
 import { generateUUID } from '../../../src/stores/createSyncedStore';
-import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { parseLogInput } from '../../../src/modules/logging/services/parseLogInputService';
 import type { ParsedLogAction } from '../../../src/modules/logging/types';
 import type { FeedingLog } from '../../../src/modules/feeding/types';
@@ -72,10 +72,10 @@ const SOFT_SHADOW = {
 
 // ── Action grid — split into primary (daily) and secondary (occasional) ──
 const PRIMARY_ACTIONS = [
-  { id: 'feeding', label: 'Feed', icon: 'coffee' as const, bg: '#F5F0E8', tint: '#A08B6E', route: '/(app)/log/feeding' },
+  { id: 'feeding', label: 'Feed', icon: 'droplet' as const, bg: '#F5F0E8', tint: '#A08B6E', route: '/(app)/log/feeding' },
   { id: 'sleep', label: 'Sleep', icon: 'moon' as const, bg: '#EDF3EE', tint: '#6B8E6F', route: '/(app)/log/sleep' },
-  { id: 'diaper', label: 'Diaper', icon: 'droplet' as const, bg: '#F3EFE8', tint: '#A0927D', route: '/(app)/log/diaper' },
-  { id: 'activity', label: 'Activity', icon: 'smile' as const, bg: '#F2EDE6', tint: '#9A8872', route: '/(app)/log/activity' },
+  { id: 'diaper', label: 'Diaper', icon: 'diaper' as const, bg: '#F3EFE8', tint: '#A0927D', route: '/(app)/log/diaper' },
+  { id: 'activity', label: 'Play Time', icon: 'smile' as const, bg: '#F2EDE6', tint: '#9A8872', route: '/(app)/log/activity' },
 ];
 
 const SECONDARY_ACTIONS = [
@@ -441,7 +441,7 @@ export default function HomeScreen() {
 
     // Data queries — explicit regex match, route immediately
     if (regexIntent.type === 'data_query') {
-      router.push('/(app)/(tabs)/insights' as any);
+      router.push('/(app)/(tabs)/guide' as any);
       return;
     }
     // NOTE: 'medical' is the default fallback (confidence 0.7) for anything
@@ -454,7 +454,7 @@ export default function HomeScreen() {
     if (regexIntent.type === 'log' && regexIntent.subType?.startsWith('diaper') && baby) {
       const diaperType = regexIntent.subType === 'diaper_dirty' ? 'dirty' : 'wet';
       useDiaperStore.getState().quickLog(baby.id, baby.family_id, loggedBy, diaperType);
-      setToastMsg(`${diaperType === 'dirty' ? 'Dirty' : 'Wet'} diaper logged!`);
+      setToastMsg(`\u2728 ${diaperType === 'dirty' ? 'Dirty' : 'Wet'} diaper tracked.`);
       setShowToast(true);
       return;
     }
@@ -506,7 +506,7 @@ export default function HomeScreen() {
           updated_at: now,
         };
         useFeedingStore.getState().addItem(log);
-        setToastMsg('Feed logged!');
+        setToastMsg('\u2728 Feeding saved.');
         setShowToast(true);
         return;
       }
@@ -530,14 +530,14 @@ export default function HomeScreen() {
       return;
     }
     if (parsed.intent === 'data_query') {
-      router.push('/(app)/(tabs)/insights' as any);
+      router.push('/(app)/(tabs)/guide' as any);
       return;
     }
 
     // Execute the parsed log action
     const { success, toastMsg: msg } = executeLogAction(parsed, baby, loggedBy, feedingMethod);
     if (success) {
-      setToastMsg(msg);
+      setToastMsg(`\u2728 ${msg}`);
       setShowToast(true);
     } else if (parsed.action_type === 'sleep') {
       router.push('/(app)/log/sleep' as any);
@@ -644,7 +644,7 @@ export default function HomeScreen() {
       progress: gestationalInfo?.progress ?? 0,
     };
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -707,13 +707,10 @@ export default function HomeScreen() {
           </Pressable>
         </BottomSheet>
 
-        <InsightToast
+        <LuminaWhisper
           visible={showToast}
-          title="Logged!"
-          body={toastMsg}
-          severity="info"
+          message={toastMsg}
           onDismiss={() => setShowToast(false)}
-          autoDismissMs={3000}
         />
         <KeyboardDoneBar />
       </SafeAreaView>
@@ -724,7 +721,7 @@ export default function HomeScreen() {
   const affirmation = getAffirmation(babyName, babyAge?.days ?? null);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -746,34 +743,64 @@ export default function HomeScreen() {
           <Text style={styles.greetingAffirmation}>{affirmation}</Text>
         </View>
 
-        {/* ── Ask Lumina Banner ── */}
-        <Pressable style={styles.luminaBanner} onPress={() => setShowNurseChat(true)}>
-          <View style={styles.luminaIconWrap}>
-            <Feather name="message-circle" size={20} color={colors.primary[600]} />
+        {/* ── Lumina AI Hub ── */}
+        <View style={styles.luminaHub}>
+          {/* Header row */}
+          <View style={styles.luminaHubHeader}>
+            <View style={styles.luminaHubIcon}>
+              <Feather name="message-circle" size={22} color={colors.primary[600]} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.luminaHubTitle}>Lumina</Text>
+              <Text style={styles.luminaHubSubtitle}>Your AI parenting companion</Text>
+            </View>
           </View>
-          <View style={styles.luminaTextGroup}>
-            <Text style={styles.luminaTitle}>Ask Lumina</Text>
-            <Text style={styles.luminaSubtitle}>
-              {babyName ? `Ask anything about ${babyName}...` : 'Your AI parenting companion'}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={20} color={colors.primary[400]} />
-        </Pressable>
 
-        {/* ── Calendar & History ── */}
-        <Pressable
-          style={styles.calendarBanner}
-          onPress={() => router.push('/(app)/calendar' as any)}
-        >
-          <View style={styles.calendarIconWrap}>
-            <Feather name="calendar" size={18} color={UI.accent} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.calendarTitle}>Calendar & History</Text>
-            <Text style={styles.calendarSubtitle}>View today's timeline and past logs</Text>
-          </View>
-          <Feather name="chevron-right" size={18} color={UI.textMuted} />
-        </Pressable>
+          {/* Input bar */}
+          <Pressable style={styles.luminaInputBar} onPress={() => setShowNurseChat(true)}>
+            <Feather name="search" size={18} color={UI.textMuted} />
+            <Text style={styles.luminaInputPlaceholder}>
+              {babyName ? `What's on your mind about ${babyName}?` : 'Ask me anything...'}
+            </Text>
+            <Pressable
+              style={styles.luminaHubMic}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleMicPress();
+              }}
+              hitSlop={12}
+              accessibilityLabel="Voice input"
+            >
+              <Feather name="mic" size={18} color={colors.primary[600]} />
+            </Pressable>
+          </Pressable>
+
+          {/* Suggested prompt chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.promptChipsRow}
+          >
+            {[
+              `Is 38°C a fever?`,
+              babyName ? `Analyze ${babyName}'s sleep` : 'Analyze sleep patterns',
+              `Play ideas for ${babyAgeMonths || 2} months`,
+              'When to start solids?',
+              'Normal poop colors',
+            ].map((prompt) => (
+              <Pressable
+                key={prompt}
+                style={styles.promptChip}
+                onPress={() => {
+                  setSmartText(prompt);
+                  setShowNurseChat(true);
+                }}
+              >
+                <Text style={styles.promptChipText}>{prompt}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
 
         {/* ── Primary Actions (2×2 grid) ── */}
         <View style={styles.actionGrid}>
@@ -809,7 +836,11 @@ export default function HomeScreen() {
                   { backgroundColor: action.bg },
                   isLive && { borderWidth: 2, borderColor: liveColor },
                 ]}>
-                  <Feather name={action.icon} size={24} color={isLive ? liveColor : action.tint} />
+                  {action.icon === 'diaper' ? (
+                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={isLive ? liveColor : action.tint} />
+                  ) : (
+                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.tint} />
+                  )}
                 </View>
                 <View>
                   <Text style={[styles.actionLabel, { color: isLive ? liveColor : action.tint }]}>
@@ -873,11 +904,11 @@ export default function HomeScreen() {
         knownAllergies={activeBaby?.known_allergies ?? []}
         babyAgeMonths={babyAgeMonths}
         onTimerStarted={() => {
-          setToastMsg('Feeding timer started!');
+          setToastMsg('\u2728 Feeding timer started.');
           setShowToast(true);
         }}
-        onLogged={(msg) => {
-          setToastMsg(msg);
+        onLogged={() => {
+          setToastMsg('\u2728 Feeding saved.');
           setShowToast(true);
         }}
       />
@@ -888,11 +919,11 @@ export default function HomeScreen() {
         familyId={activeBaby?.family_id ?? ''}
         loggedBy={loggedBy}
         onTimerStarted={() => {
-          setToastMsg('Sleep timer started!');
+          setToastMsg('\u2728 Sleep timer started.');
           setShowToast(true);
         }}
-        onLogged={(msg) => {
-          setToastMsg(msg);
+        onLogged={() => {
+          setToastMsg('\u2728 Sweet dreams recorded.');
           setShowToast(true);
         }}
       />
@@ -902,20 +933,17 @@ export default function HomeScreen() {
         babyId={activeBaby?.id ?? ''}
         familyId={activeBaby?.family_id ?? ''}
         loggedBy={loggedBy}
-        onLogged={(_, msg) => {
-          setToastMsg(msg);
+        onLogged={() => {
+          setToastMsg('\u2728 Diaper tracked.');
           setShowToast(true);
         }}
       />
 
-      {/* Quick action toast */}
-      <InsightToast
+      {/* Lumina Whisper */}
+      <LuminaWhisper
         visible={showToast}
-        title="Logged!"
-        body={toastMsg}
-        severity="info"
+        message={toastMsg}
         onDismiss={() => setShowToast(false)}
-        autoDismissMs={3000}
       />
       <KeyboardDoneBar />
     </SafeAreaView>
@@ -935,7 +963,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.base,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 20,
   },
 
@@ -967,67 +995,88 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // ── Ask Lumina Banner ──
-  luminaBanner: {
+  // ── Lumina AI Hub ──
+  luminaHub: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    paddingBottom: 16,
+    marginBottom: 20,
+    shadowColor: '#4A7A5E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.primary[100],
+  },
+  luminaHubHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius['2xl'],
-    padding: 14,
     gap: 12,
-    marginBottom: 14,
-    ...SOFT_SHADOW,
+    marginBottom: 16,
   },
-  luminaIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: UI.card,
+  luminaHubIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
-  luminaTextGroup: {
-    flex: 1,
-  },
-  luminaTitle: {
-    fontSize: 16,
+  luminaHubTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: colors.primary[700],
-    marginBottom: 1,
   },
-  luminaSubtitle: {
+  luminaHubSubtitle: {
     fontSize: 13,
-    color: colors.primary[600],
+    color: colors.primary[500],
+    marginTop: 1,
   },
-
-  // ── Calendar Banner ──
-  calendarBanner: {
+  luminaInputBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI.card,
-    borderRadius: borderRadius['2xl'],
-    padding: 14,
-    gap: 12,
-    marginBottom: 20,
-    ...SOFT_SHADOW,
+    backgroundColor: colors.neutral[50],
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
   },
-  calendarIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: UI.logBg,
+  luminaInputPlaceholder: {
+    flex: 1,
+    fontSize: 15,
+    color: UI.textMuted,
+  },
+  luminaHubMic: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary[50],
+    borderWidth: 1,
+    borderColor: colors.primary[200],
     justifyContent: 'center',
     alignItems: 'center',
   },
-  calendarTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: UI.text,
-    marginBottom: 1,
+  promptChipsRow: {
+    gap: 8,
+    paddingRight: 4,
   },
-  calendarSubtitle: {
-    fontSize: 12,
-    color: UI.textMuted,
+  promptChip: {
+    backgroundColor: colors.primary[50],
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+  },
+  promptChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.primary[700],
   },
 
   // ── Primary Action Grid (2×2) ──

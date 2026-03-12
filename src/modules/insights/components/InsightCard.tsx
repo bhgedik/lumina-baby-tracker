@@ -1,10 +1,10 @@
 // ============================================================
-// Sprouty — Insight Card
+// Lumina — Insight Card
 // Premium smart card with context tag, rich body, and chat CTA
 // Collapsible body + swipe-to-dismiss support
 // ============================================================
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
@@ -22,8 +22,6 @@ interface Props {
 
 // Safe: parent keys by insight.id, so this component remounts for new insights
 export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   const tagColor = TAG_COLORS[insight.tag] ?? TAG_COLORS.general;
   const accentColor = PRIORITY_ACCENT[insight.priority] ?? colors.neutral[300];
 
@@ -70,12 +68,6 @@ export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Pr
     })
   ).current;
 
-  // ─── Collapsible body ───
-
-  const toggleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-  }, []);
-
   return (
     <Animated.View
       style={{ transform: [{ translateX }], opacity: cardOpacity }}
@@ -109,23 +101,20 @@ export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Pr
           {/* Title */}
           <Text style={styles.title}>{insight.title}</Text>
 
-          {/* Rich body with bold markers — collapsible */}
-          <Pressable onPress={toggleExpand}>
-            <RichBody text={insight.body} numberOfLines={expanded ? undefined : 3} />
-            {!expanded && (
-              <Text style={styles.readMore}>Read more</Text>
-            )}
-          </Pressable>
+          {/* Rich body — always fully expanded, never truncated */}
+          <View style={{ marginBottom: spacing.sm }}>
+            <RichBody text={insight.body} />
+          </View>
 
-          {/* Visual guide — visible only when expanded */}
-          {expanded && insight.visualGuide && (
+          {/* Visual guide */}
+          {insight.visualGuide && (
             <View style={{ marginBottom: spacing.md }}>
               <VisualGuide guide={insight.visualGuide} />
             </View>
           )}
 
-          {/* Action items — visible only when expanded */}
-          {expanded && insight.actionItems && insight.actionItems.length > 0 && (
+          {/* Action items */}
+          {insight.actionItems && insight.actionItems.length > 0 && (
             <View style={styles.actionList}>
               {insight.actionItems.map((item, i) => (
                 <View key={i} style={styles.actionItem}>
@@ -136,8 +125,8 @@ export function InsightCard({ insight, onDiscuss, onQuickAction, onDismiss }: Pr
             </View>
           )}
 
-          {/* Quick Action — visible only when expanded */}
-          {expanded && insight.quickAction && onQuickAction && (
+          {/* Quick Action */}
+          {insight.quickAction && onQuickAction && (
             <Pressable
               style={styles.quickActionButton}
               onPress={() => onQuickAction(insight.quickAction!)}
@@ -177,8 +166,8 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: spacing.base,
-    paddingLeft: spacing.base,
+    padding: spacing.lg,
+    paddingLeft: spacing.lg,
   },
   // Tag row with dismiss X
   tagRow: {
@@ -218,14 +207,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.sm,
     lineHeight: typography.fontSize.md * typography.lineHeight.tight,
-  },
-  // Read more
-  readMore: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.primary[500],
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
   },
   // Action items
   actionList: {

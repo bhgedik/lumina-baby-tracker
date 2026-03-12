@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Health Log Screen
+// Lumina — Health Log Screen
 // Health Logger: Temperature, Symptoms, Medications, and Notes
 // ============================================================
 
@@ -21,7 +21,7 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { ChipSelector } from '../../../src/shared/components/ChipSelector';
-import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
 import { useHealthStore } from '../../../src/stores/healthStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
@@ -635,13 +635,10 @@ export default function HealthLogScreen() {
       {/* History Bottom Sheet */}
       <HistorySheet visible={showHistory} onClose={() => setShowHistory(false)} logs={babyLogs} />
 
-      <InsightToast
+      <LuminaWhisper
         visible={showToast}
-        title="Health Logged"
-        body="Entry saved successfully."
-        severity="info"
+        message={'\u2728 Health entry saved.'}
         onDismiss={() => setShowToast(false)}
-        autoDismissMs={2000}
       />
       <KeyboardDoneBar />
     </View>

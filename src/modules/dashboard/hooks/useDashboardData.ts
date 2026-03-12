@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Dashboard Data Hook
+// Lumina — Dashboard Data Hook
 // Aggregates all store summaries for the dashboard
 // Uses stable selectors to prevent unnecessary re-renders
 // ============================================================
@@ -82,13 +82,33 @@ function computeBabyAge(dateOfBirth: string): BabyAge | null {
   const diffMs = now.getTime() - birth.getTime();
   if (diffMs < 0) return null;
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days === 0) return { days, display: 'Born Today' };
-  if (days === 1) return { days, display: 'Day 1' };
-  if (days < 14) return { days, display: `Day ${days}` };
-  const weeks = Math.floor(days / 7);
-  if (weeks < 9) return { days, display: `${weeks} Week${weeks > 1 ? 's' : ''} Old` };
-  const months = Math.floor(days / 30.44);
-  return { days, display: `${months} Month${months > 1 ? 's' : ''} Old` };
+
+  if (days === 0) return { days, display: 'born today' };
+  if (days === 1) return { days, display: '1 day old' };
+  if (days < 31) return { days, display: `${days} days old` };
+
+  let months = Math.floor(days / 30.44);
+  let remainingWeeks = Math.floor((days - Math.floor(months * 30.44)) / 7);
+
+  // 4 weeks ≈ another month — round up to avoid "2 months, 4 weeks"
+  if (remainingWeeks >= 4) {
+    months += 1;
+    remainingWeeks = 0;
+  }
+
+  if (months < 12) {
+    if (remainingWeeks > 0) {
+      return { days, display: `${months} month${months > 1 ? 's' : ''}, ${remainingWeeks} week${remainingWeeks > 1 ? 's' : ''} old` };
+    }
+    return { days, display: `${months} month${months > 1 ? 's' : ''} old` };
+  }
+
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  if (remainingMonths > 0) {
+    return { days, display: `${years} year${years > 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths > 1 ? 's' : ''} old` };
+  }
+  return { days, display: `${years} year${years > 1 ? 's' : ''} old` };
 }
 
 function computeGestationalInfo(dueDate: string | null): GestationalInfo {

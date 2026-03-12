@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Sleep Log Screen (State-Based)
+// Lumina — Sleep Log Screen (State-Based)
 // Three vertical state buttons: Falling Asleep → Deep Sleep → Waking Up
 // No timers — each tap logs a timestamped state transition
 // ============================================================
@@ -18,7 +18,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
-import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { useSleepStore } from '../../../src/stores/sleepStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -134,7 +134,7 @@ export default function SleepLogScreen() {
   const [activePhase, setActivePhase] = useState<SleepPhase | null>(null);
   const [phaseTimestamps, setPhaseTimestamps] = useState<Record<string, string>>({});
   const [sessionLogId, setSessionLogId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
+  const [whisper, setWhisper] = useState<string | null>(null);
 
   // Animated scales for each button
   const scales = useRef(
@@ -203,12 +203,9 @@ export default function SleepLogScreen() {
 
         addItem(log);
         setSessionLogId(log.id);
-        setToast({ title: 'Sleep logged!', body: `${durationMinutes} min session saved.` });
+        setWhisper(`\u2728 Sweet dreams recorded. ${durationMinutes} min.`);
       } else {
-        setToast({
-          title: `${SLEEP_STATES.find((s) => s.id === phase)?.label}`,
-          body: `Logged at ${formatTime(now)}`,
-        });
+        setWhisper(`\u2728 ${SLEEP_STATES.find((s) => s.id === phase)?.label} noted.`);
       }
     },
     [baby, profile, addItem, phaseTimestamps],
@@ -349,16 +346,11 @@ export default function SleepLogScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {toast && (
-        <InsightToast
-          visible={!!toast}
-          title={toast.title}
-          body={toast.body}
-          severity="info"
-          onDismiss={() => setToast(null)}
-          autoDismissMs={2500}
-        />
-      )}
+      <LuminaWhisper
+        visible={!!whisper}
+        message={whisper ?? ''}
+        onDismiss={() => setWhisper(null)}
+      />
     </View>
   );
 }
