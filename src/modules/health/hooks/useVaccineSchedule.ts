@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — useVaccineSchedule Hook
+// Lumina — useVaccineSchedule Hook
 // Age-gated vaccine schedule: dueNow / future / completed
 // Uses chronological age only (NEVER corrected age for vaccines)
 // ============================================================

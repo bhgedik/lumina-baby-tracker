@@ -1,4 +1,4 @@
--- Sprouty: Add optional sensitivity tracker field to feeding logs
+-- Lumina: Add optional sensitivity tracker field to feeding logs
 -- Allows mothers to note suspected gas/allergy triggers per feeding
 ALTER TABLE feeding_logs
   ADD COLUMN sensitivity_notes TEXT;

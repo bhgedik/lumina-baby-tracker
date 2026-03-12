@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Prep Dashboard (Pregnancy Home View)
+// Lumina — Prep Dashboard (Pregnancy Home View)
 // Flo-inspired editorial layout: ring + baby size + rich tips
 // Checklist has moved to its own dedicated tab
 // ============================================================

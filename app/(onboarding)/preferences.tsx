@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Preferences (Step 4 of 4)
+// Lumina — Preferences (Step 4 of 4)
 // Final step — saves all data, navigates to main app
 // ============================================================
 
@@ -209,7 +209,7 @@ export default function PreferencesScreen() {
           ) : (
             <>
               <Feather name="check-circle" size={20} color={colors.textInverse} />
-              <Text style={styles.buttonText}>Start Using Sprout</Text>
+              <Text style={styles.buttonText}>Start Using Lumina</Text>
             </>
           )}
         </Pressable>

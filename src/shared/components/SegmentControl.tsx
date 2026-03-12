@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Segment Control
+// Lumina — Segment Control
 // Squishy pill selector — warm, one-handed optimized (56px+)
 // ============================================================
 

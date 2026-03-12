@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Seed Data Hook
+// Lumina — Seed Data Hook
 // Seeds all tracking domains with 30-day demo data
 // Checks store contents directly instead of flags
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Red Flag Interceptor
+// Lumina — Red Flag Interceptor
 // HARDCODED SAFETY MODULE — No AI involvement.
 // Runs SYNCHRONOUSLY before any AI call.
 // If triggered, halts all standard advice and shows emergency state.

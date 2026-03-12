@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Sync Service (Stubbed for Phase 2)
+// Lumina — Sync Service (Stubbed for Phase 2)
 // Background sync queue drain to Supabase
 // Full implementation when Supabase project is connected
 // ============================================================

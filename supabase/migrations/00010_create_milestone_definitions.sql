@@ -1,4 +1,4 @@
--- Sprouty: Milestone definitions (seed data from CDC/WHO)
+-- Lumina: Milestone definitions (seed data from CDC/WHO)
 -- These are system-level records, not user-created
 CREATE TABLE milestone_definitions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

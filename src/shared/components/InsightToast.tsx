@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Insight Toast
+// Lumina — Insight Toast
 // Warm veteran insight popup — slides from top, auto-dismiss
 // ============================================================
 

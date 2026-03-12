@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Pregnancy Module Types
+// Lumina — Pregnancy Module Types
 // ============================================================
 
 export interface PrepSuggestion {

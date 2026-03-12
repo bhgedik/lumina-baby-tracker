@@ -1,4 +1,4 @@
--- Sprouty: Database functions
+-- Lumina: Database functions
 
 -- Corrected age calculation (server-side)
 CREATE OR REPLACE FUNCTION corrected_age_days(p_baby_id UUID, p_ref_date DATE DEFAULT CURRENT_DATE)

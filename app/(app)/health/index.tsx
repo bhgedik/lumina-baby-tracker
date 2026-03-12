@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Health Hub
+// Lumina — Health Hub
 // Two-Track System: Routine Care + Active Illness Episodes
 // Premium squircle aesthetic, nurture-first, zero anxiety
 // ============================================================

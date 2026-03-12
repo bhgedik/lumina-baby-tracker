@@ -1,4 +1,4 @@
--- Sprouty: Health logs (temperature, medication, symptoms, doctor visits)
+-- Lumina: Health logs (temperature, medication, symptoms, doctor visits)
 CREATE TABLE health_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

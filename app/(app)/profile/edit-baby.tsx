@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Edit Baby Screen
+// Lumina — Edit Baby Screen
 // Pre-populated form for editing baby details
 // ============================================================
 

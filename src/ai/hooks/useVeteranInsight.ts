@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Veteran Insight Hook
+// Lumina — Veteran Insight Hook
 // Checks veteran rules after each log and surfaces first match
 // ============================================================
 

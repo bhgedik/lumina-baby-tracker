@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Insights Module Types
+// Lumina — Insights Module Types
 // Smart card feed + conversational AI chat
 // ============================================================
 

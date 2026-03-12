@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Prep Suggestions Edge Function
+// Lumina — Prep Suggestions Edge Function
 // Generates evidence-based pregnancy prep suggestions via Claude
 // ALL content must be in English and medically verified
 // ============================================================
@@ -44,7 +44,7 @@ serve(async (req: Request) => {
       feeding_method,
     } = body;
 
-    const systemPrompt = `You are Sprout, a warm and knowledgeable parental companion with the expertise of a veteran NICU nurse and pediatrician. You are helping parents prepare for their baby's arrival.
+    const systemPrompt = `You are Lumina, a warm and knowledgeable parental companion with the expertise of a veteran NICU nurse and pediatrician. You are helping parents prepare for their baby's arrival.
 
 PERSONALITY:
 - Warm, reassuring, and confident

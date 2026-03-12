@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Bottle Feeding Panel
+// Lumina — Bottle Feeding Panel
 // Warm, squishy amount slider + content type + temperature
 // ============================================================
 

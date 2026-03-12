@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Checkup Completion Sheet
+// Lumina — Checkup Completion Sheet
 // Bottom sheet for capturing growth data during well-child checkups
 // ============================================================
 

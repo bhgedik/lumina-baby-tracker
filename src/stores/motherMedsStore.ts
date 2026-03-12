@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Mother's Medication Store (Zustand)
+// Lumina — Mother's Medication Store (Zustand)
 // Tracks postpartum medication schedules + next-due countdown
 // ============================================================
 

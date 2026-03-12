@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Activity Suggestions Service
+// Lumina — Activity Suggestions Service
 // Calls ai-activity-suggestions edge function with timeout
 // Falls back to static suggestions when offline
 // ============================================================

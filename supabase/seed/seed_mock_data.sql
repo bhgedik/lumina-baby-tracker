@@ -1,5 +1,5 @@
 -- ============================================================
--- Sprouty — Realistic 5-Week Mock Data Seed
+-- Lumina — Realistic 5-Week Mock Data Seed
 -- Baby: Ece, born 35 days ago, breastfed
 -- Mother: Buse, first-time, vaginal delivery
 -- Logging: 75% consistency (25% sparse/blank days)
@@ -81,7 +81,7 @@ BEGIN
     '00000000-0000-0000-0000-000000000000',
     c_user_id,
     'authenticated', 'authenticated',
-    'seed@sprouty.app',
+    'seed@lumina.app',
     -- bcrypt hash placeholder (not for real auth, just seed data)
     '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
     NOW(), NOW(), NOW(),
@@ -95,7 +95,7 @@ BEGIN
     last_sign_in_at, created_at, updated_at
   ) VALUES (
     gen_random_uuid(), c_user_id, c_user_id::TEXT,
-    jsonb_build_object('sub', c_user_id::TEXT, 'email', 'seed@sprouty.app'),
+    jsonb_build_object('sub', c_user_id::TEXT, 'email', 'seed@lumina.app'),
     'email', NOW(), NOW(), NOW()
   );
 
@@ -103,7 +103,7 @@ BEGIN
     id, family_id, email, display_name, role,
     experience_level, delivery_method, onboarding_completed
   ) VALUES (
-    c_user_id, c_family_id, 'seed@sprouty.app', 'Buse',
+    c_user_id, c_family_id, 'seed@lumina.app', 'Buse',
     'primary', 'first_time', 'vaginal', TRUE
   );
 

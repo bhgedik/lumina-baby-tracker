@@ -1,4 +1,4 @@
--- Sprouty: AI-generated insights
+-- Lumina: AI-generated insights
 CREATE TABLE ai_insights (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID REFERENCES babies(id) ON DELETE CASCADE,

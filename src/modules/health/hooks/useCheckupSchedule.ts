@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — useCheckupSchedule Hook
+// Lumina — useCheckupSchedule Hook
 // Age-gated checkup schedule: dueNow / future / completed
 // ============================================================
 

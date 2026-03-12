@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Visual Guide Component
+// Lumina — Visual Guide Component
 // Actionable visual guidance: video thumbnails, step-by-step
 // instructions, or illustration placeholders
 // ============================================================

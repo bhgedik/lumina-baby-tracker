@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Breast Feeding Panel
+// Lumina — Breast Feeding Panel
 // Side-by-side "Start Left" / "Start Right" pills
 // Active = Sage Green · Inactive = Dimmed · No modals
 // ============================================================

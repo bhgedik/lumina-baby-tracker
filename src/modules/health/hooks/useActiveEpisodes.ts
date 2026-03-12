@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — useActiveEpisodes Hook
+// Lumina — useActiveEpisodes Hook
 // Returns active and resolved illness episodes for active baby
 // ============================================================
 

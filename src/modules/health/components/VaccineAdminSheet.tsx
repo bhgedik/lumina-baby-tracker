@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Vaccine Administration Sheet
+// Lumina — Vaccine Administration Sheet
 // Bottom sheet for recording a vaccine administration
 // ============================================================
 

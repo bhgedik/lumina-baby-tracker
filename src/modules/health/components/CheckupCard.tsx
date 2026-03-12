@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Well-Child Checkup Card (Premium)
+// Lumina — Well-Child Checkup Card (Premium)
 // Warm squircle card with screening chips and age label
 // ============================================================
 

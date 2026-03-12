@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Parent Profile (Quiz Step 2 of 3)
+// Lumina — Parent Profile (Quiz Step 2 of 3)
 // Collects parent name, experience level
 // ============================================================
 

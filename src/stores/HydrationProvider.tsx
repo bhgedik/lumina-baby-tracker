@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Hydration Provider
+// Lumina — Hydration Provider
 // Hydrates all Zustand stores on app start
 // ============================================================
 
@@ -37,7 +37,7 @@ export function HydrationProvider({ children }: Props) {
         // ⚠️  TEMPORARY: Wipe all storage before hydrating
         if (DEV_FORCE_RESET) {
           await AsyncStorage.clear();
-          console.log('[Sprout] DEV_FORCE_RESET: All storage cleared');
+          console.log('[Lumina] DEV_FORCE_RESET: All storage cleared');
         }
 
         await Promise.all([
@@ -55,7 +55,7 @@ export function HydrationProvider({ children }: Props) {
           useLuminaThreadStore.getState().hydrate(),
         ]);
       } catch (e) {
-        console.warn('[Sprout] Hydration error (non-fatal):', e);
+        console.warn('[Lumina] Hydration error (non-fatal):', e);
       }
       setReady(true);
     }

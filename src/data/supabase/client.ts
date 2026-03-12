@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Supabase Client Initialization
+// Lumina — Supabase Client Initialization
 // Gracefully stubs if env vars are missing (offline-only mode)
 // ============================================================
 

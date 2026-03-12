@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Diaper Details Sheet
+// Lumina — Diaper Details Sheet
 // BottomSheet with AI scan, stool color, consistency, rash, notes
 // ============================================================
 

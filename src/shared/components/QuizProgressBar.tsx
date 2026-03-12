@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Quiz Progress Bar
+// Lumina — Quiz Progress Bar
 // Animated horizontal fill bar for onboarding quiz steps
 // ============================================================
 

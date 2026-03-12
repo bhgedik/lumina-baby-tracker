@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Diaper Store (Zustand)
+// Lumina — Diaper Store (Zustand)
 // Diaper logs + quickLog shortcut
 // ============================================================
 

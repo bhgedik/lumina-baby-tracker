@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Diaper Analysis Service
+// Lumina — Diaper Analysis Service
 // Calls the analyze-diaper edge function for AI photo analysis
 // ============================================================
 

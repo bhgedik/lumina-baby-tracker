@@ -94,7 +94,7 @@ export default function LuminaHubScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -171,6 +171,15 @@ export default function LuminaHubScreen() {
               Ask Lumina about sleep, feeding, health, or anything on your mind
             </Text>
           </View>
+          <Pressable
+            style={styles.consultationMicButton}
+            onPress={handleNewConsultation}
+            hitSlop={12}
+            accessibilityLabel="Voice input"
+            accessibilityHint="Start a consultation with your voice"
+          >
+            <Feather name="mic" size={18} color={UI.accentDark} />
+          </Pressable>
         </Pressable>
 
         {/* ── Recent Consultations ── */}
@@ -357,6 +366,16 @@ const styles = StyleSheet.create({
     color: UI.textSecondary,
     marginTop: 3,
     lineHeight: 18,
+  },
+  consultationMicButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: UI.card,
+    borderWidth: 1,
+    borderColor: UI.accent + '40',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // ── Thread Rows ──

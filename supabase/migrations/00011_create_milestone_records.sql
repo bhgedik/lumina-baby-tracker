@@ -1,4 +1,4 @@
--- Sprouty: Individual baby milestone tracking
+-- Lumina: Individual baby milestone tracking
 CREATE TABLE milestone_records (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

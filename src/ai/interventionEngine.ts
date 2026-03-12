@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Intervention Engine
+// Lumina — Intervention Engine
 // Determines the AI intervention level based on log data patterns.
 // Runs locally on the device — no API calls needed for rule evaluation.
 // ============================================================

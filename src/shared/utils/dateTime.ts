@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Date/Time Utilities
+// Lumina — Date/Time Utilities
 // ============================================================
 
 import { format, formatDistanceToNow, differenceInMinutes, differenceInHours } from 'date-fns';

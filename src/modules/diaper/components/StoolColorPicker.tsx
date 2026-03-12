@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Stool Color Picker
+// Lumina — Stool Color Picker
 // Seven 56px color circles with medical warnings
 // ============================================================
 

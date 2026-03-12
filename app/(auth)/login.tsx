@@ -22,7 +22,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.logo}>Sprout</Text>
+        <Text style={styles.logo}>Lumina</Text>
         <Text style={styles.tagline}>Your baby's digital companion</Text>
 
         <View style={styles.form}>

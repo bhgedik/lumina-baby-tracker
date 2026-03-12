@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Analyzing Screen
+// Lumina — Analyzing Screen
 // Artificial 3-4s loading screen after onboarding quiz,
 // before the paywall. Pulsing animation + phased text.
 // ============================================================

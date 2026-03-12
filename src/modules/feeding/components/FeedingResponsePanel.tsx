@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Feeding Response Panel
+// Lumina — Feeding Response Panel
 // Baby response + optional notes
 // ============================================================
 

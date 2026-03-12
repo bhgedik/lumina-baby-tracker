@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Filter Chips
+// Lumina — Filter Chips
 // Horizontal scrollable category pills for filtering insights
 // ============================================================
 

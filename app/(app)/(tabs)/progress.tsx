@@ -1,8 +1,9 @@
 // ============================================================
 // Nodd — Progress Screen
-// Weekly micro-milestone focus — newsletter-style, anxiety-free
-// Shows only what matters THIS week with actionable observation
-// prompts instead of a long timeline of locked future milestones
+// "Open the Box" — Lovevery-inspired developmental journey
+// Each period is a sealed gift box that parents unwrap when
+// baby reaches that age. Creates anticipation & joy, not anxiety.
+// Sources: CDC 2022, WHO MGRS, AAP, Pathways.org, Harvard CCDC
 // ============================================================
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
@@ -16,101 +17,91 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useMilestoneStore } from '../../../src/stores/milestoneStore';
 import { useCorrectedAge } from '../../../src/modules/baby/hooks/useCorrectedAge';
-import { MILESTONES, DOMAIN_ICONS } from '../../../src/modules/milestones/data/definitions';
-import type { MilestoneDef } from '../../../src/modules/milestones/data/definitions';
+import {
+  MILESTONES,
+  PERIODS,
+  DOMAIN_ICONS,
+} from '../../../src/modules/milestones/data/definitions';
+import type { MilestoneDef, DevelopmentalPeriod } from '../../../src/modules/milestones/data/definitions';
 
-const SERIF_FONT = Platform.select({
-  ios: 'Georgia',
-  android: 'serif',
-  default: 'serif',
-});
+const SERIF_FONT = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
-// ── Mini SVG badge icons ──
 
-function LeafBadge({ size = 20, color = '#8EBA9B' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 16 16">
-      <Path
-        d="M8 1 Q13 4 14 8 Q13 12 8 15 Q3 12 2 8 Q3 4 8 1 Z"
-        fill={color}
-      />
-      <Path d="M8 4 L8 12" stroke="rgba(255,255,255,0.5)" strokeWidth={0.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
+// ── Confetti (used for box opening + milestone celebration) ──
 
-function SparkleBadge({ size = 20, color = '#D4B96A' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 16 16">
-      <Path
-        d="M8 0 L9.5 6.5 L16 8 L9.5 9.5 L8 16 L6.5 9.5 L0 8 L6.5 6.5 Z"
-        fill={color}
-      />
-    </Svg>
-  );
-}
+const CONFETTI_COLORS = ['#8EBA9B', '#B3D1BC', '#5E8A72', '#F17C4C', '#F5A882', '#F5E6D0'];
 
-// ── Confetti system ──
-
-const CONFETTI_COLORS = ['#8EBA9B', '#B3D1BC', '#D4B96A', '#E8D19A', '#D4A088', '#F5E6D0'];
-
-interface ConfettiPiece {
-  x: number;
-  y: number;
-  color: string;
-  size: number;
-}
-
-function generateConfetti(): ConfettiPiece[] {
-  return Array.from({ length: 14 }, () => ({
-    x: (Math.random() - 0.5) * 180,
-    y: -(40 + Math.random() * 100),
+function generateConfetti(count = 20) {
+  return Array.from({ length: count }, () => ({
+    x: (Math.random() - 0.5) * 240,
+    y: -(60 + Math.random() * 140),
     color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-    size: 5 + Math.random() * 6,
+    size: 5 + Math.random() * 7,
   }));
 }
 
-// ── MicroMilestoneCard ──
+// ── Helpers ──
 
-function MicroMilestoneCard({
+type PeriodStatus = 'past' | 'current' | 'upcoming';
+
+function getPeriodStatus(period: DevelopmentalPeriod, ageWeeks: number): PeriodStatus {
+  if (ageWeeks >= period.endWeek) return 'past';
+  if (ageWeeks >= period.startWeek) return 'current';
+  return 'upcoming';
+}
+
+function getMilestonesForPeriod(period: DevelopmentalPeriod): MilestoneDef[] {
+  return MILESTONES.filter((m) => {
+    return m.targetWeek >= period.startWeek && m.targetWeek < period.endWeek;
+  }).sort((a, b) => a.targetWeek - b.targetWeek);
+}
+
+function formatAchievedDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── Milestone Card (inside an opened box) ──
+
+interface CelebratedEntry {
+  achievedDate: string;
+  notes: string | null;
+}
+
+function MilestoneCard({
   milestone,
   babyName,
+  isCelebrated,
+  celebratedEntry,
   onCelebrate,
+  onUncelebrate,
 }: {
   milestone: MilestoneDef;
   babyName: string;
+  isCelebrated: boolean;
+  celebratedEntry?: CelebratedEntry;
   onCelebrate: (id: string) => void;
+  onUncelebrate: (id: string) => void;
 }) {
-  const [tipExpanded, setTipExpanded] = useState(false);
-  const tipAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-
   const [showConfetti, setShowConfetti] = useState(false);
-  const confettiPieces = useRef(generateConfetti()).current;
+  const confettiPieces = useRef(generateConfetti(12)).current;
   const confettiAnims = useRef(confettiPieces.map(() => new Animated.Value(0))).current;
 
   const domainInfo = DOMAIN_ICONS[milestone.domain];
   const prompt = milestone.observationPrompt.replace(/\{babyName\}/g, babyName);
 
-  const toggleTip = useCallback(() => {
-    const toExpanded = !tipExpanded;
-    setTipExpanded(toExpanded);
-    Animated.spring(tipAnim, {
-      toValue: toExpanded ? 1 : 0,
-      tension: 80,
-      friction: 12,
-      useNativeDriver: false,
-    }).start();
-  }, [tipExpanded, tipAnim]);
-
   const handleCelebrate = useCallback(() => {
+    if (isCelebrated) {
+      onUncelebrate(milestone.id);
+      return;
+    }
     setShowConfetti(true);
     confettiAnims.forEach((a) => a.setValue(0));
     Animated.parallel(
@@ -129,124 +120,293 @@ function MicroMilestoneCard({
       Animated.spring(scaleAnim, { toValue: 1, tension: 180, friction: 8, useNativeDriver: true }),
     ]).start();
     onCelebrate(milestone.id);
-  }, [milestone.id, onCelebrate, confettiAnims, scaleAnim]);
-
-  const tipMaxHeight = tipAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 300] });
-  const tipOpacity = tipAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 0, 1] });
-  const tipChevronRotate = tipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  }, [milestone.id, isCelebrated, onCelebrate, onUncelebrate, confettiAnims, scaleAnim]);
 
   return (
-    <Animated.View style={[styles.microCard, shadows.soft, { transform: [{ scale: scaleAnim }] }]}>
-      <View style={[styles.microCardBorder, { borderLeftColor: domainInfo.color }]}>
-        {/* Header row: icon + title + celebrate circle */}
-        <View style={styles.microCardHeader}>
-          <View style={[styles.domainBadge, { backgroundColor: domainInfo.bg }]}>
-            <Feather name={domainInfo.icon as any} size={16} color={domainInfo.color} />
-          </View>
-          <Text style={styles.microCardTitle}>{milestone.title}</Text>
-          <Pressable onPress={handleCelebrate} hitSlop={8}>
-            <View style={styles.celebrateCircle}>
-              <View style={styles.celebrateCircleInner} />
-            </View>
-          </Pressable>
+    <Animated.View
+      style={[styles.milestoneCard, { transform: [{ scale: scaleAnim }] }]}
+    >
+      {/* Header: icon + title */}
+      <View style={styles.cardHeader}>
+        <View style={[styles.domainBadge, { backgroundColor: domainInfo.bg }]}>
+          <Feather name={domainInfo.icon as any} size={16} color={domainInfo.color} />
         </View>
-
-        {/* Observation prompt */}
-        <Text style={styles.observationPrompt}>{prompt}</Text>
-
-        {/* Lumina's Tip — collapsible */}
-        <Pressable onPress={toggleTip} style={styles.tipToggle}>
-          <Feather name="heart" size={13} color={colors.primary[600]} />
-          <Text style={styles.tipToggleLabel}>Lumina's Tip</Text>
-          <Animated.View style={{ transform: [{ rotate: tipChevronRotate }] }}>
-            <Feather name="chevron-down" size={14} color={colors.primary[400]} />
-          </Animated.View>
-        </Pressable>
-
-        <Animated.View style={{ maxHeight: tipMaxHeight, opacity: tipOpacity, overflow: 'hidden' }}>
-          <View style={styles.nurseTipCard}>
-            <Text style={styles.nurseTipText}>{milestone.nurseTip}</Text>
-          </View>
-        </Animated.View>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {milestone.title}
+        </Text>
       </View>
 
-      {/* Confetti overlay */}
+      {/* Body text */}
+      <Text style={styles.observationPrompt}>{prompt}</Text>
+
+      {/* Lumina's Tip — inline, no heavy box */}
+      <View style={styles.nurseTipRow}>
+        <Text style={styles.nurseTipText}>
+          <Text style={styles.nurseTipLabel}>{'✨ Lumina\u2019s Tip: '}</Text>
+          {milestone.nurseTip}
+        </Text>
+      </View>
+
+      {/* CTA */}
+      {isCelebrated ? (
+        <Pressable onPress={handleCelebrate} style={styles.achievedRow}>
+          <Feather name="check-circle" size={16} color={colors.primary[500]} />
+          <Text style={styles.achievedText}>
+            Noticed{celebratedEntry?.achievedDate
+              ? ` on ${formatAchievedDate(celebratedEntry.achievedDate)}`
+              : ''}
+          </Text>
+          <Text style={styles.undoText}>Undo</Text>
+        </Pressable>
+      ) : (
+        <Pressable onPress={handleCelebrate} style={styles.celebrateButton}>
+          <Feather name="check" size={14} color={colors.primary[700]} />
+          <Text style={styles.celebrateButtonText}>Mark as Achieved</Text>
+        </Pressable>
+      )}
+
+      {/* Confetti burst */}
       {showConfetti && (
         <View style={styles.confettiContainer} pointerEvents="none">
-          {confettiPieces.map((piece, i) => {
-            const progress = confettiAnims[i];
-            return (
-              <Animated.View
-                key={i}
-                style={[styles.confettiPiece, {
-                  backgroundColor: piece.color,
-                  width: piece.size,
-                  height: piece.size,
-                  borderRadius: piece.size / 2,
-                  transform: [
-                    { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, piece.x] }) },
-                    { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, piece.y] }) },
-                    { scale: progress.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1.2, 0.6] }) },
-                  ],
-                  opacity: progress.interpolate({ inputRange: [0, 0.2, 0.7, 1], outputRange: [0, 1, 1, 0] }),
-                }]}
-              />
-            );
-          })}
+          {confettiPieces.map((piece, i) => (
+            <Animated.View
+              key={i}
+              style={[styles.confettiPiece, {
+                backgroundColor: piece.color,
+                width: piece.size,
+                height: piece.size,
+                borderRadius: piece.size / 2,
+                transform: [
+                  { translateX: confettiAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, piece.x] }) },
+                  { translateY: confettiAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, piece.y] }) },
+                  { scale: confettiAnims[i].interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1.2, 0.6] }) },
+                ],
+                opacity: confettiAnims[i].interpolate({ inputRange: [0, 0.2, 0.7, 1], outputRange: [0, 1, 1, 0] }),
+              }]}
+            />
+          ))}
         </View>
       )}
     </Animated.View>
   );
 }
 
-// ── Past Celebrations Accordion ──
+// ── Sealed Chapter (future period — locked, minimal) ──
 
-function PastCelebrations({
-  milestones,
+function SealedChapter({ period }: { period: DevelopmentalPeriod }) {
+  return (
+    <View style={styles.sealedChapter}>
+      <View style={styles.sealedLeft}>
+        <View style={styles.sealedNode} />
+        <View style={styles.sealedLine} />
+      </View>
+      <View style={styles.sealedContent}>
+        <Text style={styles.sealedTitle}>{period.title}</Text>
+        <Text style={styles.sealedSubtitle}>{period.subtitle}</Text>
+      </View>
+      <Feather name="lock" size={14} color={colors.neutral[300]} />
+    </View>
+  );
+}
+
+// ── Ready Chapter (current period, not yet opened — reveal CTA) ──
+
+function ReadyChapter({
+  period,
+  milestoneCount,
+  onOpen,
 }: {
-  milestones: MilestoneDef[];
+  period: DevelopmentalPeriod;
+  milestoneCount: number;
+  onOpen: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const expandAnim = useRef(new Animated.Value(0)).current;
-  const chevronRotate = expandAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-  const contentMaxHeight = expandAnim.interpolate({ inputRange: [0, 1], outputRange: [0, milestones.length * 52 + 16] });
-  const contentOpacity = expandAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 0, 1] });
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const toggle = useCallback(() => {
-    const toExpanded = !expanded;
-    setExpanded(toExpanded);
-    Animated.spring(expandAnim, {
-      toValue: toExpanded ? 1 : 0,
-      tension: 80,
-      friction: 12,
-      useNativeDriver: false,
-    }).start();
-  }, [expanded, expandAnim]);
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.01, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    pulse.start();
+    return () => { pulse.stop(); };
+  }, [pulseAnim]);
 
   return (
-    <View style={[styles.pastCard, shadows.soft]}>
-      <Pressable onPress={toggle} style={styles.pastHeader}>
-        <SparkleBadge size={16} color="#D4B96A" />
-        <Text style={styles.pastHeaderText}>Past Celebrations ({milestones.length})</Text>
-        <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
-          <Feather name="chevron-down" size={18} color={colors.textTertiary} />
-        </Animated.View>
-      </Pressable>
+    <View style={styles.readyChapter}>
+      {/* Editorial header */}
+      <Text style={styles.chapterTitle}>{period.title}</Text>
+      <Text style={styles.chapterSubtitle}>{period.subtitle}</Text>
 
-      <Animated.View style={{ maxHeight: contentMaxHeight, opacity: contentOpacity, overflow: 'hidden' }}>
-        <View style={styles.pastList}>
-          {milestones.map((m) => (
-            <View key={m.id} style={styles.pastRow}>
-              <View style={styles.pastCheckWrap}>
-                <Feather name="check" size={14} color={colors.primary[500]} />
-              </View>
-              <Text style={styles.pastRowTitle} numberOfLines={1}>{m.title}</Text>
-              <Text style={styles.pastRowWeek}>Week {m.targetWeek}</Text>
-              <SparkleBadge size={12} color="#D4B96A" />
+      {/* Reveal CTA card */}
+      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+        <Pressable onPress={onOpen} style={styles.readyCta}>
+          <View style={styles.readyCtaIcon}>
+            <Feather name="gift" size={22} color={colors.secondary[500]} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.readyCtaText}>
+              Discover {milestoneCount} new moments
+            </Text>
+            <Text style={styles.readyCtaHint}>Tap to reveal this chapter</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.secondary[400]} />
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+// ── Timeline Chapter (editorial timeline — no accordion boxes) ──
+
+function TimelineChapter({
+  period,
+  status,
+  milestones,
+  celebrated,
+  babyName,
+  onCelebrate,
+  onUncelebrate,
+  justOpened,
+}: {
+  period: DevelopmentalPeriod;
+  status: PeriodStatus;
+  milestones: MilestoneDef[];
+  celebrated: Record<string, CelebratedEntry>;
+  babyName: string;
+  onCelebrate: (id: string) => void;
+  onUncelebrate: (id: string) => void;
+  justOpened: boolean;
+}) {
+  const celebratedCount = milestones.filter((m) => m.id in celebrated).length;
+  const isPast = status === 'past';
+
+  // Reveal animation for cards when box is just opened
+  const revealAnims = useRef(milestones.map(() => new Animated.Value(justOpened ? 0 : 1))).current;
+  const [showBoxConfetti, setShowBoxConfetti] = useState(justOpened);
+  const boxConfetti = useRef(generateConfetti(24)).current;
+  const boxConfettiAnims = useRef(boxConfetti.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    if (!justOpened) return;
+
+    // Fire confetti
+    boxConfettiAnims.forEach((a) => a.setValue(0));
+    Animated.parallel(
+      boxConfettiAnims.map((anim, i) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 1000 + Math.random() * 500,
+          delay: i * 25,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ),
+    ).start(() => setShowBoxConfetti(false));
+
+    // Stagger reveal cards
+    Animated.stagger(
+      80,
+      revealAnims.map((anim) =>
+        Animated.spring(anim, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
+      ),
+    ).start();
+  }, [justOpened, revealAnims, boxConfettiAnims]);
+
+  return (
+    <View style={styles.chapterContainer}>
+      {/* ── Editorial Chapter Header ── */}
+      <View style={styles.chapterHeader}>
+        <Text style={styles.chapterTitle}>{period.title}</Text>
+        <View style={styles.chapterMeta}>
+          <Text style={styles.chapterSubtitle}>{period.subtitle}</Text>
+          {celebratedCount > 0 && (
+            <View style={styles.chapterBadge}>
+              <Text style={styles.chapterBadgeText}>
+                {celebratedCount}/{milestones.length}
+              </Text>
             </View>
+          )}
+        </View>
+      </View>
+
+      {/* ── Reassurance — current period only ── */}
+      {!isPast && period.reassurance && (
+        <Text style={styles.chapterReassurance}>{period.reassurance}</Text>
+      )}
+
+      {/* ── Timeline with milestone cards ── */}
+      <View style={styles.timelineContainer}>
+        {milestones.map((m, i) => {
+          const anim = revealAnims[i] ?? new Animated.Value(1);
+          const isCelebrated = m.id in celebrated;
+          const isLast = i === milestones.length - 1;
+
+          return (
+            <Animated.View
+              key={m.id}
+              style={{
+                opacity: anim,
+                transform: [
+                  { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) },
+                  { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+                ],
+              }}
+            >
+              <View style={styles.timelineRow}>
+                {/* Left: line + node */}
+                <View style={styles.timelineLeft}>
+                  <View style={[
+                    styles.timelineNode,
+                    isCelebrated && styles.timelineNodeCelebrated,
+                  ]}>
+                    {isCelebrated && (
+                      <Feather name="check" size={8} color="#FFFFFF" />
+                    )}
+                  </View>
+                  {!isLast && <View style={styles.timelineLine} />}
+                </View>
+
+                {/* Right: milestone card */}
+                <View style={styles.timelineCardWrapper}>
+                  <MilestoneCard
+                    milestone={m}
+                    babyName={babyName}
+                    isCelebrated={isCelebrated}
+                    celebratedEntry={celebrated[m.id]}
+                    onCelebrate={onCelebrate}
+                    onUncelebrate={onUncelebrate}
+                  />
+                </View>
+              </View>
+            </Animated.View>
+          );
+        })}
+      </View>
+
+      {/* Box-open confetti */}
+      {showBoxConfetti && (
+        <View style={styles.boxConfettiContainer} pointerEvents="none">
+          {boxConfetti.map((piece, i) => (
+            <Animated.View
+              key={i}
+              style={[styles.confettiPiece, {
+                backgroundColor: piece.color,
+                width: piece.size,
+                height: piece.size,
+                borderRadius: piece.size / 2,
+                transform: [
+                  { translateX: boxConfettiAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, piece.x] }) },
+                  { translateY: boxConfettiAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0, piece.y] }) },
+                  { scale: boxConfettiAnims[i].interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1.4, 0.5] }) },
+                ],
+                opacity: boxConfettiAnims[i].interpolate({ inputRange: [0, 0.15, 0.7, 1], outputRange: [0, 1, 1, 0] }),
+              }]}
+            />
           ))}
         </View>
-      </Animated.View>
+      )}
     </View>
   );
 }
@@ -256,89 +416,99 @@ function PastCelebrations({
 export default function ProgressScreen() {
   const baby = useBabyStore((s) => s.getActiveBaby());
   const age = useCorrectedAge(baby);
-  const { celebrated, celebrate, hydrate } = useMilestoneStore();
+  const { celebrated, openedBoxes, celebrate, uncelebrate, openBox, hydrate } = useMilestoneStore();
   useEffect(() => { hydrate(); }, [hydrate]);
 
   const babyName = baby?.name ?? 'your baby';
   const effectiveAgeWeeks = Math.floor((age?.effectiveAgeDays ?? 0) / 7);
+  const ageDisplay = age?.forDisplay?.primary ?? '';
+  const isPreterm = age?.isPreterm ?? false;
 
-  // This week's milestones: in range AND not celebrated
-  const thisWeekMilestones = useMemo(() => {
-    return MILESTONES.filter((m) => {
-      const startWeek = Math.floor(m.expectedStartMonth * 4.33);
-      const endWeek = Math.ceil(m.expectedEndMonth * 4.33);
-      return effectiveAgeWeeks >= startWeek && effectiveAgeWeeks <= endWeek
-        && !(m.id in celebrated);
-    }).sort((a, b) => a.targetWeek - b.targetWeek);
-  }, [effectiveAgeWeeks, celebrated]);
+  // Track which box was just opened this session (for animation)
+  const [justOpenedId, setJustOpenedId] = useState<string | null>(null);
 
-  // Past celebrations
-  const celebratedMilestones = useMemo(() => {
-    return MILESTONES
-      .filter((m) => m.id in celebrated)
-      .sort((a, b) => a.targetWeek - b.targetWeek);
-  }, [celebrated]);
+  const handleOpenBox = useCallback((periodId: string) => {
+    openBox(periodId);
+    setJustOpenedId(periodId);
+    // Clear "just opened" flag after animations finish
+    setTimeout(() => setJustOpenedId(null), 2000);
+  }, [openBox]);
 
   const handleCelebrate = useCallback((milestoneId: string) => {
     celebrate(milestoneId);
   }, [celebrate]);
 
-  const ageDisplay = age?.forDisplay?.primary ?? '';
-  const isPreterm = age?.isPreterm ?? false;
+  const handleUncelebrate = useCallback((milestoneId: string) => {
+    uncelebrate(milestoneId);
+  }, [uncelebrate]);
+
+  const totalCelebrated = useMemo(() => Object.keys(celebrated).length, [celebrated]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header — editorial style */}
         <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerIcon}>
-              <Feather name="trending-up" size={18} color={colors.textInverse} />
-            </View>
-            <View>
-              <Text style={styles.screenTitle}>Progress</Text>
-              {ageDisplay ? <Text style={styles.ageLabel}>{ageDisplay}{isPreterm ? ' (corrected)' : ''}</Text> : null}
-            </View>
+          <Text style={styles.screenTitle}>{babyName}'s Milestones</Text>
+          <View style={styles.headerMeta}>
+            {ageDisplay ? (
+              <Text style={styles.ageLabel}>{ageDisplay}{isPreterm ? ' (corrected)' : ''}</Text>
+            ) : null}
+            {totalCelebrated > 0 && (
+              <Text style={styles.celebrationSummaryText}>
+                {' · '}{totalCelebrated} moment{totalCelebrated !== 1 ? 's' : ''} noticed
+              </Text>
+            )}
           </View>
         </View>
 
-        {/* Hero: Week X — What to Watch For */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Week {effectiveAgeWeeks}</Text>
-          <Text style={styles.heroSubtitle}>What to Watch For</Text>
-        </View>
+        {/* Boxes */}
+        {PERIODS.map((period) => {
+          const status = getPeriodStatus(period, effectiveAgeWeeks);
+          const milestones = getMilestonesForPeriod(period);
+          const isOpened = period.id in openedBoxes;
 
-        {/* This week's milestones or "all caught up" */}
-        {thisWeekMilestones.length === 0 ? (
-          <View style={[styles.caughtUpCard, shadows.soft]}>
-            <LeafBadge size={28} color={colors.primary[400]} />
-            <Text style={styles.caughtUpTitle}>All caught up!</Text>
-            <Text style={styles.caughtUpBody}>
-              No new milestones to watch for this week. Enjoy the moment — {babyName} is doing great.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.milestoneList}>
-            {thisWeekMilestones.map((m) => (
-              <MicroMilestoneCard
-                key={m.id}
-                milestone={m}
-                babyName={babyName}
-                onCelebrate={handleCelebrate}
+          // Past periods are auto-opened
+          const effectivelyOpened = status === 'past' || isOpened;
+
+          if (status === 'upcoming') {
+            return <SealedChapter key={period.id} period={period} />;
+          }
+
+          if (status === 'current' && !isOpened) {
+            return (
+              <ReadyChapter
+                key={period.id}
+                period={period}
+                milestoneCount={milestones.length}
+                onOpen={() => handleOpenBox(period.id)}
               />
-            ))}
-          </View>
-        )}
+            );
+          }
 
-        {/* Past Celebrations */}
-        {celebratedMilestones.length > 0 && (
-          <PastCelebrations milestones={celebratedMilestones} />
-        )}
+          return (
+            <TimelineChapter
+              key={period.id}
+              period={period}
+              status={status}
+              milestones={milestones}
+              celebrated={celebrated}
+              babyName={babyName}
+              onCelebrate={handleCelebrate}
+              onUncelebrate={handleUncelebrate}
+              justOpened={justOpenedId === period.id}
+            />
+          );
+        })}
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Remember: developmental ranges are wide and normal.{'\n'}Your baby is exactly where they need to be.
+            Every baby unfolds at their own pace.{'\n'}
+            {babyName} is right on time.
+          </Text>
+          <Text style={styles.footerSource}>
+            Based on CDC 2022, WHO, AAP & Pathways.org
           </Text>
         </View>
 
@@ -348,60 +518,320 @@ export default function ProgressScreen() {
   );
 }
 
+// ── Styles ──
+
 const styles = StyleSheet.create({
-  // ── Layout ──
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
 
-  // ── Header ──
-  header: { marginBottom: spacing.lg },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  headerIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary[500], justifyContent: 'center', alignItems: 'center', ...shadows.sm },
-  screenTitle: { fontSize: typography.fontSize['2xl'], fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  ageLabel: { fontSize: typography.fontSize.sm, color: colors.primary[600], fontWeight: typography.fontWeight.medium, marginTop: 1 },
+  // Header — editorial
+  header: { marginBottom: spacing.xl, paddingTop: spacing.sm },
+  screenTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  ageLabel: {
+    fontSize: typography.fontSize.base,
+    color: colors.primary[600],
+    fontWeight: typography.fontWeight.medium,
+  },
+  celebrationSummaryText: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.medium,
+  },
 
-  // ── Hero section ──
-  heroSection: { marginBottom: spacing.lg },
-  heroTitle: { fontFamily: SERIF_FONT, fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary },
-  heroSubtitle: { fontSize: typography.fontSize.base, color: colors.textSecondary, marginTop: spacing.xs },
+  // ── Editorial Chapter Header ──
+  chapterContainer: {
+    marginBottom: spacing.xl,
+  },
+  chapterHeader: {
+    marginBottom: spacing.sm,
+  },
+  chapterTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  chapterMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: 4,
+  },
+  chapterSubtitle: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+  },
+  chapterBadge: {
+    backgroundColor: colors.primary[100],
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 12,
+  },
+  chapterBadgeText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: '600',
+    color: colors.primary[700],
+  },
+  chapterReassurance: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    marginBottom: spacing.md,
+  },
 
-  // ── Caught up card ──
-  caughtUpCard: { backgroundColor: colors.surface, borderRadius: borderRadius['2xl'], padding: spacing.xl, alignItems: 'center', marginBottom: spacing['2xl'], gap: spacing.sm },
-  caughtUpTitle: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary },
-  caughtUpBody: { fontSize: typography.fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed },
+  // ── Timeline ──
+  timelineContainer: {
+    marginTop: spacing.md,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  timelineLeft: {
+    width: 28,
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  timelineNode: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary[200],
+    borderWidth: 2,
+    borderColor: colors.primary[300],
+    marginTop: 22,
+    zIndex: 1,
+  },
+  timelineNodeCelebrated: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary[500],
+    borderColor: colors.primary[500],
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: colors.primary[100],
+    marginTop: -1,
+  },
+  timelineCardWrapper: {
+    flex: 1,
+    paddingBottom: spacing.base,
+  },
 
-  // ── Milestone list ──
-  milestoneList: { gap: spacing.base, marginBottom: spacing['2xl'] },
+  // ── Sealed Chapter (future, locked) ──
+  sealedChapter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    opacity: 0.55,
+    paddingVertical: spacing.sm,
+  },
+  sealedLeft: {
+    width: 28,
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  sealedNode: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.neutral[200],
+    borderWidth: 2,
+    borderColor: colors.neutral[300],
+  },
+  sealedLine: {
+    width: 2,
+    height: 24,
+    backgroundColor: colors.neutral[200],
+    marginTop: 4,
+  },
+  sealedContent: {
+    flex: 1,
+  },
+  sealedTitle: {
+    fontFamily: SERIF_FONT,
+    fontSize: typography.fontSize.lg,
+    fontWeight: '700',
+    color: colors.neutral[400],
+  },
+  sealedSubtitle: {
+    fontSize: typography.fontSize.sm,
+    color: colors.neutral[400],
+    marginTop: 2,
+  },
 
-  // ── MicroMilestoneCard ──
-  microCard: { borderRadius: borderRadius['2xl'], backgroundColor: colors.surface, overflow: 'hidden' },
-  microCardBorder: { borderLeftWidth: 4, borderLeftColor: colors.primary[400], padding: spacing.base },
-  microCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  domainBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  microCardTitle: { flex: 1, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary },
-  celebrateCircle: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: colors.primary[300], alignItems: 'center', justifyContent: 'center' },
-  celebrateCircleInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary[100] },
-  observationPrompt: { fontSize: typography.fontSize.sm, color: colors.textSecondary, lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed, marginTop: spacing.md, fontStyle: 'italic' },
-  tipToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md, paddingVertical: spacing.xs },
-  tipToggleLabel: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.primary[700] },
-  nurseTipCard: { backgroundColor: colors.primary[50], borderRadius: borderRadius.xl, padding: spacing.md, marginTop: spacing.sm },
-  nurseTipText: { fontSize: typography.fontSize.sm, color: colors.primary[700], lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed },
+  // ── Ready Chapter (current, not yet revealed) ──
+  readyChapter: {
+    marginBottom: spacing.xl,
+  },
+  readyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+    gap: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: colors.secondary[200],
+  },
+  readyCtaIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: colors.secondary[50],
+    alignItems: 'center', justifyContent: 'center',
+  },
+  readyCtaText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.secondary[600],
+  },
+  readyCtaHint: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
 
-  // ── Past Celebrations ──
-  pastCard: { backgroundColor: colors.surface, borderRadius: borderRadius['2xl'], overflow: 'hidden', marginBottom: spacing['2xl'] },
-  pastHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.base },
-  pastHeaderText: { flex: 1, fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary },
-  pastList: { paddingHorizontal: spacing.base, paddingBottom: spacing.base },
-  pastRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral[100] },
-  pastCheckWrap: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center' },
-  pastRowTitle: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.textPrimary },
-  pastRowWeek: { fontSize: typography.fontSize.xs, color: colors.textTertiary },
+  // Milestone card — premium floating journal card
+  milestoneCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  domainBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cardTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2C2C2E',
+  },
+  observationPrompt: {
+    fontSize: 15,
+    color: '#48484A',
+    lineHeight: 22,
+    marginTop: spacing.md,
+  },
 
-  // ── Confetti ──
+  // Lumina's Tip — inline, light
+  nurseTipRow: {
+    marginTop: spacing.md,
+  },
+  nurseTipLabel: {
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  nurseTipText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    lineHeight: 20,
+  },
+
+  // CTA — refined pill, left-aligned
+  celebrateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: spacing.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: colors.primary[50],
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+  },
+  celebrateButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary[700],
+  },
+  achievedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: colors.primary[50],
+    borderRadius: 20,
+  },
+  achievedText: {
+    fontSize: 14,
+    color: colors.primary[600],
+    fontWeight: '500',
+  },
+  undoText: {
+    fontSize: 13,
+    color: colors.textTertiary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+
+  // Confetti (milestone-level)
   confettiContainer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   confettiPiece: { position: 'absolute' },
 
-  // ── Footer ──
-  footer: { alignItems: 'center', paddingVertical: spacing['2xl'], paddingHorizontal: spacing.xl },
-  footerText: { fontFamily: SERIF_FONT, fontSize: typography.fontSize.sm, fontStyle: 'italic', color: colors.textTertiary, textAlign: 'center', lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed },
+  // Confetti (box-level)
+  boxConfettiContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    top: 0,
+    overflow: 'visible',
+  },
+
+  // Footer
+  footer: {
+    alignItems: 'center',
+    paddingVertical: spacing['2xl'],
+    paddingHorizontal: spacing.xl,
+  },
+  footerText: {
+    fontFamily: SERIF_FONT,
+    fontSize: typography.fontSize.base,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+  },
+  footerSource: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    opacity: 0.6,
+  },
 });

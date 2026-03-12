@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Chart Data Hook
+// Lumina — Growth Chart Data Hook
 // Prepares chart-ready data from growth store
 // ============================================================
 

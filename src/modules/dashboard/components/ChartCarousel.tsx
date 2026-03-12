@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Chart Carousel
+// Lumina — Chart Carousel
 // Horizontal paging ScrollView with 3 chart cards + dots
 // ============================================================
 
@@ -13,7 +13,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { HabitsChart } from './HabitsChart';
 import { SleepChart } from './SleepChart';
 import { GrowthPercentileChart } from './GrowthPercentileChart';
@@ -78,17 +78,17 @@ export function ChartCarousel({ data, todayFeeds, todayWet, todayDirty }: ChartC
           <HabitsChart data={data.habits} />
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Feather name="coffee" size={13} color={UI.textMuted} />
+              <Feather name="droplet" size={13} color={UI.textMuted} />
               <Text style={styles.statText}>{todayFeeds} feeds</Text>
             </View>
             <View style={styles.statDot} />
             <View style={styles.stat}>
-              <Feather name="droplet" size={13} color={UI.textMuted} />
+              <MaterialCommunityIcons name="human-baby-changing-table" size={13} color={UI.textMuted} />
               <Text style={styles.statText}>{todayWet} wet</Text>
             </View>
             <View style={styles.statDot} />
             <View style={styles.stat}>
-              <Feather name="cloud" size={13} color={UI.textMuted} />
+              <MaterialCommunityIcons name="human-baby-changing-table" size={13} color={UI.textMuted} />
               <Text style={styles.statText}>{todayDirty} dirty</Text>
             </View>
           </View>

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Generic Offline-First Synced Store Factory
+// Lumina — Generic Offline-First Synced Store Factory
 // Zustand + AsyncStorage persistence with sync queue
 // ============================================================
 

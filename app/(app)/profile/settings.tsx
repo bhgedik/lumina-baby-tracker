@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Settings Screen
+// Lumina — Settings Screen
 // Notifications, units, privacy — offline-first
 // ============================================================
 
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Privacy</Text>
         <Pressable
           style={[styles.card, shadows.sm, styles.linkRow]}
-          onPress={() => Linking.openURL('https://sprout.app/privacy')}
+          onPress={() => Linking.openURL('https://lumina.app/privacy')}
         >
           <View style={styles.linkContent}>
             <Feather name="shield" size={18} color={colors.textSecondary} />

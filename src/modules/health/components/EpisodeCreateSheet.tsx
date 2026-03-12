@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Episode Create Sheet
+// Lumina — Episode Create Sheet
 // Bottom sheet for starting a new illness episode
 // Quick-pick illness type cards for fast episode creation
 // ============================================================

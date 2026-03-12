@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Insight Chat Service
+// Lumina — Insight Chat Service
 // Client-side interface to the ai-chat edge function
 // Falls back gracefully when offline or Supabase not configured
 // ============================================================

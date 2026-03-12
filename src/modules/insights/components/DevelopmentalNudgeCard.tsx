@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Developmental Nudge Card
+// Lumina — Developmental Nudge Card
 // Premium card for expert developmental insights from Supabase
 // Distinct aesthetic from InsightCard: no accent bar, rounded
 // visual placeholder, dismiss via X button

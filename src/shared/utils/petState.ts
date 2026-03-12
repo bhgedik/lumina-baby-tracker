@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Pet State Resolver
+// Lumina — Pet State Resolver
 // Maps elapsed hours since last log → pet expression + colors
 // ============================================================
 

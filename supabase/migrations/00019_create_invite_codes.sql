@@ -1,5 +1,5 @@
 -- ============================================================
--- Sprout — Invite Codes
+-- Lumina — Invite Codes
 -- Partner/caregiver invite system with 6-char codes
 -- ============================================================
 

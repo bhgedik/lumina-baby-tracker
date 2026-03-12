@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Prep Suggestions Service
+// Lumina — Prep Suggestions Service
 // Calls the Supabase Edge Function for AI-generated suggestions
 // Falls back to local curated pool when offline
 // ============================================================

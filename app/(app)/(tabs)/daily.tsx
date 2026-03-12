@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Daily Intelligence Dashboard
+// Lumina — Daily Intelligence Dashboard
 // Personalized AI hub: health check → smart feed
 // Clean editorial layout, no category tabs
 // ============================================================
@@ -154,7 +154,7 @@ function generateSmartSuggestions(
       tint: '#A08B6E',
       visualGuide: {
         type: 'step_by_step',
-        media_url: 'https://placeholder.sprouty.app/guides/early-feeding',
+        media_url: 'https://placeholder.lumina.app/guides/early-feeding',
         action_text: 'Early feeding basics',
         steps: [
           { step: 1, instruction: 'Watch for feeding cues: rooting, lip smacking, hand-to-mouth', icon: 'eye' },
@@ -206,7 +206,7 @@ function generateSmartSuggestions(
       tint: UI.warmTint,
       visualGuide: {
         type: 'step_by_step',
-        media_url: 'https://placeholder.sprouty.app/guides/wake-windows',
+        media_url: 'https://placeholder.lumina.app/guides/wake-windows',
         action_text: 'Spotting drowsy cues',
         steps: [
           { step: 1, instruction: 'Watch for yawning, eye rubbing, or looking away', icon: 'eye' },
@@ -396,7 +396,7 @@ export default function DailyScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

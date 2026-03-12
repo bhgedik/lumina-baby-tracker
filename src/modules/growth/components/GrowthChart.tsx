@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Chart (SVG)
+// Lumina — Growth Chart (SVG)
 // Interactive chart with WHO percentile bands + baby's data line
 // Tap data points for exact percentile & measurement tooltip
 // ============================================================

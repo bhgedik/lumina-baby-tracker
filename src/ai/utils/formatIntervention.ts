@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Intervention Message Formatter
+// Lumina — Intervention Message Formatter
 // Maps trigger IDs from evaluateIntervention() to
 // human-readable nurse nudge messages for InsightToast.
 // ============================================================

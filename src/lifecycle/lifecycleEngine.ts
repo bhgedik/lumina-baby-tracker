@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Lifecycle Stage Engine
+// Lumina — Lifecycle Stage Engine
 // Determines the current developmental stage based on corrected age.
 // Drives content targeting, AI prompt selection, and UI theming.
 // ============================================================

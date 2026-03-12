@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Insights Data Hook
+// Lumina — Insights Data Hook
 // Cross-references ALL stores to generate smart insight cards
 // Combines static nurse knowledge + live pattern detection
 // ============================================================

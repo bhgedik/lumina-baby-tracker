@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Celebration Interstitial
+// Lumina — Celebration Interstitial
 // Premium SVG illustration + elegant botanical particles
 // for the "I Had My Baby!" flow
 // ============================================================

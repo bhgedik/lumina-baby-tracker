@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Create Account (Post-Paywall Auth)
+// Lumina — Create Account (Post-Paywall Auth)
 // Personalized auth screen — flushes onboarding data on success
 // ============================================================
 
@@ -102,7 +102,7 @@ export default function CreateAccountScreen() {
     if (!isSupabaseConfigured) {
       await flushOnboardingToStores({
         userId: 'dev-user-id',
-        userEmail: 'dev@sprouty.app',
+        userEmail: 'dev@lumina.app',
       });
       router.replace('/(app)/(tabs)/home');
     }

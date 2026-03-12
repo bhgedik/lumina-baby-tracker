@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Wake Window Indicator
+// Lumina — Wake Window Indicator
 // Color-coded progress bar: green→yellow→red
 // ============================================================
 

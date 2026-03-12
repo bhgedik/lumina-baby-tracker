@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Onboarding Store (Zustand)
+// Lumina — Onboarding Store (Zustand)
 // Accumulates data across onboarding steps, persists locally
 // ============================================================
 

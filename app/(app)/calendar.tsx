@@ -10,9 +10,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
-import { SleepTimeline, type TimelineDay } from '../../src/modules/insights/components/SleepTimeline';
 import { SleepTrendLine, type TrendDay } from '../../src/modules/insights/components/SleepTrendLine';
 import { GroundedBarChart } from '../../src/modules/insights/components/GroundedBarChart';
+import { WeeklyPatternGrid, type PatternDay } from '../../src/modules/insights/components/WeeklyPatternGrid';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
@@ -46,98 +46,254 @@ const SAMPLE_EVENTS = [
 
 // ── Weekly dummy data ──
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const BREAST_COLOR = '#E8A87C';
+const FORMULA_COLOR = '#D4874E';
+const NIGHT_COLOR = '#4A5899';
+const NAP_COLOR = '#A2B4E8';
+const WET_COLOR = EVENT_TYPES.diaper.color;
+const DIRTY_COLOR = '#C4B8A8';
 
-const WEEKLY_SLEEP = [
-  { day: 'Mon', totalHrs: 14.5, naps: 4, nightHrs: 10 },
-  { day: 'Tue', totalHrs: 15.2, naps: 3, nightHrs: 10.5 },
-  { day: 'Wed', totalHrs: 13.8, naps: 4, nightHrs: 9.5 },
-  { day: 'Thu', totalHrs: 14.0, naps: 3, nightHrs: 10 },
-  { day: 'Fri', totalHrs: 15.5, naps: 4, nightHrs: 11 },
-  { day: 'Sat', totalHrs: 14.2, naps: 3, nightHrs: 10 },
-  { day: 'Sun', totalHrs: 14.8, naps: 4, nightHrs: 10.5 },
+// Unified weekly pattern data — all events with timestamps
+const WEEKLY_PATTERN_DATA: PatternDay[] = [
+  {
+    label: 'Mon',
+    sleep: [
+      { startHour: 19.5, endHour: 6, type: 'night' },
+      { startHour: 9, endHour: 10.25, type: 'nap' },
+      { startHour: 13, endHour: 14.5, type: 'nap' },
+      { startHour: 16.5, endHour: 17.25, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6.5, type: 'breast', detail: '15 min L' },
+      { hour: 8.5, type: 'bottle', detail: '120 ml' },
+      { hour: 11, type: 'breast', detail: '12 min R' },
+      { hour: 14.5, type: 'bottle', detail: '90 ml' },
+      { hour: 17.5, type: 'breast', detail: '10 min L' },
+      { hour: 19, type: 'bottle', detail: '120 ml' },
+      { hour: 23, type: 'breast', detail: '8 min R' },
+      { hour: 3, type: 'breast', detail: '10 min L' },
+    ],
+    diapers: [
+      { hour: 6.25, type: 'wet' },
+      { hour: 9, type: 'dirty' },
+      { hour: 11.5, type: 'wet' },
+      { hour: 14, type: 'wet' },
+      { hour: 16, type: 'dirty' },
+      { hour: 18.5, type: 'wet' },
+      { hour: 21, type: 'wet' },
+      { hour: 1, type: 'wet' },
+      { hour: 4, type: 'dirty' },
+    ],
+  },
+  {
+    label: 'Tue',
+    sleep: [
+      { startHour: 19, endHour: 5.5, type: 'night' },
+      { startHour: 8.5, endHour: 9.75, type: 'nap' },
+      { startHour: 12.5, endHour: 14.5, type: 'nap' },
+      { startHour: 16, endHour: 17, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6, type: 'breast', detail: '14 min R' },
+      { hour: 10, type: 'bottle', detail: '110 ml' },
+      { hour: 12, type: 'breast', detail: '12 min L' },
+      { hour: 15, type: 'bottle', detail: '100 ml' },
+      { hour: 17.5, type: 'breast', detail: '10 min R' },
+      { hour: 18.75, type: 'bottle', detail: '130 ml' },
+      { hour: 22.5, type: 'breast', detail: '8 min L' },
+    ],
+    diapers: [
+      { hour: 6.5, type: 'wet' },
+      { hour: 8, type: 'dirty' },
+      { hour: 10.5, type: 'wet' },
+      { hour: 13, type: 'wet' },
+      { hour: 15.5, type: 'wet' },
+      { hour: 17, type: 'dirty' },
+      { hour: 20, type: 'wet' },
+      { hour: 23, type: 'wet' },
+      { hour: 3.5, type: 'wet' },
+    ],
+  },
+  {
+    label: 'Wed',
+    sleep: [
+      { startHour: 20, endHour: 5.5, type: 'night' },
+      { startHour: 9, endHour: 10, type: 'nap' },
+      { startHour: 13, endHour: 14, type: 'nap' },
+      { startHour: 16, endHour: 16.75, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6, type: 'breast', detail: '15 min L' },
+      { hour: 8, type: 'bottle', detail: '100 ml' },
+      { hour: 10.5, type: 'breast', detail: '13 min R' },
+      { hour: 12.5, type: 'bottle', detail: '110 ml' },
+      { hour: 14.5, type: 'breast', detail: '10 min L' },
+      { hour: 17, type: 'breast', detail: '12 min R' },
+      { hour: 19.5, type: 'bottle', detail: '130 ml' },
+      { hour: 23, type: 'breast', detail: '8 min L' },
+      { hour: 3, type: 'breast', detail: '10 min R' },
+    ],
+    diapers: [
+      { hour: 7, type: 'wet' },
+      { hour: 9.5, type: 'dirty' },
+      { hour: 11, type: 'wet' },
+      { hour: 14, type: 'dirty' },
+      { hour: 16.5, type: 'wet' },
+      { hour: 19, type: 'wet' },
+      { hour: 22, type: 'dirty' },
+      { hour: 2, type: 'wet' },
+    ],
+  },
+  {
+    label: 'Thu',
+    sleep: [
+      { startHour: 19.5, endHour: 6, type: 'night' },
+      { startHour: 9.5, endHour: 10.5, type: 'nap' },
+      { startHour: 13.5, endHour: 14.5, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6.5, type: 'breast', detail: '12 min R' },
+      { hour: 8.5, type: 'bottle', detail: '120 ml' },
+      { hour: 11, type: 'breast', detail: '15 min L' },
+      { hour: 15, type: 'bottle', detail: '100 ml' },
+      { hour: 17, type: 'breast', detail: '10 min R' },
+      { hour: 19, type: 'bottle', detail: '130 ml' },
+      { hour: 23.5, type: 'breast', detail: '8 min L' },
+      { hour: 3.5, type: 'breast', detail: '10 min R' },
+    ],
+    diapers: [
+      { hour: 6, type: 'wet' },
+      { hour: 8, type: 'dirty' },
+      { hour: 10, type: 'wet' },
+      { hour: 13, type: 'wet' },
+      { hour: 15, type: 'wet' },
+      { hour: 18, type: 'dirty' },
+      { hour: 21, type: 'wet' },
+      { hour: 1, type: 'wet' },
+    ],
+  },
+  {
+    label: 'Fri',
+    sleep: [
+      { startHour: 19, endHour: 6.5, type: 'night' },
+      { startHour: 9, endHour: 10.5, type: 'nap' },
+      { startHour: 13, endHour: 15, type: 'nap' },
+      { startHour: 16.5, endHour: 17, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 7, type: 'breast', detail: '14 min L' },
+      { hour: 10.75, type: 'bottle', detail: '110 ml' },
+      { hour: 12.5, type: 'breast', detail: '12 min R' },
+      { hour: 15.5, type: 'bottle', detail: '100 ml' },
+      { hour: 17.5, type: 'breast', detail: '10 min L' },
+      { hour: 18.75, type: 'bottle', detail: '120 ml' },
+      { hour: 22, type: 'breast', detail: '8 min R' },
+    ],
+    diapers: [
+      { hour: 7, type: 'wet' },
+      { hour: 9.5, type: 'dirty' },
+      { hour: 11, type: 'wet' },
+      { hour: 13.5, type: 'wet' },
+      { hour: 15, type: 'dirty' },
+      { hour: 17, type: 'wet' },
+      { hour: 19.5, type: 'wet' },
+      { hour: 22, type: 'dirty' },
+      { hour: 2, type: 'wet' },
+      { hour: 4.5, type: 'wet' },
+    ],
+  },
+  {
+    label: 'Sat',
+    sleep: [
+      { startHour: 19.5, endHour: 6, type: 'night' },
+      { startHour: 9.5, endHour: 10.25, type: 'nap' },
+      { startHour: 13, endHour: 14.5, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6.5, type: 'breast', detail: '15 min R' },
+      { hour: 8.5, type: 'bottle', detail: '120 ml' },
+      { hour: 11, type: 'breast', detail: '12 min L' },
+      { hour: 14.75, type: 'bottle', detail: '100 ml' },
+      { hour: 17, type: 'breast', detail: '10 min R' },
+      { hour: 19, type: 'bottle', detail: '130 ml' },
+      { hour: 23, type: 'breast', detail: '8 min L' },
+      { hour: 3, type: 'breast', detail: '10 min R' },
+    ],
+    diapers: [
+      { hour: 7, type: 'wet' },
+      { hour: 9, type: 'dirty' },
+      { hour: 11, type: 'wet' },
+      { hour: 14, type: 'wet' },
+      { hour: 17, type: 'dirty' },
+      { hour: 20, type: 'wet' },
+      { hour: 23, type: 'wet' },
+      { hour: 3.5, type: 'wet' },
+    ],
+  },
+  {
+    label: 'Sun',
+    sleep: [
+      { startHour: 19, endHour: 6, type: 'night' },
+      { startHour: 9, endHour: 10.5, type: 'nap' },
+      { startHour: 13, endHour: 14.75, type: 'nap' },
+      { startHour: 16.5, endHour: 17.25, type: 'nap' },
+    ],
+    feeds: [
+      { hour: 6.5, type: 'breast', detail: '14 min L' },
+      { hour: 8.5, type: 'bottle', detail: '110 ml' },
+      { hour: 11, type: 'breast', detail: '12 min R' },
+      { hour: 15, type: 'bottle', detail: '100 ml' },
+      { hour: 17.5, type: 'breast', detail: '10 min L' },
+      { hour: 19, type: 'bottle', detail: '120 ml' },
+      { hour: 22.5, type: 'breast', detail: '8 min R' },
+      { hour: 3, type: 'breast', detail: '10 min L' },
+    ],
+    diapers: [
+      { hour: 6.5, type: 'wet' },
+      { hour: 9, type: 'dirty' },
+      { hour: 11.5, type: 'wet' },
+      { hour: 14, type: 'wet' },
+      { hour: 16, type: 'dirty' },
+      { hour: 18.5, type: 'wet' },
+      { hour: 21, type: 'wet' },
+      { hour: 0.5, type: 'wet' },
+      { hour: 4, type: 'dirty' },
+    ],
+  },
 ];
 
-// Timeline data — shows WHEN sleep happened each day
-const WEEKLY_SLEEP_TIMELINE: TimelineDay[] = [
-  { label: 'Mon', events: [
-    { startHour: 19.5, endHour: 6, type: 'night' },
-    { startHour: 9, endHour: 10.25, type: 'nap' },
-    { startHour: 13, endHour: 14.5, type: 'nap' },
-    { startHour: 16.5, endHour: 17.25, type: 'nap' },
-  ]},
-  { label: 'Tue', events: [
-    { startHour: 19, endHour: 5.5, type: 'night' },
-    { startHour: 8.5, endHour: 9.75, type: 'nap' },
-    { startHour: 12.5, endHour: 14.5, type: 'nap' },
-    { startHour: 16, endHour: 17, type: 'nap' },
-  ]},
-  { label: 'Wed', events: [
-    { startHour: 20, endHour: 5.5, type: 'night' },
-    { startHour: 9, endHour: 10, type: 'nap' },
-    { startHour: 13, endHour: 14, type: 'nap' },
-    { startHour: 16, endHour: 16.75, type: 'nap' },
-  ]},
-  { label: 'Thu', events: [
-    { startHour: 19.5, endHour: 6, type: 'night' },
-    { startHour: 9.5, endHour: 10.5, type: 'nap' },
-    { startHour: 13.5, endHour: 14.5, type: 'nap' },
-  ]},
-  { label: 'Fri', events: [
-    { startHour: 19, endHour: 6.5, type: 'night' },
-    { startHour: 9, endHour: 10.5, type: 'nap' },
-    { startHour: 13, endHour: 15, type: 'nap' },
-    { startHour: 16.5, endHour: 17, type: 'nap' },
-  ]},
-  { label: 'Sat', events: [
-    { startHour: 19.5, endHour: 6, type: 'night' },
-    { startHour: 9.5, endHour: 10.25, type: 'nap' },
-    { startHour: 13, endHour: 14.5, type: 'nap' },
-  ]},
-  { label: 'Sun', events: [
-    { startHour: 19, endHour: 6, type: 'night' },
-    { startHour: 9, endHour: 10.5, type: 'nap' },
-    { startHour: 13, endHour: 14.75, type: 'nap' },
-    { startHour: 16.5, endHour: 17.25, type: 'nap' },
-  ]},
-];
+// Derived aggregates for metrics
+const WEEKLY_SLEEP_AGG = WEEKLY_PATTERN_DATA.map((d) => {
+  let nightHrs = 0;
+  let napHrs = 0;
+  let napCount = 0;
+  d.sleep.forEach((s) => {
+    let startW = s.startHour < 6 ? s.startHour + 24 : s.startHour;
+    let endW = s.endHour < 6 ? s.endHour + 24 : s.endHour;
+    if (endW <= startW) endW += 24;
+    const dur = endW - startW;
+    if (s.type === 'night') nightHrs += dur;
+    else { napHrs += dur; napCount++; }
+  });
+  return { day: d.label, totalHrs: nightHrs + napHrs, nightHrs, napHrs, napCount };
+});
 
-// Trend data — total hours per day for the line chart
-const WEEKLY_SLEEP_TREND: TrendDay[] = WEEKLY_SLEEP.map((d) => ({
+const WEEKLY_SLEEP_TREND: TrendDay[] = WEEKLY_SLEEP_AGG.map((d) => ({
   label: d.day,
   totalHours: d.totalHrs,
 }));
 
-const WEEKLY_FEEDS = [
-  { day: 'Mon', breast: 5, bottle: 3, breastMin: 68, formulaMl: 270 },
-  { day: 'Tue', breast: 4, bottle: 3, breastMin: 55, formulaMl: 240 },
-  { day: 'Wed', breast: 6, bottle: 3, breastMin: 82, formulaMl: 260 },
-  { day: 'Thu', breast: 5, bottle: 3, breastMin: 65, formulaMl: 280 },
-  { day: 'Fri', breast: 4, bottle: 3, breastMin: 52, formulaMl: 250 },
-  { day: 'Sat', breast: 5, bottle: 3, breastMin: 70, formulaMl: 270 },
-  { day: 'Sun', breast: 5, bottle: 3, breastMin: 66, formulaMl: 260 },
-];
+const WEEKLY_FEEDS_AGG = WEEKLY_PATTERN_DATA.map((d) => {
+  const breast = d.feeds.filter((f) => f.type === 'breast').length;
+  const bottle = d.feeds.filter((f) => f.type === 'bottle').length;
+  return { day: d.label, breast, bottle, total: breast + bottle };
+});
 
-const BREAST_COLOR = '#E8A87C';
-const FORMULA_COLOR = '#D4874E';
-
-// Sleep colors — Apple Health inspired
-const NIGHT_COLOR = '#4A5899';
-const NAP_COLOR = '#A2B4E8';
-
-// Diaper colors
-const WET_COLOR = EVENT_TYPES.diaper.color;
-const DIRTY_COLOR = '#C4B8A8';
-
-const WEEKLY_DIAPERS = [
-  { day: 'Mon', wet: 6, dirty: 3 },
-  { day: 'Tue', wet: 7, dirty: 2 },
-  { day: 'Wed', wet: 5, dirty: 3 },
-  { day: 'Thu', wet: 6, dirty: 2 },
-  { day: 'Fri', wet: 7, dirty: 3 },
-  { day: 'Sat', wet: 6, dirty: 2 },
-  { day: 'Sun', wet: 6, dirty: 3 },
-];
+const WEEKLY_DIAPERS_AGG = WEEKLY_PATTERN_DATA.map((d) => {
+  const wet = d.diapers.filter((dp) => dp.type === 'wet').length;
+  const dirty = d.diapers.filter((dp) => dp.type === 'dirty').length;
+  return { day: d.label, wet, dirty, total: wet + dirty };
+});
 
 // ── Data Grid Cell ──
 
@@ -150,23 +306,21 @@ function DataCell({ label, value, color }: { label: string; value: string; color
   );
 }
 
-// ── Weekly View (Apple Health / Oura inspired) ──
+// ── Weekly View (Huckleberry-style unified grid) ──
 
 function WeeklyView() {
-  // ── Sleep analytics ──
-  const totalSleepWeek = WEEKLY_SLEEP.reduce((s, d) => s + d.totalHrs, 0);
-  const totalNightWeek = WEEKLY_SLEEP.reduce((s, d) => s + d.nightHrs, 0);
-  const totalNapHrsWeek = WEEKLY_SLEEP.reduce((s, d) => s + (d.totalHrs - d.nightHrs), 0);
-  const totalNapCountWeek = WEEKLY_SLEEP.reduce((s, d) => s + d.naps, 0);
+  // ── Aggregated analytics ──
+  const totalSleepWeek = WEEKLY_SLEEP_AGG.reduce((s, d) => s + d.totalHrs, 0);
+  const totalNightWeek = WEEKLY_SLEEP_AGG.reduce((s, d) => s + d.nightHrs, 0);
+  const totalNapHrsWeek = WEEKLY_SLEEP_AGG.reduce((s, d) => s + d.napHrs, 0);
+  const totalNapCountWeek = WEEKLY_SLEEP_AGG.reduce((s, d) => s + d.napCount, 0);
   const avgSleepTotal = totalSleepWeek / 7;
   const avgNight = totalNightWeek / 7;
   const avgNapHrs = totalNapHrsWeek / 7;
   const avgNapCount = (totalNapCountWeek / 7).toFixed(1);
-  // ── Feeds analytics (sessions only — no mixed units) ──
-  const avgBreastMin = Math.round(WEEKLY_FEEDS.reduce((s, d) => s + d.breastMin, 0) / 7);
-  const avgFormulaMl = Math.round(WEEKLY_FEEDS.reduce((s, d) => s + d.formulaMl, 0) / 7);
+  const avgFeeds = (WEEKLY_FEEDS_AGG.reduce((s, d) => s + d.total, 0) / 7).toFixed(1);
+  const avgDiapers = Math.round(WEEKLY_DIAPERS_AGG.reduce((s, d) => s + d.total, 0) / 7);
 
-  // Format hours + minutes
   const fmtHM = (hrs: number) => {
     const h = Math.floor(hrs);
     const m = Math.round((hrs - h) * 60);
@@ -193,7 +347,7 @@ function WeeklyView() {
           <View style={styles.insightBullet}>
             <View style={[styles.insightBulletDot, { backgroundColor: EVENT_TYPES.feed.color }]} />
             <Text style={styles.insightBulletText}>
-              Wednesday had the most feeds (9). Consider whether a growth spurt is happening.
+              Wednesday had the most feeds ({Math.max(...WEEKLY_FEEDS_AGG.map(d => d.total))}). Consider whether a growth spurt is happening.
             </Text>
           </View>
           <View style={styles.insightBullet}>
@@ -205,28 +359,34 @@ function WeeklyView() {
         </View>
       </View>
 
-      {/* ── Sleep Schedule (Timeline — shows WHEN sleep happened) ── */}
+      {/* ── Unified Pattern Grid (Huckleberry-style) ── */}
       <View style={styles.premiumCard}>
         <View style={styles.cardTitleRow}>
-          <Feather name="moon" size={16} color={NIGHT_COLOR} />
-          <Text style={styles.cardTitleText}>Sleep Schedule</Text>
+          <Feather name="grid" size={16} color={colors.primary[600]} />
+          <Text style={styles.cardTitleText}>Weekly Pattern</Text>
         </View>
-        <Text style={styles.heroMetric}>{fmtHM(avgSleepTotal)}</Text>
-        <Text style={styles.heroSubtitle}>Avg Daily Sleep</Text>
+        <Text style={styles.heroSubtitle}>Sleep, feeds & diapers at a glance</Text>
 
-        <SleepTimeline data={WEEKLY_SLEEP_TIMELINE} />
+        <WeeklyPatternGrid data={WEEKLY_PATTERN_DATA} />
+      </View>
 
-        {/* Metrics Grid — the 4 most useful numbers for a parent */}
-        <View style={styles.dataGridDivider} />
-        <View style={styles.dataGrid}>
-          <DataCell label="AVG BEDTIME" value="7:15 PM" color={NIGHT_COLOR} />
-          <DataCell label="AVG NAPS / DAY" value={avgNapCount} color={NAP_COLOR} />
-          <DataCell label="AVG NAP LENGTH" value={fmtHM(avgNapHrs / (totalNapCountWeek / 7))} color={NAP_COLOR} />
-          <DataCell label="LONGEST STRETCH" value="5h 45m" color={NIGHT_COLOR} />
+      {/* ── Quick Stats Row ── */}
+      <View style={styles.quickStatsRow}>
+        <View style={[styles.quickStatCard, { borderLeftColor: NIGHT_COLOR }]}>
+          <Text style={styles.quickStatValue}>{fmtHM(avgSleepTotal)}</Text>
+          <Text style={styles.quickStatLabel}>Avg Sleep</Text>
+        </View>
+        <View style={[styles.quickStatCard, { borderLeftColor: EVENT_TYPES.feed.color }]}>
+          <Text style={styles.quickStatValue}>{avgFeeds}</Text>
+          <Text style={styles.quickStatLabel}>Avg Feeds</Text>
+        </View>
+        <View style={[styles.quickStatCard, { borderLeftColor: WET_COLOR }]}>
+          <Text style={styles.quickStatValue}>{avgDiapers}</Text>
+          <Text style={styles.quickStatLabel}>Avg Diapers</Text>
         </View>
       </View>
 
-      {/* ── Lumina's Analysis (AI interpretation of the sleep data) ── */}
+      {/* ── Lumina's Analysis ── */}
       <View style={styles.luminaAnalysisCard}>
         <View style={styles.luminaAnalysisHeader}>
           <View style={styles.luminaAnalysisIcon}>
@@ -235,7 +395,7 @@ function WeeklyView() {
           <Text style={styles.luminaAnalysisTitle}>Lumina's Analysis</Text>
         </View>
         <Text style={styles.luminaAnalysisBody}>
-          Ece's longest sleep stretch improved to 5h 45m this week. Her night wake-ups correlate with feeding times, meaning she's waking for hunger, not habit. A consistent 7:15 PM bedtime is forming — this is exactly the kind of rhythm that leads to longer stretches over the coming weeks. You're doing great.
+          Ece's pattern is beautifully consistent. Night sleep clusters between 7–8 PM to 5:30–6:30 AM with feeds naturally filling the wake windows. Her naps are well-spaced through the day and diaper output confirms good hydration. A bedtime routine around 7:15 PM is forming — this rhythm leads to longer stretches over the coming weeks.
         </Text>
       </View>
 
@@ -258,24 +418,22 @@ function WeeklyView() {
         <View style={styles.dataGrid}>
           <DataCell label="NIGHT AVG" value={fmtHM(avgNight)} color={NIGHT_COLOR} />
           <DataCell label="NAP AVG" value={fmtHM(avgNapHrs)} color={NAP_COLOR} />
-          <DataCell label="TOTAL NAPS" value={String(totalNapCountWeek)} />
+          <DataCell label="NAPS / DAY" value={avgNapCount} />
           <DataCell label="CONSISTENCY" value="Good" color={colors.primary[500]} />
         </View>
       </View>
 
-      {/* ── Feeds Card (Premium — proper grounded chart) ── */}
+      {/* ── Feeds Breakdown ── */}
       <View style={styles.premiumCard}>
         <View style={styles.cardTitleRow}>
           <Feather name="droplet" size={16} color={EVENT_TYPES.feed.color} />
-          <Text style={styles.cardTitleText}>Feeds</Text>
+          <Text style={styles.cardTitleText}>Feeds Breakdown</Text>
         </View>
-        <Text style={styles.heroMetric}>
-          {((WEEKLY_FEEDS.reduce((s, d) => s + d.breast + d.bottle, 0) / 7)).toFixed(1)}
-        </Text>
+        <Text style={styles.heroMetric}>{avgFeeds}</Text>
         <Text style={styles.heroSubtitle}>Avg Sessions / Day</Text>
 
         <GroundedBarChart
-          data={WEEKLY_FEEDS.map((d) => ({
+          data={WEEKLY_FEEDS_AGG.map((d) => ({
             label: d.day,
             segments: [
               { value: d.breast, color: BREAST_COLOR },
@@ -284,45 +442,28 @@ function WeeklyView() {
           }))}
           legend={[
             { label: 'Breast', color: BREAST_COLOR },
-            { label: 'Formula', color: FORMULA_COLOR },
+            { label: 'Bottle', color: FORMULA_COLOR },
           ]}
         />
 
         <View style={styles.dataGridDivider} />
         <View style={styles.dataGrid}>
-          <DataCell label="AVG BREAST" value={`${avgBreastMin}m/day`} color={BREAST_COLOR} />
-          <DataCell label="AVG FORMULA" value={`${avgFormulaMl}ml/day`} color={FORMULA_COLOR} />
-          <DataCell label="MOST FEEDS" value={`${Math.max(...WEEKLY_FEEDS.map(d => d.breast + d.bottle))}`} />
-          <DataCell label="LEAST FEEDS" value={`${Math.min(...WEEKLY_FEEDS.map(d => d.breast + d.bottle))}`} />
+          <DataCell label="MOST FEEDS" value={`${Math.max(...WEEKLY_FEEDS_AGG.map(d => d.total))}`} />
+          <DataCell label="LEAST FEEDS" value={`${Math.min(...WEEKLY_FEEDS_AGG.map(d => d.total))}`} />
         </View>
       </View>
 
-      {/* ── Lumina's Analysis — Feeds ── */}
-      <View style={styles.luminaAnalysisFeedCard}>
-        <View style={styles.luminaAnalysisHeader}>
-          <View style={styles.luminaAnalysisFeedIcon}>
-            <Feather name="star" size={14} color={EVENT_TYPES.feed.color} />
-          </View>
-          <Text style={[styles.luminaAnalysisTitle, { color: '#8B5E3C' }]}>Lumina's Analysis</Text>
-        </View>
-        <Text style={styles.luminaAnalysisBody}>
-          Ece is maintaining a steady rhythm of about {((WEEKLY_FEEDS.reduce((s, d) => s + d.breast + d.bottle, 0) / 7)).toFixed(0)} feeding sessions a day. The combination of breast and formula is working beautifully to keep her satisfied and growing. You're doing a great job tracking!
-        </Text>
-      </View>
-
-      {/* ── Diapers Card (Premium — proper grounded chart) ── */}
+      {/* ── Diapers Breakdown ── */}
       <View style={styles.premiumCard}>
         <View style={styles.cardTitleRow}>
           <MaterialCommunityIcons name="baby-face-outline" size={18} color={WET_COLOR} />
-          <Text style={styles.cardTitleText}>Diapers</Text>
+          <Text style={styles.cardTitleText}>Diapers Breakdown</Text>
         </View>
-        <Text style={styles.heroMetric}>
-          {Math.round(WEEKLY_DIAPERS.reduce((s, d) => s + d.wet + d.dirty, 0) / 7)}
-        </Text>
+        <Text style={styles.heroMetric}>{avgDiapers}</Text>
         <Text style={styles.heroSubtitle}>Avg Changes / Day</Text>
 
         <GroundedBarChart
-          data={WEEKLY_DIAPERS.map((d) => ({
+          data={WEEKLY_DIAPERS_AGG.map((d) => ({
             label: d.day,
             segments: [
               { value: d.wet, color: WET_COLOR },
@@ -334,19 +475,6 @@ function WeeklyView() {
             { label: 'Dirty', color: DIRTY_COLOR },
           ]}
         />
-      </View>
-
-      {/* ── Lumina's Analysis — Diapers ── */}
-      <View style={styles.luminaAnalysisDiaperCard}>
-        <View style={styles.luminaAnalysisHeader}>
-          <View style={styles.luminaAnalysisDiaperIcon}>
-            <Feather name="star" size={14} color={WET_COLOR} />
-          </View>
-          <Text style={[styles.luminaAnalysisTitle, { color: '#6B5D4F' }]}>Lumina's Analysis</Text>
-        </View>
-        <Text style={styles.luminaAnalysisBody}>
-          Ece is averaging about {Math.round(WEEKLY_DIAPERS.reduce((s, d) => s + d.wet + d.dirty, 0) / 7)} diaper changes a day with a healthy mix of wet and dirty. This is a fantastic sign that she is well-hydrated and getting plenty of milk. Great job!
-        </Text>
       </View>
     </View>
   );
@@ -706,7 +834,7 @@ export default function CalendarScreen() {
           <MonthlyView />
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -998,6 +1126,37 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 
+
+  // ── Quick Stats Row ──
+  quickStatsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  quickStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.md,
+    borderLeftWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  quickStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  quickStatLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textTertiary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 
   // ── Monthly views reuse ──
   summaryRow: { flexDirection: 'row', gap: spacing.sm },

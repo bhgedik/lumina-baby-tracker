@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Percentile Chart (line chart)
+// Lumina — Growth Percentile Chart (line chart)
 // Weight percentile over time with P25/P50/P75 reference lines
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Expert Insights Hook
+// Lumina — Expert Insights Hook
 // Fetches developmental nudges from Supabase filtered by
 // the active baby's EFFECTIVE age (corrected for preterm),
 // excluding dismissed nudges

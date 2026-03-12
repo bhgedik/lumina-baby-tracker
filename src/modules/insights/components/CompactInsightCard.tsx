@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Compact Insight Card
+// Lumina — Compact Insight Card
 // Smaller card for medium/low priority insights with
 // tap-to-expand body, action items, and quick actions
 // ============================================================

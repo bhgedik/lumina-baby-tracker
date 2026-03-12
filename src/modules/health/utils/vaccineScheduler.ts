@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Vaccine & Checkup Schedule Computation
+// Lumina — Vaccine & Checkup Schedule Computation
 // CRITICAL: Vaccines ALWAYS use chronological age (date_of_birth)
 //           NEVER use calculateCorrectedAge() for vaccines
 // ============================================================

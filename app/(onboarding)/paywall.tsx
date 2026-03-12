@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Paywall Screen
+// Lumina — Paywall Screen
 // High-conversion paywall with pricing toggle, trust timeline,
 // and optimized CTA. Shown after the analyzing screen.
 // ============================================================
@@ -63,7 +63,7 @@ export default function PaywallScreen() {
           Your personalized plan for {babyName} is ready
         </Text>
         <Text style={styles.subtitle}>
-          Unlock the full Sprouty experience
+          Unlock the full Lumina experience
         </Text>
 
         {/* Premium features */}

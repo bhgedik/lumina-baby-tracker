@@ -1,4 +1,4 @@
--- Sprouty: Baby profiles
+-- Lumina: Baby profiles
 CREATE TABLE babies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   family_id UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,

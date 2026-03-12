@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Baby Profile (Quiz Step 1 of 3)
+// Lumina — Baby Profile (Quiz Step 1 of 3)
 // Collects baby name, DOB/due date, gender, feeding method,
 // and gestational age (absorbed from gestational-age screen)
 // ============================================================

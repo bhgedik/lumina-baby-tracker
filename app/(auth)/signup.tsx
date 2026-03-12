@@ -24,7 +24,7 @@ export default function SignupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Join Sprout</Text>
+        <Text style={styles.title}>Join Lumina</Text>
         <Text style={styles.subtitle}>Create your parenting companion account</Text>
 
         <View style={styles.form}>

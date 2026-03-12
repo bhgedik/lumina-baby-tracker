@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Daily Nurse Insights (Static)
+// Lumina — Daily Nurse Insights (Static)
 // Offline-first: No API calls, pure static data
 // Content is feeding-method neutral (covers breast + formula)
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Keyboard Done Bar
+// Lumina — Keyboard Done Bar
 // iOS InputAccessoryView with a "Done" button to dismiss keyboard
 // Android: no-op (keyboard has built-in dismiss)
 // ============================================================

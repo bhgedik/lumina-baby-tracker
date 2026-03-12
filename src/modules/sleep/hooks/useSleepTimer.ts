@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Sleep Timer Hook
+// Lumina — Sleep Timer Hook
 // Reads sleepStore.activeTimer, returns elapsed display
 // ============================================================
 

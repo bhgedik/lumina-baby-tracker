@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Sleep Quick Action Sheet
+// Lumina — Sleep Quick Action Sheet
 // Nap Now / Night Sleep + Log Past Sleep with time pickers
 // Timer running view with Stop & Review + Save/Discard flow
 // ============================================================
@@ -72,7 +72,7 @@ function parseTimeInput(input: string): Date | null {
 }
 
 export function SleepSheet({ visible, onClose, babyId, familyId, loggedBy, onTimerStarted, onLogged }: Props) {
-  const [showPastSleep, setShowPastSleep] = useState(false);
+  const [showPastSleep, setShowPastSleep] = useState(true);
   const [sleepType, setSleepType] = useState<SleepType>('nap');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -118,7 +118,7 @@ export function SleepSheet({ visible, onClose, babyId, familyId, loggedBy, onTim
   // Reset on close
   useEffect(() => {
     if (!visible) {
-      setShowPastSleep(false);
+      setShowPastSleep(true);
       setSleepType('nap');
       setStartTime('');
       setEndTime('');

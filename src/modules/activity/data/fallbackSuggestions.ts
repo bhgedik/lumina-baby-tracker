@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Fallback Activity Suggestions (Offline / Timeout)
+// Lumina — Fallback Activity Suggestions (Offline / Timeout)
 // Static, age-bucketed suggestions used when AI is unavailable
 // ============================================================
 

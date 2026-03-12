@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Intervention Watch Hook
+// Lumina — Intervention Watch Hook
 // Centralized hook that subscribes to ALL store item counts,
 // evaluates the intervention engine on every change, and
 // surfaces non-passive results via InsightToast state.

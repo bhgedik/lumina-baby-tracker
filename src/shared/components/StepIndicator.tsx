@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Step Indicator
+// Lumina — Step Indicator
 // Icon-based progress bar with dashed connectors for onboarding
 // ============================================================
 

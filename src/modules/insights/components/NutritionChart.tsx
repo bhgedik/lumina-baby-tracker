@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Nutrition / Milk Intake Chart
+// Lumina — Nutrition / Milk Intake Chart
 // Bar chart showing daily volume (ml) — 7 days
 // Estimated values from breastfeeding shown with disclaimer
 // ============================================================

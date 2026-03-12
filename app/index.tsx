@@ -48,7 +48,7 @@ export default function Index() {
         // Fully ready → app
         router.replace('/(app)/(tabs)/home');
       } catch (e) {
-        console.warn('[Sprouty] Navigation error:', e);
+        console.warn('[Lumina] Navigation error:', e);
       }
     };
 

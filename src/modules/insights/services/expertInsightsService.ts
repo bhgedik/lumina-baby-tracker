@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Expert Insights Service
+// Lumina — Expert Insights Service
 // Queries developmental nudges from the expert_insights table
 // Graceful offline fallback: returns empty array if Supabase
 // is not configured

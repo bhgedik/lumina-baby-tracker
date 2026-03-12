@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Chat Context Builder
+// Lumina — Chat Context Builder
 // Queries Zustand stores for recent baby data and formats
 // into RecentLogEntry[] for the ai-chat edge function
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Corrected Age Calculation
+// Lumina — Corrected Age Calculation
 //
 // THE SINGLE MOST CRITICAL CALCULATION IN THE ENTIRE APP.
 //

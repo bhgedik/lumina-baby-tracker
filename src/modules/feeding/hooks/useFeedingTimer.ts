@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Feeding Timer Hook
+// Lumina — Feeding Timer Hook
 // Reads feedingStore.activeTimer, returns elapsed display
 // ============================================================
 

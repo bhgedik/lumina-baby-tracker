@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Diaper Quick Action Sheet
+// Lumina — Diaper Quick Action Sheet
 // 4+1 instant log grid: Dry / Wet / Dirty / Both + AI Photo
 // ============================================================
 

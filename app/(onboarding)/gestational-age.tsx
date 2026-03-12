@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Gestational Age (Step 3 of 4)
+// Lumina — Gestational Age (Step 3 of 4)
 // Critical for corrected age calculations
 // Skips preterm question if user is still pregnant
 // ============================================================

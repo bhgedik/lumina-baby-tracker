@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Bottom Sheet
+// Lumina — Bottom Sheet
 // Warm, squishy slide-up modal with drag-to-dismiss
 // ============================================================
 

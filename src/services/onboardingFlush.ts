@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Onboarding Data Flush Service
+// Lumina — Onboarding Data Flush Service
 // Converts onboarding quiz data into Profile + Family + Baby
 // Called after auth success to persist data to stores
 // ============================================================

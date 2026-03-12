@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Welcome Screen
+// Lumina — Welcome Screen
 // 3-slide swipeable carousel. Warm, nurturing first impression.
 // ============================================================
 
@@ -108,9 +108,9 @@ export default function WelcomeScreen() {
         {/* Logo badge */}
         <View style={styles.hero}>
           <View style={[styles.logoBadge, shadows.soft]}>
-            <Text style={styles.logoText}>S</Text>
+            <Text style={styles.logoText}>{'Lumina'.charAt(0)}</Text>
           </View>
-          <Text style={styles.appName}>Sprouty</Text>
+          <Text style={styles.appName}>Lumina</Text>
         </View>
 
         {/* Carousel */}

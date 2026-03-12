@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Feeding Store (Zustand)
+// Lumina — Feeding Store (Zustand)
 // Feeding logs + active timer with side tracking
 // ============================================================
 

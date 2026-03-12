@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Health Store (Zustand)
+// Lumina — Health Store (Zustand)
 // Three collections: health logs, vaccinations, illness episodes
 // Offline-first with AsyncStorage + SyncQueue
 // ============================================================

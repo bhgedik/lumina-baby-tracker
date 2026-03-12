@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Insights Shared Constants
+// Lumina — Insights Shared Constants
 // Tag colors and priority accents used across insight components
 // ============================================================
 

@@ -1,4 +1,4 @@
--- Sprouty: Family table
+-- Lumina: Family table
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE families (

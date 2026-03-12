@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Sleep Store (Zustand)
+// Lumina — Sleep Store (Zustand)
 // Sleep logs + active timer + wake windows
 // ============================================================
 

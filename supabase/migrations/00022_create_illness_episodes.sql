@@ -1,5 +1,5 @@
 -- ============================================================
--- Sprouty — Illness Episodes + Health Log Linkage
+-- Lumina — Illness Episodes + Health Log Linkage
 -- ============================================================
 
 -- ── illness_episodes table ──────────────────────────────────

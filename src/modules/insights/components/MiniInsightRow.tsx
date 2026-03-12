@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Mini Insight Row
+// Lumina — Mini Insight Row
 // Minimal positive reinforcement row with green check circle,
 // title, and chevron for navigation
 // ============================================================

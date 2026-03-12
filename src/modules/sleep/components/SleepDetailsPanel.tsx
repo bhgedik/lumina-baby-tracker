@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Sleep Details Panel
+// Lumina — Sleep Details Panel
 // Method, location, room temp, quality, night wakings
 // ============================================================
 

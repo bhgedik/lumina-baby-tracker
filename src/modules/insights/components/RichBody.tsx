@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Rich Body Text
+// Lumina — Rich Body Text
 // Renders text with **bold** markers as actual bold Text nodes
 // ============================================================
 

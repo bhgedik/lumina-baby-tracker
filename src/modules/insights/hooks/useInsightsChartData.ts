@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Insights Chart Data Hook
+// Lumina — Insights Chart Data Hook
 // Aggregates store data for the analytics dashboard:
 // Growth percentile, Nutrition/milk intake, Stacked sleep
 // ============================================================

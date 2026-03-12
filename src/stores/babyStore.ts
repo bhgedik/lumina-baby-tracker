@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Baby Store (Zustand)
+// Lumina — Baby Store (Zustand)
 // Baby list + active baby selection
 // ============================================================
 

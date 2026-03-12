@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Nurse Insight Card
+// Lumina — Nurse Insight Card
 // Daily static nurse briefing with sage green accent
 // ============================================================
 

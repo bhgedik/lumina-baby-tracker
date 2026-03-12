@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — WHO Growth Standards
+// Lumina — WHO Growth Standards
 // Pre-computed percentile curves from WHO Multicentre Growth
 // Reference Study (weight in grams, length/head in cm)
 // 0–24 months at half-month intervals

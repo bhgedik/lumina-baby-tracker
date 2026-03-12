@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Doctor Visit Sheet
+// Lumina — Doctor Visit Sheet
 // Context-aware bottom sheet for logging doctor visits
 // linked to active illness episodes
 // ============================================================

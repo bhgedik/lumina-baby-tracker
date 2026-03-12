@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Baby Summary Section
+// Lumina — Baby Summary Section
 // Anxiety-free baby view with natural language stat pills
 // and massive one-tap quick-log buttons
 // ============================================================
@@ -97,7 +97,7 @@ export function BabySummarySection({
             onPress={onQuickDiaper}
             accessibilityLabel="Quick diaper log"
           >
-            <Feather name="droplet" size={30} color="#FFFDF8" />
+            <MaterialCommunityIcons name="human-baby-changing-table" size={30} color="#FFFDF8" />
           </Pressable>
           <Text style={styles.quickButtonLabel}>Diaper</Text>
         </View>

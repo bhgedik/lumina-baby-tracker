@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Activity Suggestions Edge Function
+// Lumina — Activity Suggestions Edge Function
 // Generates age-appropriate reading, sensory, and music
 // suggestions via Claude. Returns structured JSON.
 // ============================================================
@@ -40,7 +40,7 @@ serve(async (req: Request) => {
 
     const effectiveAge = corrected_age_months ?? age_months;
 
-    const systemPrompt = `You are Sprouty, a warm veteran pediatric nurse who helps parents discover age-appropriate activities for their baby. You have deep knowledge of child development, children's literature, and sensory play.
+    const systemPrompt = `You are Lumina, a warm veteran pediatric nurse who helps parents discover age-appropriate activities for their baby. You have deep knowledge of child development, children's literature, and sensory play.
 
 PERSONALITY:
 - Warm, encouraging, specific

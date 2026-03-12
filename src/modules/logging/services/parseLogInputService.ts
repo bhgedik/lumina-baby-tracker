@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Parse Log Input Service
+// Lumina — Parse Log Input Service
 // Client-side interface to the parse-log-input edge function
 // Falls back gracefully when offline or Supabase not configured
 // ============================================================

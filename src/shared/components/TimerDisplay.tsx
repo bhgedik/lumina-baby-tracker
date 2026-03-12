@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Timer Display
+// Lumina — Timer Display
 // Warm, squishy countup display with Feather icon controls
 // ============================================================
 

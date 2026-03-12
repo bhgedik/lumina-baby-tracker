@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Chart Card
+// Lumina — Growth Chart Card
 // Visual-first, interactive growth visualization
 // Tap data points for percentile drill-down
 // "Ask the Nurse" integration for trend context

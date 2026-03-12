@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Challenge Screen (Quiz Step 3 of 3)
+// Lumina — Challenge Screen (Quiz Step 3 of 3)
 // Asks parent what their biggest challenge is right now
 // ============================================================
 

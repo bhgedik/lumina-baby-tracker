@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Prep Checklist Store (Zustand)
+// Lumina — Prep Checklist Store (Zustand)
 // AI-powered + static pregnancy prep items with persistence
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Logging Types
+// Lumina — Logging Types
 // Structured data format for AI-parsed natural language logs
 // ============================================================
 

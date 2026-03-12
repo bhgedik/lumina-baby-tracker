@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Episode Timeline
+// Lumina — Episode Timeline
 // Vertical chronological timeline of health logs within an episode
 // ============================================================
 

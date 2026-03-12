@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Content Safety Filter
+// Lumina — Content Safety Filter
 // Strictly filters content based on baby's allergies, feeding method,
 // and chronic conditions. This prevents emotional alienation and
 // ensures medical safety of recommendations.

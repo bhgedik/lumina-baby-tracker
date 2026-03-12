@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Feeding Quick Action Sheet
+// Lumina — Feeding Quick Action Sheet
 // 4-mode card grid: Breast / Bottle·BM / Bottle·Formula / Solids
 // Each mode reveals inline sub-view for data entry
 // All modes support manual time entry for past logging

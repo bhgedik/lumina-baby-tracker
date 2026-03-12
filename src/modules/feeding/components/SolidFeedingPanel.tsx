@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Solid Feeding Panel
+// Lumina — Solid Feeding Panel
 // Food entry with reaction tracking
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Nurse Says Data Hook
+// Lumina — Nurse Says Data Hook
 // Provides veteran nurse reference cards + daily nurse insight
 // for the dedicated Nurse Says tab
 // ============================================================

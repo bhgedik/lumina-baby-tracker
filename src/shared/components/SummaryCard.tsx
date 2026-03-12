@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Summary Card
+// Lumina — Summary Card
 // Dashboard stat card — warm, squishy, color-coded
 // ============================================================
 

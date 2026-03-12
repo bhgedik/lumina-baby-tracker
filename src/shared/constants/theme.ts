@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Design System Tokens
+// Lumina — Design System Tokens
 // Warm, calming palette inspired by nursery aesthetics
 // ============================================================
 

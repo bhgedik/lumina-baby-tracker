@@ -1,9 +1,9 @@
 // ============================================================
-// Sprout — App Configuration Constants
+// Lumina — App Configuration Constants
 // ============================================================
 
 export const APP_CONFIG = {
-  name: 'Sprout',
+  name: 'Lumina',
   version: '1.0.0',
 
   // Supabase — set actual values in .env.local

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Pregnancy Prep Content
+// Lumina — Pregnancy Prep Content
 // Static tips indexed by gestational week + must-have checklist
 // + baby size comparisons + initial prep suggestions
 // ============================================================

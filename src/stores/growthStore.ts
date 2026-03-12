@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Growth Store (Zustand)
+// Lumina — Growth Store (Zustand)
 // Weight, length, and head circumference logs
 // ============================================================
 

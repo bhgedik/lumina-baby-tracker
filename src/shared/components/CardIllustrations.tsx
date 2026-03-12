@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Hand-Drawn Card Illustrations
+// Lumina — Hand-Drawn Card Illustrations
 // Playful, storybook-style SVG illustrations for dashboard cards
 // Each illustration is warm, organic, and slightly whimsical
 // ============================================================

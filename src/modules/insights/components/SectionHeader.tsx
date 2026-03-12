@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Section Header
+// Lumina — Section Header
 // Reusable section divider with icon, title, count badge,
 // and optional collapse toggle
 // ============================================================

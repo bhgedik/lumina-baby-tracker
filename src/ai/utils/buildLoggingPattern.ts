@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Logging Pattern Builder
+// Lumina — Logging Pattern Builder
 // Computes LoggingPattern from ALL stores for a given baby.
 // Used by evaluateIntervention() to detect behavioral patterns.
 // ============================================================

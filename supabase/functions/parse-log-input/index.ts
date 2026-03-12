@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Parse Log Input Edge Function
+// Lumina — Parse Log Input Edge Function
 // Sends natural language to Claude for structured extraction
 // Returns ParsedLogAction JSON for automatic log creation
 // ============================================================
@@ -17,7 +17,7 @@ interface RequestBody {
   current_datetime: string;
 }
 
-const SYSTEM_PROMPT = `You are a structured data parser for the Sprouty baby tracking app. Your ONLY job is to extract logging data from natural language parental input and return a JSON object.
+const SYSTEM_PROMPT = `You are a structured data parser for the Lumina baby tracking app. Your ONLY job is to extract logging data from natural language parental input and return a JSON object.
 
 You are NOT a conversational assistant. Do NOT provide advice, commentary, or encouragement. Return ONLY the JSON object described below.
 

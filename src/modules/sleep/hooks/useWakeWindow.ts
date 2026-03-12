@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Wake Window Hook
+// Lumina — Wake Window Hook
 // Returns wake window status using corrected age
 // ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Pregnancy Content Cards + Ask Lumina Banner
+// Lumina — Pregnancy Content Cards + Ask Lumina Banner
 // Full-width cards matching the tip card aesthetic
 // Accent bar | icon | title | body — unified visual language
 // ============================================================
@@ -44,7 +44,15 @@ export function PregnancyInsightsGrid({ week, babyName, onJournal, onAskLumina }
           <Text style={styles.luminaTitle}>Ask Lumina</Text>
           <Text style={styles.luminaSubtitle}>Your AI pregnancy companion — ask anything</Text>
         </View>
-        <Feather name="chevron-right" size={20} color={colors.primary[400]} />
+        <Pressable
+          style={styles.luminaMicButton}
+          onPress={onAskLumina}
+          hitSlop={12}
+          accessibilityLabel="Voice input"
+          accessibilityHint="Ask Lumina with your voice"
+        >
+          <Feather name="mic" size={18} color={colors.primary[600]} />
+        </Pressable>
       </Pressable>
 
       {/* ── Baby This Week ── */}
@@ -135,6 +143,16 @@ const styles = StyleSheet.create({
   luminaSubtitle: {
     fontSize: typography.fontSize.sm,
     color: colors.primary[600],
+  },
+  luminaMicButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // ── Unified Content Cards (matches tip card) ──

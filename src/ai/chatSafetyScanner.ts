@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Chat Safety Scanner
+// Lumina — Chat Safety Scanner
 // Synchronous keyword matcher that runs BEFORE every chat send.
 // Catches medical emergencies and crisis situations in text.
 // Mirrors redFlagInterceptor.ts patterns for natural language.

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — AAP Well-Child Checkup Schedule (Birth–24 months)
+// Lumina — AAP Well-Child Checkup Schedule (Birth–24 months)
 // ============================================================
 
 import type { WellChildCheckup } from '../types';

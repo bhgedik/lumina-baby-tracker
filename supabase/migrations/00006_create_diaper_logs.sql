@@ -1,4 +1,4 @@
--- Sprouty: Diaper change logs
+-- Lumina: Diaper change logs
 CREATE TABLE diaper_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

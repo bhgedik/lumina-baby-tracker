@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Diaper Analysis Edge Function
+// Lumina — Diaper Analysis Edge Function
 // Two-pass Claude Vision: privacy check → stool analysis
 // Image is NEVER stored — processed in memory only
 // ============================================================

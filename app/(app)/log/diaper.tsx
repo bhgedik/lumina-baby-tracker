@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Diaper Log Screen
+// Lumina — Diaper Log Screen
 // Flat single-screen: tap to log, tap log entry to edit inline.
 // Zero modals, zero redirects.
 // ============================================================

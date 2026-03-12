@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Chart Data Hook
+// Lumina — Chart Data Hook
 // Aggregates store data into chart-ready arrays for the carousel
 // ============================================================
 

@@ -1,4 +1,4 @@
--- Sprouty: Sleep logs (naps and night sleep)
+-- Lumina: Sleep logs (naps and night sleep)
 CREATE TABLE sleep_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

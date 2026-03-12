@@ -1,5 +1,5 @@
 -- ============================================================
--- Sprouty — Complete Schema DDL
+-- Lumina — Complete Schema DDL
 -- Run this in Supabase SQL Editor on a fresh database.
 -- ============================================================
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Dynamic Lottie Icon
+// Lumina — Dynamic Lottie Icon
 // Animated illustrations for Quick Log cards, driven by baby data
 // Playback speed/progress responds to time-since-last-event & age
 // ============================================================

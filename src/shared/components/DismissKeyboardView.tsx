@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Dismiss Keyboard View
+// Lumina — Dismiss Keyboard View
 // Wrap screens to allow tap-anywhere keyboard dismissal
 // ============================================================
 

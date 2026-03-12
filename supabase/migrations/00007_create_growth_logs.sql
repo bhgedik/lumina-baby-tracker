@@ -1,4 +1,4 @@
--- Sprouty: Growth measurements (weight, height, head circumference)
+-- Lumina: Growth measurements (weight, height, head circumference)
 CREATE TABLE growth_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   baby_id UUID NOT NULL REFERENCES babies(id) ON DELETE CASCADE,

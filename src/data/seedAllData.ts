@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Seed Data Generators
+// Lumina — Seed Data Generators
 // Generates 30 days of realistic demo data for all tracking
 // domains, simulating a mother with ~75% logging completion
 // ============================================================

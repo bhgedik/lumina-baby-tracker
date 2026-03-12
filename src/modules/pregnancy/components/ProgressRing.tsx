@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Flo-Inspired Progress Ring
+// Lumina — Flo-Inspired Progress Ring
 // Ethereal gradient ring with pulse glow + serif center text
 // ============================================================
 

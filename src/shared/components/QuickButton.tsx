@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Quick Button
+// Lumina — Quick Button
 // Squishy round tap target — warm shadows, one-handed optimized
 // ============================================================
 

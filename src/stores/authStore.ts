@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Auth Store (Zustand)
+// Lumina — Auth Store (Zustand)
 // Session, profile, and family state
 // ============================================================
 

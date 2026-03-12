@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Chat Sheet
+// Lumina — Chat Sheet
 // Modern conversational UI in a bottom sheet
 // User bubbles right, Lumina bubbles left, typing indicator
 // ============================================================
@@ -466,21 +466,33 @@ export function ChatSheet({ visible, onClose, insight, babyName, babyAgeDays, fe
               returnKeyType="default"
               editable={!isTyping}
             />
-            <Pressable
-              style={[
-                styles.sendButton,
-                (!inputText.trim() || isTyping) && styles.sendButtonDisabled,
-              ]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || isTyping}
-              accessibilityLabel="Send message"
-            >
-              <Feather
-                name="send"
-                size={18}
-                color={inputText.trim() && !isTyping ? colors.textInverse : colors.textTertiary}
-              />
-            </Pressable>
+            {inputText.trim() ? (
+              <Pressable
+                style={[
+                  styles.sendButton,
+                  isTyping && styles.sendButtonDisabled,
+                ]}
+                onPress={handleSend}
+                disabled={isTyping}
+                accessibilityLabel="Send message"
+              >
+                <Feather
+                  name="send"
+                  size={18}
+                  color={!isTyping ? colors.textInverse : colors.textTertiary}
+                />
+              </Pressable>
+            ) : (
+              <Pressable
+                style={styles.micButton}
+                onPress={() => {/* Voice input — wired later */}}
+                hitSlop={12}
+                accessibilityLabel="Voice input"
+                accessibilityHint="Tap to dictate your message"
+              >
+                <Feather name="mic" size={20} color={colors.primary[600]} />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -693,5 +705,15 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: colors.neutral[200],
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary[50],
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

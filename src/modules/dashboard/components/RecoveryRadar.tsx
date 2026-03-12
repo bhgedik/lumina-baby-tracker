@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Recovery Radar
+// Lumina — Recovery Radar
 // Mother's recovery section: Medication tracker
 // ============================================================
 

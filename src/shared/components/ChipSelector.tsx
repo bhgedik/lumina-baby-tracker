@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Chip Selector
+// Lumina — Chip Selector
 // Warm, squishy scrollable chips — 48px+ height
 // ============================================================
 

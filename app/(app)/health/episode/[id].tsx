@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Episode Detail Screen
+// Lumina — Episode Detail Screen
 // Full timeline view for an illness episode with resolve action
 // ============================================================
 

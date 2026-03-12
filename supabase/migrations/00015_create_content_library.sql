@@ -1,4 +1,4 @@
--- Sprouty: Content library (articles, activities, checklists, etc.)
+-- Lumina: Content library (articles, activities, checklists, etc.)
 CREATE TABLE content_library (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   type TEXT NOT NULL CHECK (type IN ('article', 'activity', 'product', 'video', 'checklist')),

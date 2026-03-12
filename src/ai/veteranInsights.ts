@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Veteran Nurse Insights Engine
+// Lumina — Veteran Nurse Insights Engine
 // Maps common log patterns to expert-level, non-obvious root causes.
 // This is the "product moat" — the knowledge a veteran NICU nurse has.
 // ============================================================
@@ -38,7 +38,7 @@ export const VETERAN_RULES: VeteranRule[] = [
       source: 'Pediatric Nursing Best Practices',
       visual_guide: {
         type: 'step_by_step',
-        media_url: 'https://placeholder.sprouty.app/guides/nasal-aspirator',
+        media_url: 'https://placeholder.lumina.app/guides/nasal-aspirator',
         action_text: 'How to safely use a nasal aspirator',
         steps: [
           { step: 1, instruction: 'Lay baby on their back with head slightly tilted', icon: 'user' },
@@ -67,7 +67,7 @@ export const VETERAN_RULES: VeteranRule[] = [
       source: 'NICU Discharge Best Practices',
       visual_guide: {
         type: 'step_by_step',
-        media_url: 'https://placeholder.sprouty.app/guides/cotton-hat-method',
+        media_url: 'https://placeholder.lumina.app/guides/cotton-hat-method',
         action_text: 'Cotton hat method after bath',
         steps: [
           { step: 1, instruction: 'Pat head gently with a soft towel — never rub', icon: 'droplet' },
@@ -125,7 +125,7 @@ export const VETERAN_RULES: VeteranRule[] = [
       source: 'Pediatric Nursing Administration Standards',
       visual_guide: {
         type: 'video_link',
-        media_url: 'https://placeholder.sprouty.app/videos/oral-syringe-technique',
+        media_url: 'https://placeholder.lumina.app/videos/oral-syringe-technique',
         action_text: 'Watch: Oral syringe technique',
         thumbnail_icon: 'play-circle',
         duration_label: '1:30',
@@ -149,7 +149,7 @@ export const VETERAN_RULES: VeteranRule[] = [
       source: 'Dermatology Best Practices',
       visual_guide: {
         type: 'step_by_step',
-        media_url: 'https://placeholder.sprouty.app/guides/diaper-rash-dry-first',
+        media_url: 'https://placeholder.lumina.app/guides/diaper-rash-dry-first',
         action_text: 'Dry-first diaper rash technique',
         steps: [
           { step: 1, instruction: 'Clean area with warm water and soft cloth', icon: 'droplet' },
@@ -176,7 +176,7 @@ export const VETERAN_RULES: VeteranRule[] = [
       source: 'The Lullaby Trust / Red Nose Safe Sleep',
       visual_guide: {
         type: 'illustration',
-        media_url: 'https://placeholder.sprouty.app/illustrations/tog-scale',
+        media_url: 'https://placeholder.lumina.app/illustrations/tog-scale',
         action_text: 'TOG scale visual reference',
         thumbnail_icon: 'thermometer',
       },

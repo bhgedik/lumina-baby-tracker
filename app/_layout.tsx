@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { colors, typography, spacing } from '../src/shared/constants/theme';
 import { HydrationProvider } from '../src/stores/HydrationProvider';
+
+// Keep splash visible while app loads
+SplashScreen.preventAutoHideAsync();
 
 /**
  * Root-level error boundary — catches JS errors anywhere in the tree
@@ -23,7 +27,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[Sprout] Uncaught error:', error, info.componentStack);
+    console.error('[Lumina] Uncaught error:', error, info.componentStack);
   }
 
   render() {
@@ -58,10 +62,14 @@ class ErrorBoundary extends React.Component<
  * will be added in subsequent phases.
  */
 export default function RootLayout() {
+  const onLayoutRootView = useCallback(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
     <ErrorBoundary>
       <HydrationProvider>
-        <View style={styles.container}>
+        <View style={styles.container} onLayout={onLayoutRootView}>
           <StatusBar style="dark" />
           <Slot />
         </View>

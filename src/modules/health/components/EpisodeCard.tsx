@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Episode Card
+// Lumina — Episode Card
 // Displays an illness episode with symptoms and log count
 // ============================================================
 

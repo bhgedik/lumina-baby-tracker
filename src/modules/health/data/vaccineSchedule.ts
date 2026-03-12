@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — CDC Immunization Schedule (Birth–24 months)
+// Lumina — CDC Immunization Schedule (Birth–24 months)
 // CRITICAL: Vaccines ALWAYS use chronological age, NEVER corrected age
 // ============================================================
 

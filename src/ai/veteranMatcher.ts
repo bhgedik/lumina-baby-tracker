@@ -1,5 +1,5 @@
 // ============================================================
-// Sprout — Veteran Matcher
+// Lumina — Veteran Matcher
 // Client-side condition evaluator for VeteranRules
 // Maps each rule ID to actual runtime field checks
 // ============================================================

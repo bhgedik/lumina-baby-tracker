@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Vaccine Card (Premium)
+// Lumina — Vaccine Card (Premium)
 // Warm squircle card with tinted icon, status accent, and
 // satisfying "Mark Given" action button
 // ============================================================

@@ -11,11 +11,26 @@ function SettingsButton() {
     <Pressable
       onPress={() => router.push('/(app)/(tabs)/profile')}
       hitSlop={10}
-      style={styles.settingsButton}
+      style={styles.headerButton}
       accessibilityRole="button"
       accessibilityLabel="Settings"
     >
-      <Feather name="settings" size={22} color={colors.neutral[500]} />
+      <Feather name="user" size={22} color={colors.neutral[500]} />
+    </Pressable>
+  );
+}
+
+function CalendarButton() {
+  const router = useRouter();
+  return (
+    <Pressable
+      onPress={() => router.push('/(app)/calendar' as any)}
+      hitSlop={10}
+      style={styles.headerButton}
+      accessibilityRole="button"
+      accessibilityLabel="Calendar & History"
+    >
+      <Feather name="calendar" size={22} color={colors.neutral[500]} />
     </Pressable>
   );
 }
@@ -39,10 +54,11 @@ export default function TabsLayout() {
       initialRouteName="home"
       screenOptions={{
         headerShown: true,
-        headerTransparent: true,
+        headerTransparent: false,
         headerTitle: '',
-        headerLeft: () => null,
-        headerRight: () => <SettingsButton />,
+        headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
+        headerLeft: () => <SettingsButton />,
+        headerRight: () => <CalendarButton />,
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.primary[600],
         tabBarInactiveTintColor: colors.neutral[400],
@@ -50,7 +66,7 @@ export default function TabsLayout() {
         tabBarItemStyle: styles.tabItem,
       }}
     >
-      {/* 1. Home — default landing, far left */}
+      {/* 1. Home */}
       <Tabs.Screen
         name="home"
         options={{
@@ -60,13 +76,24 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 2. Insights — always visible */}
+      {/* 2. Daily — postpartum only / Checklist — pregnancy only */}
       <Tabs.Screen
-        name="insights"
+        name="daily"
         options={{
-          title: 'Insights',
+          title: 'Daily',
+          href: isPregnant ? null : undefined,
           tabBarIcon: ({ color }) => (
-            <Feather name="zap" size={26} color={color} />
+            <Feather name="sun" size={26} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="checklist"
+        options={{
+          title: 'Checklist',
+          href: isPregnant ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <Feather name="check-square" size={26} color={color} />
           ),
         }}
       />
@@ -89,14 +116,13 @@ export default function TabsLayout() {
           tabBarLabel: () => null,
         }}
       />
-      {/* 4. Daily — postpartum only */}
+      {/* 4. Guide */}
       <Tabs.Screen
-        name="daily"
+        name="guide"
         options={{
-          title: 'Daily',
-          href: isPregnant ? null : undefined,
+          title: 'Guide',
           tabBarIcon: ({ color }) => (
-            <Feather name="sun" size={26} color={color} />
+            <Feather name="book-open" size={26} color={color} />
           ),
         }}
       />
@@ -104,21 +130,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Progress',
+          title: 'Milestones',
           href: isPregnant ? null : undefined,
           tabBarIcon: ({ color }) => (
             <Feather name="trending-up" size={26} color={color} />
-          ),
-        }}
-      />
-      {/* 5b. Checklist — pregnancy only (replaces Progress slot) */}
-      <Tabs.Screen
-        name="checklist"
-        options={{
-          title: 'Checklist',
-          href: isPregnant ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <Feather name="check-square" size={26} color={color} />
           ),
         }}
       />
@@ -141,6 +156,7 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 82 : 60,
     paddingTop: 4,
     paddingBottom: Platform.OS === 'ios' ? 22 : 6,
+    paddingHorizontal: 8,
     elevation: 0,
     shadowOpacity: 0,
   },
@@ -150,10 +166,13 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   tabItem: {
+    flex: 1,
     paddingTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  settingsButton: {
-    marginRight: spacing.base,
+  headerButton: {
+    marginHorizontal: spacing.base,
     padding: spacing.xs,
   },
   fabContainer: {

@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "Sprouty",
-    "slug": "sprouty",
+    "name": "Lumina",
+    "slug": "lumina",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "scheme": "sprout",
+    "scheme": "lumina",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F8F5F0"
+      "image": "./assets/images/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#C5CEAC"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sprout.babytracker"
+      "bundleIdentifier": "com.lumina.babytracker"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +23,14 @@
         "backgroundColor": "#F8F5F0"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.sprout.babytracker"
+      "package": "com.lumina.babytracker"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
+      "expo-splash-screen",
       "expo-router",
       "expo-secure-store",
       [
@@ -42,7 +43,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Sprouty needs camera access to analyze diaper contents."
+          "cameraPermission": "Lumina needs camera access to analyze diaper contents."
         }
       ],
       "@react-native-community/datetimepicker"

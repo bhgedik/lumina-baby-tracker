@@ -1,5 +1,5 @@
 // ============================================================
-// Sprouty — Percentile Calculation Utility
+// Lumina — Percentile Calculation Utility
 // Linear interpolation against WHO growth curves
 // ============================================================
 
