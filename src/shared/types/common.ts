@@ -50,6 +50,7 @@ export type FeedingType = 'breast' | 'bottle' | 'solid' | 'snack';
 export type BreastSide = 'left' | 'right' | 'both';
 export type BottleContentType = 'breast_milk' | 'formula' | 'mixed' | 'water' | 'juice';
 export type PrimaryFeedingMethod = 'breast_only' | 'formula_only' | 'mixed';
+export type PumpingSide = 'left' | 'right' | 'both';
 
 // === Sleep Types ===
 export type SleepType = 'nap' | 'night';

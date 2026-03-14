@@ -21,7 +21,7 @@ export interface MilestoneDef {
 }
 
 export const DOMAIN_ICONS: Record<DevelopmentalDomain, { icon: string; color: string; bg: string }> = {
-  motor_gross: { icon: 'target', color: '#5E8A72', bg: '#F0F5F2' },
+  motor_gross: { icon: 'target', color: '#A78BBA', bg: '#F5F0FA' },
   motor_fine: { icon: 'edit-3', color: '#8B6914', bg: '#FFF8E7' },
   cognitive: { icon: 'zap', color: '#7B61A6', bg: '#F3EFF9' },
   language: { icon: 'message-circle', color: '#3B82C4', bg: '#EFF6FF' },

@@ -47,7 +47,7 @@ const STATUS_PALETTE: Record<VaccineStatus, {
     label: 'Done',
     pillBg: colors.primary[50],
     pillText: colors.primary[600],
-    iconBg: '#EDF3EE',
+    iconBg: '#F0EBF5',
     iconTint: colors.primary[500],
   },
 };

@@ -8,10 +8,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { DISCOVERY_NODES, TAG_COLORS } from '../../../src/modules/guide/guideData';
-import type { GuideArticle } from '../../../src/modules/guide/guideData';
+import type { GuideArticle, LibraryCard } from '../../../src/modules/guide/guideData';
 
 const UI = {
-  bg: '#F7F4F0',
+  bg: '#FDFCF5',
   card: '#FFFFFF',
   text: '#3D3D3D',
   textSecondary: '#5C5C5C',
@@ -82,20 +82,21 @@ export default function TopicHubScreen() {
 
         {/* ── Hero Section ── */}
         <View style={[styles.hero, { backgroundColor: topic.accentColor + '14' }]}>
-          <Text style={styles.heroEmoji}>{topic.icon}</Text>
-          <Text style={styles.heroBadge}>{topic.badge}</Text>
+          <View style={[styles.heroIconWrap, { backgroundColor: topic.accentColor + '18' }]}>
+            <Feather name={(topic as LibraryCard).icon as any || 'book-open'} size={32} color={topic.accentColor} />
+          </View>
           <Text style={styles.heroTitle}>{topic.title}</Text>
           <Text style={styles.heroSubtitle}>{topic.subtitle}</Text>
           <View style={styles.heroMeta}>
             <View style={[styles.heroMetaPill, { backgroundColor: topic.accentColor + '20' }]}>
-              <Feather name="award" size={12} color={topic.accentColor} />
+              <Feather name="book-open" size={12} color={topic.accentColor} />
               <Text style={[styles.heroMetaText, { color: topic.accentColor }]}>
-                Comprehensive Masterclass
+                Expert Guide
               </Text>
             </View>
           </View>
           <Text style={styles.heroChapterCount}>
-            {totalCount} expert chapters
+            {totalCount} chapters
           </Text>
         </View>
 
@@ -213,15 +214,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
     marginBottom: 24,
   },
-  heroEmoji: {
-    fontSize: 52,
-    marginBottom: 12,
-  },
-  heroBadge: {
-    fontSize: 20,
-    position: 'absolute',
-    top: 72,
-    right: 28,
+  heroIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   heroTitle: {
     fontSize: 26,

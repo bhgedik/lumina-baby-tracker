@@ -26,7 +26,7 @@ const CARD_WIDTH = SCREEN_WIDTH - H_PADDING * 2;
 const UI = {
   text: '#3D3D3D',
   textMuted: '#8A8A8A',
-  accent: '#8BA88E',
+  accent: '#B199CE',
   card: '#FFFFFF',
   dotInactive: '#D4CFC8',
 };
@@ -94,11 +94,11 @@ export function ChartCarousel({ data, todayFeeds, todayWet, todayDirty }: ChartC
           </View>
           <View style={styles.legend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#8BA88E' }]} />
+              <View style={[styles.legendDot, { backgroundColor: '#B199CE' }]} />
               <Text style={styles.legendLabel}>Feeds</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#F17C4C' }]} />
+              <View style={[styles.legendDot, { backgroundColor: '#F2B89C' }]} />
               <Text style={styles.legendLabel}>Diapers</Text>
             </View>
           </View>

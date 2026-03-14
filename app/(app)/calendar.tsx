@@ -5,14 +5,18 @@
 // ============================================================
 
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, LayoutAnimation } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 import { SleepTrendLine, type TrendDay } from '../../src/modules/insights/components/SleepTrendLine';
 import { GroundedBarChart } from '../../src/modules/insights/components/GroundedBarChart';
+import type { BarDay } from '../../src/modules/insights/components/GroundedBarChart';
 import { WeeklyPatternGrid, type PatternDay } from '../../src/modules/insights/components/WeeklyPatternGrid';
+import { GrowthChartCard } from '../../src/modules/growth/components/GrowthChartCard';
+import { useGrowthChartData } from '../../src/modules/growth/hooks/useGrowthChartData';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
@@ -27,21 +31,32 @@ const EVENT_TYPES = {
   feed: { color: '#D4874E', bg: '#FDF2E9', icon: 'droplet' as const, label: 'Feed' },
   sleep: { color: '#6B7DB3', bg: '#EEF0F7', icon: 'moon' as const, label: 'Sleep' },
   diaper: { color: '#A0927D', bg: '#F3EFE8', icon: 'droplet' as const, label: 'Diaper' },
-  activity: { color: '#8BA88E', bg: '#EDF3EE', icon: 'smile' as const, label: 'Activity' },
+  activity: { color: '#B199CE', bg: '#F0EBF5', icon: 'smile' as const, label: 'Activity' },
   health: { color: '#C4696B', bg: '#F9EDED', icon: 'thermometer' as const, label: 'Health' },
-  growth: { color: '#5E8A72', bg: '#EDF3EE', icon: 'trending-up' as const, label: 'Growth' },
+  growth: { color: '#A78BBA', bg: '#F0EBF5', icon: 'trending-up' as const, label: 'Growth' },
+  pumping: { color: '#A78BBA', bg: '#F0EBF5', icon: 'droplet' as const, label: 'Pumping' },
 };
 
 // Daily view sample events
 const SAMPLE_EVENTS = [
-  { id: '1', type: 'feed' as const, time: '8:30 AM', detail: 'Bottle — 120 ml formula' },
-  { id: '2', type: 'diaper' as const, time: '9:15 AM', detail: 'Wet diaper' },
-  { id: '3', type: 'sleep' as const, time: '10:00 AM', detail: 'Nap — 45 min' },
-  { id: '4', type: 'feed' as const, time: '11:30 AM', detail: 'Left breast — 15 min' },
-  { id: '5', type: 'diaper' as const, time: '12:00 PM', detail: 'Dirty diaper' },
-  { id: '6', type: 'activity' as const, time: '1:00 PM', detail: 'Tummy time — 10 min' },
-  { id: '7', type: 'feed' as const, time: '2:30 PM', detail: 'Right breast — 12 min' },
-  { id: '8', type: 'sleep' as const, time: '3:00 PM', detail: 'Nap — 1 hr 20 min' },
+  { id: '1', type: 'feed' as const, time: '6:30 AM', detail: 'Breastfeed — 15 min left' },
+  { id: '2', type: 'diaper' as const, time: '7:15 AM', detail: 'Wet diaper' },
+  { id: '3', type: 'feed' as const, time: '8:30 AM', detail: 'Bottle — 120 ml' },
+  { id: '4', type: 'sleep' as const, time: '9:00 AM', detail: 'Morning nap — 1h 15m' },
+  { id: '5', type: 'diaper' as const, time: '10:20 AM', detail: 'Dirty diaper' },
+  { id: '6', type: 'feed' as const, time: '11:00 AM', detail: 'Breastfeed — 12 min right' },
+  { id: '7', type: 'activity' as const, time: '11:45 AM', detail: 'Tummy time — 10 min' },
+  { id: '8', type: 'diaper' as const, time: '12:30 PM', detail: 'Wet diaper' },
+  { id: '9', type: 'sleep' as const, time: '1:00 PM', detail: 'Afternoon nap — 1h 30m' },
+  { id: '10', type: 'feed' as const, time: '2:30 PM', detail: 'Bottle — 100 ml' },
+  { id: '11', type: 'diaper' as const, time: '3:15 PM', detail: 'Wet diaper' },
+  { id: '12', type: 'feed' as const, time: '5:00 PM', detail: 'Breastfeed — 10 min left' },
+  { id: '13', type: 'sleep' as const, time: '5:30 PM', detail: 'Catnap — 30 min' },
+  { id: '14', type: 'diaper' as const, time: '6:15 PM', detail: 'Dirty diaper' },
+  { id: '15', type: 'feed' as const, time: '7:00 PM', detail: 'Bottle — 130 ml' },
+  { id: '16', type: 'sleep' as const, time: '7:30 PM', detail: 'Bedtime' },
+  { id: 'p1', type: 'pumping' as const, time: '9:00 AM', detail: 'Pumped — 90 ml (L: 40, R: 50)' },
+  { id: 'p2', type: 'pumping' as const, time: '2:30 PM', detail: 'Pumped — 110 ml' },
 ];
 
 // ── Weekly dummy data ──
@@ -72,6 +87,7 @@ const WEEKLY_PATTERN_DATA: PatternDay[] = [
       { hour: 19, type: 'bottle', detail: '120 ml' },
       { hour: 23, type: 'breast', detail: '8 min R' },
       { hour: 3, type: 'breast', detail: '10 min L' },
+      { hour: 9.0, type: 'pumping', detail: '90 ml' },
     ],
     diapers: [
       { hour: 6.25, type: 'wet' },
@@ -132,6 +148,7 @@ const WEEKLY_PATTERN_DATA: PatternDay[] = [
       { hour: 19.5, type: 'bottle', detail: '130 ml' },
       { hour: 23, type: 'breast', detail: '8 min L' },
       { hour: 3, type: 'breast', detail: '10 min R' },
+      { hour: 14.5, type: 'pumping', detail: '100 ml' },
     ],
     diapers: [
       { hour: 7, type: 'wet' },
@@ -160,6 +177,7 @@ const WEEKLY_PATTERN_DATA: PatternDay[] = [
       { hour: 19, type: 'bottle', detail: '130 ml' },
       { hour: 23.5, type: 'breast', detail: '8 min L' },
       { hour: 3.5, type: 'breast', detail: '10 min R' },
+      { hour: 10.0, type: 'pumping', detail: '85 ml' },
     ],
     diapers: [
       { hour: 6, type: 'wet' },
@@ -188,6 +206,7 @@ const WEEKLY_PATTERN_DATA: PatternDay[] = [
       { hour: 17.5, type: 'breast', detail: '10 min L' },
       { hour: 18.75, type: 'bottle', detail: '120 ml' },
       { hour: 22, type: 'breast', detail: '8 min R' },
+      { hour: 15.0, type: 'pumping', detail: '110 ml' },
     ],
     diapers: [
       { hour: 7, type: 'wet' },
@@ -289,6 +308,75 @@ const WEEKLY_FEEDS_AGG = WEEKLY_PATTERN_DATA.map((d) => {
   return { day: d.label, breast, bottle, total: breast + bottle };
 });
 
+
+// Derived per-tab feed data for segmented chart
+const WEEKLY_NURSING_BARS: BarDay[] = WEEKLY_PATTERN_DATA.map((d) => {
+  let totalMin = 0;
+  d.feeds.forEach((f) => {
+    if (f.type !== 'breast' || !f.detail) return;
+    const num = parseInt(f.detail, 10);
+    if (!isNaN(num)) totalMin += num;
+  });
+  return { label: d.label, segments: [{ value: totalMin, color: '#F2B89C' }] };
+});
+
+const WEEKLY_BOTTLE_BARS: BarDay[] = WEEKLY_PATTERN_DATA.map((d) => {
+  let totalMl = 0;
+  d.feeds.forEach((f) => {
+    if (f.type !== 'bottle' || !f.detail) return;
+    const num = parseInt(f.detail, 10);
+    if (!isNaN(num)) totalMl += num;
+  });
+  return { label: d.label, segments: [{ value: totalMl, color: '#D4874E' }] };
+});
+
+const WEEKLY_PUMPING_BARS: BarDay[] = WEEKLY_PATTERN_DATA.map((d) => {
+  let totalMl = 0;
+  d.feeds.forEach((f) => {
+    if (f.type !== 'pumping' || !f.detail) return;
+    const num = parseInt(f.detail, 10);
+    if (!isNaN(num)) totalMl += num;
+  });
+  return { label: d.label, segments: [{ value: totalMl, color: '#A78BBA' }] };
+});
+
+const FEED_TAB_CONFIG = {
+  nursing: {
+    data: WEEKLY_NURSING_BARS,
+    yUnit: 'min',
+    color: '#F2B89C',
+    stats: [
+      { label: 'AVG NURSING', value: `${Math.round(WEEKLY_NURSING_BARS.reduce((s, d) => s + d.segments[0].value, 0) / 7)} min/day`, color: '#F2B89C' },
+      { label: 'SESSIONS', value: `${WEEKLY_PATTERN_DATA.reduce((s, d) => s + d.feeds.filter(f => f.type === 'breast').length, 0)}`, color: undefined },
+    ],
+  },
+  bottle: {
+    data: WEEKLY_BOTTLE_BARS,
+    yUnit: 'ml',
+    color: '#D4874E',
+    stats: [
+      { label: 'AVG BOTTLE', value: `${Math.round(WEEKLY_BOTTLE_BARS.reduce((s, d) => s + d.segments[0].value, 0) / 7)} ml/day`, color: '#D4874E' },
+      { label: 'SESSIONS', value: `${WEEKLY_PATTERN_DATA.reduce((s, d) => s + d.feeds.filter(f => f.type === 'bottle').length, 0)}`, color: undefined },
+    ],
+  },
+  pumping: {
+    data: WEEKLY_PUMPING_BARS,
+    yUnit: 'ml',
+    color: '#A78BBA',
+    stats: [
+      { label: 'AVG YIELD', value: `${Math.round(WEEKLY_PUMPING_BARS.reduce((s, d) => s + d.segments[0].value, 0) / 7)} ml/day`, color: '#A78BBA' },
+      { label: 'SESSIONS', value: `${WEEKLY_PATTERN_DATA.reduce((s, d) => s + d.feeds.filter(f => f.type === 'pumping').length, 0)}`, color: undefined },
+    ],
+  },
+} as const;
+
+type FeedTab = keyof typeof FEED_TAB_CONFIG;
+const FEED_TABS: { key: FeedTab; label: string; color: string }[] = [
+  { key: 'nursing', label: 'Nursing', color: '#F2B89C' },
+  { key: 'bottle', label: 'Bottle', color: '#D4874E' },
+  { key: 'pumping', label: 'Pumping', color: '#A78BBA' },
+];
+
 const WEEKLY_DIAPERS_AGG = WEEKLY_PATTERN_DATA.map((d) => {
   const wet = d.diapers.filter((dp) => dp.type === 'wet').length;
   const dirty = d.diapers.filter((dp) => dp.type === 'dirty').length;
@@ -302,6 +390,65 @@ function DataCell({ label, value, color }: { label: string; value: string; color
     <View style={styles.dataCell}>
       <Text style={styles.dataCellLabel}>{label}</Text>
       <Text style={[styles.dataCellValue, color ? { color } : undefined]}>{value}</Text>
+    </View>
+  );
+}
+
+// ── Feeds Tabbed Card ──
+
+function FeedsTabbedCard() {
+  const [activeTab, setActiveTab] = useState<FeedTab>('nursing');
+  const config = FEED_TAB_CONFIG[activeTab];
+
+  const handleTabPress = (tab: FeedTab) => {
+    if (tab === activeTab) return;
+    Haptics.selectionAsync();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setActiveTab(tab);
+  };
+
+  return (
+    <View style={styles.premiumCard}>
+      <View style={styles.cardTitleRow}>
+        <Feather name="droplet" size={16} color={config.color} />
+        <Text style={styles.cardTitleText}>Feeds Trend</Text>
+      </View>
+
+      {/* Segmented tabs */}
+      <View style={styles.feedTabBar}>
+        {FEED_TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              style={[
+                styles.feedTab,
+                isActive && [styles.feedTabActive, { backgroundColor: tab.color + '20' }],
+              ]}
+              onPress={() => handleTabPress(tab.key)}
+            >
+              <View style={[styles.feedTabDot, { backgroundColor: isActive ? tab.color : colors.neutral[300] }]} />
+              <Text style={[
+                styles.feedTabLabel,
+                isActive && { color: tab.color, fontWeight: typography.fontWeight.bold },
+              ]}>
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Dynamic chart */}
+      <GroundedBarChart data={config.data} yUnit={config.yUnit} />
+
+      {/* Dynamic stats */}
+      <View style={styles.dataGridDivider} />
+      <View style={styles.dataGrid}>
+        {config.stats.map((stat) => (
+          <DataCell key={stat.label} label={stat.label} value={stat.value} color={stat.color} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -423,35 +570,8 @@ function WeeklyView() {
         </View>
       </View>
 
-      {/* ── Feeds Breakdown ── */}
-      <View style={styles.premiumCard}>
-        <View style={styles.cardTitleRow}>
-          <Feather name="droplet" size={16} color={EVENT_TYPES.feed.color} />
-          <Text style={styles.cardTitleText}>Feeds Breakdown</Text>
-        </View>
-        <Text style={styles.heroMetric}>{avgFeeds}</Text>
-        <Text style={styles.heroSubtitle}>Avg Sessions / Day</Text>
-
-        <GroundedBarChart
-          data={WEEKLY_FEEDS_AGG.map((d) => ({
-            label: d.day,
-            segments: [
-              { value: d.breast, color: BREAST_COLOR },
-              { value: d.bottle, color: FORMULA_COLOR },
-            ],
-          }))}
-          legend={[
-            { label: 'Breast', color: BREAST_COLOR },
-            { label: 'Bottle', color: FORMULA_COLOR },
-          ]}
-        />
-
-        <View style={styles.dataGridDivider} />
-        <View style={styles.dataGrid}>
-          <DataCell label="MOST FEEDS" value={`${Math.max(...WEEKLY_FEEDS_AGG.map(d => d.total))}`} />
-          <DataCell label="LEAST FEEDS" value={`${Math.min(...WEEKLY_FEEDS_AGG.map(d => d.total))}`} />
-        </View>
-      </View>
+      {/* ── Feeds Breakdown (Tabbed) ── */}
+      <FeedsTabbedCard />
 
       {/* ── Diapers Breakdown ── */}
       <View style={styles.premiumCard}>
@@ -520,11 +640,123 @@ const CAL_COLORS: Record<number, string> = {
   3: colors.primary[500],
 };
 
+// Sample events per day for detail panel
+type DayEvent = { time: string; type: keyof typeof EVENT_TYPES; detail: string };
+const MONTHLY_DAY_EVENTS: Record<number, DayEvent[]> = {
+  1: [
+    { time: '6:30 AM', type: 'feed', detail: 'Breastfeed — 15 min L' },
+    { time: '9:00 AM', type: 'sleep', detail: 'Morning nap — 1h 15m' },
+    { time: '9:00 AM', type: 'pumping', detail: 'Pumped — 90 ml' },
+    { time: '11:00 AM', type: 'feed', detail: 'Bottle — 120 ml' },
+    { time: '2:00 PM', type: 'diaper', detail: 'Wet diaper' },
+    { time: '5:00 PM', type: 'feed', detail: 'Breastfeed — 10 min R' },
+  ],
+  2: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 12 min R' },
+    { time: '8:15 AM', type: 'diaper', detail: 'Dirty diaper' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 1h 30m' },
+    { time: '12:00 PM', type: 'feed', detail: 'Bottle — 100 ml' },
+    { time: '2:30 PM', type: 'pumping', detail: 'Pumped — 110 ml' },
+  ],
+  3: [
+    { time: '6:00 AM', type: 'feed', detail: 'Breastfeed — 14 min L' },
+    { time: '7:30 AM', type: 'diaper', detail: 'Wet diaper' },
+    { time: '9:30 AM', type: 'sleep', detail: 'Morning nap — 1h' },
+    { time: '11:30 AM', type: 'feed', detail: 'Bottle — 130 ml' },
+    { time: '1:00 PM', type: 'diaper', detail: 'Dirty diaper' },
+    { time: '3:00 PM', type: 'sleep', detail: 'Afternoon nap — 1h 15m' },
+    { time: '5:00 PM', type: 'feed', detail: 'Breastfeed — 10 min R' },
+    { time: '7:00 PM', type: 'feed', detail: 'Bottle — 120 ml' },
+  ],
+  4: [
+    { time: '6:45 AM', type: 'feed', detail: 'Bottle — 110 ml' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 45 min' },
+    { time: '12:00 PM', type: 'feed', detail: 'Breastfeed — 12 min L' },
+  ],
+  5: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 15 min R' },
+    { time: '9:00 AM', type: 'pumping', detail: 'Pumped — 85 ml' },
+    { time: '10:30 AM', type: 'sleep', detail: 'Nap — 1h 20m' },
+    { time: '1:00 PM', type: 'feed', detail: 'Bottle — 100 ml' },
+    { time: '3:00 PM', type: 'diaper', detail: 'Wet diaper' },
+    { time: '5:30 PM', type: 'feed', detail: 'Breastfeed — 10 min L' },
+  ],
+  6: [
+    { time: '6:30 AM', type: 'feed', detail: 'Bottle — 120 ml' },
+    { time: '9:00 AM', type: 'sleep', detail: 'Morning nap — 1h 30m' },
+    { time: '11:00 AM', type: 'feed', detail: 'Breastfeed — 12 min R' },
+    { time: '2:00 PM', type: 'pumping', detail: 'Pumped — 100 ml' },
+    { time: '5:00 PM', type: 'feed', detail: 'Bottle — 110 ml' },
+    { time: '7:30 PM', type: 'sleep', detail: 'Bedtime' },
+  ],
+  7: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 14 min L' },
+    { time: '8:00 AM', type: 'diaper', detail: 'Dirty diaper' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 1h' },
+  ],
+  8: [
+    { time: '6:00 AM', type: 'feed', detail: 'Bottle — 130 ml' },
+    { time: '9:30 AM', type: 'sleep', detail: 'Morning nap — 1h 15m' },
+    { time: '12:00 PM', type: 'feed', detail: 'Breastfeed — 12 min R' },
+    { time: '2:00 PM', type: 'diaper', detail: 'Wet diaper' },
+    { time: '4:30 PM', type: 'feed', detail: 'Bottle — 100 ml' },
+    { time: '7:00 PM', type: 'sleep', detail: 'Bedtime' },
+  ],
+  9: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 10 min L' },
+    { time: '9:00 AM', type: 'pumping', detail: 'Pumped — 95 ml' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 1h 10m' },
+    { time: '1:00 PM', type: 'feed', detail: 'Bottle — 120 ml' },
+    { time: '3:30 PM', type: 'sleep', detail: 'Afternoon nap — 1h' },
+  ],
+  10: [
+    { time: '6:30 AM', type: 'feed', detail: 'Bottle — 110 ml' },
+    { time: '8:00 AM', type: 'diaper', detail: 'Dirty diaper' },
+    { time: '9:30 AM', type: 'sleep', detail: 'Nap — 1h 30m' },
+    { time: '12:00 PM', type: 'feed', detail: 'Breastfeed — 15 min R' },
+    { time: '2:30 PM', type: 'pumping', detail: 'Pumped — 105 ml' },
+    { time: '5:00 PM', type: 'feed', detail: 'Bottle — 100 ml' },
+    { time: '7:30 PM', type: 'sleep', detail: 'Bedtime' },
+  ],
+  11: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 12 min L' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 1h' },
+    { time: '1:00 PM', type: 'feed', detail: 'Bottle — 120 ml' },
+  ],
+  12: [
+    { time: '6:30 AM', type: 'feed', detail: 'Breastfeed — 14 min R' },
+    { time: '9:00 AM', type: 'sleep', detail: 'Morning nap — 1h 15m' },
+    { time: '11:00 AM', type: 'feed', detail: 'Bottle — 100 ml' },
+    { time: '2:00 PM', type: 'diaper', detail: 'Wet diaper' },
+    { time: '3:00 PM', type: 'pumping', detail: 'Pumped — 90 ml' },
+    { time: '5:00 PM', type: 'feed', detail: 'Breastfeed — 10 min L' },
+    { time: '7:00 PM', type: 'feed', detail: 'Bottle — 130 ml' },
+    { time: '7:30 PM', type: 'sleep', detail: 'Bedtime' },
+  ],
+  13: [
+    { time: '7:00 AM', type: 'feed', detail: 'Breastfeed — 12 min L' },
+    { time: '9:00 AM', type: 'diaper', detail: 'Dirty diaper' },
+    { time: '10:00 AM', type: 'sleep', detail: 'Nap — 1h 20m' },
+    { time: '12:30 PM', type: 'feed', detail: 'Bottle — 110 ml' },
+    { time: '3:00 PM', type: 'sleep', detail: 'Afternoon nap — 1h' },
+  ],
+};
+
 // ── Monthly View ──
 
 function MonthlyView() {
   const weightGain = (MONTHLY_GROWTH.endWeight - MONTHLY_GROWTH.startWeight).toFixed(1);
   const lengthGain = (MONTHLY_GROWTH.endLength - MONTHLY_GROWTH.startLength).toFixed(1);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const growthChartData = useGrowthChartData();
+
+  const handleDayPress = (day: number) => {
+    Haptics.selectionAsync();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedDay((prev) => (prev === day ? null : day));
+  };
+
+  const selectedEvents = selectedDay ? (MONTHLY_DAY_EVENTS[selectedDay] ?? []) : [];
 
   return (
     <View style={styles.weeklyContainer}>
@@ -567,16 +799,30 @@ function MonthlyView() {
           <View key={ri} style={styles.calRow}>
             {row.map((val, ci) => {
               const dayNum = ri * 7 + ci - 4; // offset for starting day
+              const isValid = val != null && dayNum > 0 && dayNum <= 31;
+              const isSelected = selectedDay === dayNum;
               return (
                 <View key={ci} style={styles.calCell}>
-                  {val != null ? (
-                    <View style={[styles.calDot, { backgroundColor: CAL_COLORS[val] }]}>
+                  {isValid ? (
+                    <Pressable
+                      onPress={() => handleDayPress(dayNum)}
+                      style={[
+                        styles.calDot,
+                        { backgroundColor: CAL_COLORS[val!] },
+                        isSelected && styles.calDotSelected,
+                      ]}
+                    >
                       <Text style={[
                         styles.calDayText,
-                        val >= 3 && { color: '#FFF' },
+                        val! >= 3 && { color: '#FFF' },
+                        isSelected && styles.calDayTextSelected,
                       ]}>
-                        {dayNum > 0 && dayNum <= 31 ? dayNum : ''}
+                        {dayNum}
                       </Text>
+                    </Pressable>
+                  ) : val != null ? (
+                    <View style={[styles.calDot, { backgroundColor: CAL_COLORS[val] }]}>
+                      <Text style={styles.calDayText} />
                     </View>
                   ) : (
                     <View style={styles.calEmpty} />
@@ -593,6 +839,32 @@ function MonthlyView() {
           ))}
           <Text style={styles.legendText}>More</Text>
         </View>
+
+        {/* ── Day Detail Panel ── */}
+        {selectedDay !== null && (
+          <View style={styles.dayDetailPanel}>
+            <View style={styles.dayDetailHeader}>
+              <Text style={styles.dayDetailTitle}>March {selectedDay}</Text>
+              <Pressable onPress={() => { Haptics.selectionAsync(); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSelectedDay(null); }}>
+                <Feather name="x" size={16} color={colors.textTertiary} />
+              </Pressable>
+            </View>
+            {selectedEvents.length > 0 ? (
+              selectedEvents.map((evt, i) => {
+                const evtType = EVENT_TYPES[evt.type];
+                return (
+                  <View key={i} style={styles.dayDetailRow}>
+                    <Text style={styles.dayDetailTime}>{evt.time}</Text>
+                    <View style={[styles.dayDetailDot, { backgroundColor: evtType?.color ?? colors.textTertiary }]} />
+                    <Text style={styles.dayDetailText}>{evt.detail}</Text>
+                  </View>
+                );
+              })
+            ) : (
+              <Text style={styles.dayDetailEmpty}>No activity recorded for this day</Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Sleep trend (premium — grounded chart) */}
@@ -718,6 +990,78 @@ function MonthlyView() {
           </View>
         </View>
       </View>
+
+      {/* Growth Chart or Empty State */}
+      {growthChartData.hasData ? (
+        <GrowthChartCard />
+      ) : (
+        <View style={styles.chartCard}>
+          <View style={styles.chartHeader}>
+            <Feather name="bar-chart-2" size={14} color={EVENT_TYPES.growth.color} />
+            <Text style={styles.chartTitle}>Growth Chart</Text>
+          </View>
+          {/* Mini faux chart illustration */}
+          <View style={styles.growthEmptyChart}>
+            {/* Soft grid lines */}
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={[styles.growthEmptyGridLine, { bottom: `${i * 25 + 12}%` as const }]} />
+            ))}
+            {/* Percentile band */}
+            <View style={styles.growthEmptyBand} />
+            {/* Rising curve with connected segments */}
+            {[
+              { left: 12, bottom: 18, w: 28, angle: 22 },
+              { left: 30, bottom: 32, w: 26, angle: 18 },
+              { left: 50, bottom: 44, w: 24, angle: 12 },
+              { left: 68, bottom: 52, w: 18, angle: 6 },
+            ].map((seg, i) => (
+              <View
+                key={`seg-${i}`}
+                style={[
+                  styles.growthEmptyCurveSegment,
+                  {
+                    left: `${seg.left}%` as const,
+                    bottom: `${seg.bottom}%` as const,
+                    width: seg.w,
+                    transform: [{ rotate: `${-seg.angle}deg` }],
+                  },
+                ]}
+              />
+            ))}
+            {/* Data point dots along the curve */}
+            {[
+              { left: '12%' as const, bottom: '18%' as const, size: 7 },
+              { left: '30%' as const, bottom: '32%' as const, size: 8 },
+              { left: '50%' as const, bottom: '44%' as const, size: 9 },
+              { left: '68%' as const, bottom: '52%' as const, size: 9 },
+              { left: '82%' as const, bottom: '56%' as const, size: 10 },
+            ].map((dot, i) => (
+              <View
+                key={`dot-${i}`}
+                style={[
+                  styles.growthEmptyDot,
+                  {
+                    left: dot.left,
+                    bottom: dot.bottom,
+                    width: dot.size,
+                    height: dot.size,
+                    borderRadius: dot.size / 2,
+                    opacity: 0.25 + i * 0.15,
+                  },
+                ]}
+              />
+            ))}
+            {/* Ruler icon centered */}
+            <View style={styles.growthEmptyIconWrap}>
+              <Feather name="trending-up" size={22} color={colors.primary[300]} />
+            </View>
+          </View>
+          <Text style={styles.growthEmptyTitle}>No chart data yet</Text>
+          <Text style={styles.growthEmptyBody}>
+            Log at least 2 measurements to see the growth curve with WHO percentiles.
+          </Text>
+        </View>
+      )}
 
       {/* Monthly Insights */}
       <View style={styles.insightsCard}>
@@ -945,7 +1289,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: spacing.lg,
-    shadowColor: '#4A7A5E',
+    shadowColor: '#8E72A4',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -1099,6 +1443,42 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
 
   // ── Data Grid ──
+  // ── Feed Tabs ──
+  feedTabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.xl,
+    padding: 3,
+    marginBottom: spacing.md,
+    gap: 3,
+  },
+  feedTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: borderRadius.lg,
+  },
+  feedTabActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  feedTabDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  feedTabLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textTertiary,
+  },
+
   dataGridDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.neutral[200],
@@ -1269,6 +1649,63 @@ const styles = StyleSheet.create({
   calLegendDot: {
     width: 12, height: 12, borderRadius: 3,
   },
+  calDotSelected: {
+    borderWidth: 2.5,
+    borderColor: colors.primary[700],
+    transform: [{ scale: 1.15 }],
+  },
+  calDayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: typography.fontWeight.bold,
+  },
+
+  // ── Monthly: Day Detail Panel ──
+  dayDetailPanel: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral[100],
+  },
+  dayDetailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  dayDetailTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+  },
+  dayDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: spacing.md,
+  },
+  dayDetailTime: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textTertiary,
+    width: 68,
+  },
+  dayDetailDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dayDetailText: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textPrimary,
+  },
+  dayDetailEmpty: {
+    fontSize: typography.fontSize.base,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    paddingVertical: spacing['2xl'],
+  },
 
   // ── Monthly: Growth ──
   growthGrid: {
@@ -1299,5 +1736,71 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: colors.neutral[200],
     marginVertical: 4,
+  },
+
+  // Growth Chart Empty State
+  growthEmptyChart: {
+    height: 120,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  growthEmptyGridLine: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    height: 1,
+    backgroundColor: colors.neutral[200],
+    opacity: 0.5,
+  },
+  growthEmptyBand: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    top: '25%',
+    bottom: '25%',
+    backgroundColor: colors.primary[100],
+    opacity: 0.3,
+    borderRadius: 8,
+  },
+  growthEmptyDots: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  growthEmptyCurveSegment: {
+    position: 'absolute',
+    height: 2.5,
+    borderRadius: 2,
+    backgroundColor: colors.primary[300],
+    opacity: 0.35,
+  },
+  growthEmptyDot: {
+    position: 'absolute',
+    backgroundColor: colors.primary[400],
+    borderWidth: 1.5,
+    borderColor: colors.primary[200],
+  },
+  growthEmptyIconWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  growthEmptyTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  growthEmptyBody: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.sm * 1.5,
   },
 });

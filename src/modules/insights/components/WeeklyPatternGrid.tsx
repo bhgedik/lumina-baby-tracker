@@ -1,16 +1,14 @@
 // ============================================================
-// Lumina — Weekly Pattern Grid (Huckleberry Style)
-// Unified 24h × 7-day grid overlaying sleep, feeds, and diapers
-// Y-axis: time slots (6AM → 6AM), X-axis: 7 day columns
-// Semantic icon badges for feeds/diapers (not abstract dots)
-// Smart clustering for overlapping events
-// Tap any item for a tooltip with haptic feedback
+// Lumina — Weekly Pattern Grid (Calendar Block Style)
+// Google/Apple Calendar week view with zoom in/out.
+// Every event is a distinct rounded rectangle block.
+// High-contrast colors, structured layout, zero dots.
 // ============================================================
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, type LayoutChangeEvent } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, type LayoutChangeEvent } from 'react-native';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 // ── Types ────────────────────────────────────────────────────
@@ -23,7 +21,7 @@ export interface SleepBlock {
 
 export interface FeedEvent {
   hour: number;
-  type: 'breast' | 'bottle';
+  type: 'breast' | 'bottle' | 'pumping';
   detail?: string;
 }
 
@@ -53,36 +51,40 @@ interface TooltipInfo {
 // ── Layout ───────────────────────────────────────────────────
 
 const VIEWBOX_W = 320;
-const VIEWBOX_H = 520;
-const PAD = { top: 20, right: 8, bottom: 8, left: 36 };
+const PAD = { top: 24, right: 8, bottom: 8, left: 36 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
-const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
+const COL_PAD = 1.5;
 
 const WINDOW_START = 6;
 const WINDOW_HOURS = 24;
 
-// Colors
-const NIGHT_COLOR = '#4A5899';
-const NIGHT_COLOR_LIGHT = 'rgba(74, 88, 153, 0.22)';
-const NAP_COLOR = '#A2B4E8';
-const NAP_COLOR_LIGHT = 'rgba(162, 180, 232, 0.28)';
-const BREAST_COLOR = '#E8A87C';
-const BREAST_BG = '#FDF2E9';
-const BOTTLE_COLOR = '#D4874E';
-const BOTTLE_BG = '#FDEBD2';
-const WET_COLOR = '#A0927D';
-const WET_BG = '#F3EFE8';
-const DIRTY_COLOR = '#8B7D68';
-const DIRTY_BG = '#EDE8DF';
+// ── Zoom levels ─────────────────────────────────────────────
+
+const ZOOM_LEVELS = [
+  { label: '1×', viewboxH: 520, scrollable: false },
+  { label: '2×', viewboxH: 1040, scrollable: true },
+  { label: '3×', viewboxH: 1560, scrollable: true },
+];
+
+// ── High-Contrast Colors ────────────────────────────────────
+
+const NIGHT_FILL = '#334177';
+const NIGHT_TEXT = '#FFFFFF';
+const NAP_FILL = '#B8D4F0';
+const NAP_TEXT = '#2A4A78';
+const FEED_FILL = '#F2C196';
+const FEED_TEXT = '#7A4A1A';
+const PUMPING_FILL = '#A78BBA';
+const PUMPING_TEXT = '#4A3660';
+const DIAPER_FILL = '#A8D5BA';
+const DIAPER_TEXT = '#2A5A3A';
+
 const GRID_COLOR = '#E8E4DE';
 const GRID_COLOR_STRONG = '#D4CFC8';
 const LABEL_COLOR = '#5C5C66';
 
-const BADGE_SIZE = 18;
-const BADGE_OVERLAP = 6;
-
-// Minimum SVG height for inline duration label
-const INLINE_LABEL_MIN_H = 28;
+const MIN_BLOCK_H = 8;
+const EVENT_BLOCK_H = 10;
 
 const TIME_MARKS = [
   { hour: 6, label: '6 AM' },
@@ -101,11 +103,6 @@ function toWindowHour(hour: number): number {
   return hour < WINDOW_START ? hour + 24 : hour;
 }
 
-function hourToY(windowHour: number): number {
-  const fraction = (windowHour - WINDOW_START) / WINDOW_HOURS;
-  return PAD.top + fraction * PLOT_H;
-}
-
 function formatTime12(hour24: number): string {
   const h = Math.floor(hour24) % 24;
   const m = Math.round((hour24 - Math.floor(hour24)) * 60);
@@ -122,7 +119,6 @@ function formatDuration(hours: number): string {
   return `${h}h ${m}m`;
 }
 
-/** Short format for inline labels: "10h" or "1.5h" or "45m" */
 function formatDurationShort(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   const h = Math.floor(hours);
@@ -132,66 +128,111 @@ function formatDurationShort(hours: number): string {
   return `${h}h${m}`;
 }
 
-// ── Badge event type for clustering ──
-interface BadgeEvent {
-  hour: number;
-  kind: 'breast' | 'bottle' | 'wet' | 'dirty';
-  detail?: string;
+interface CalBlock {
+  y: number;
+  h: number;
+  fill: string;
+  textColor: string;
+  label?: string;
+  detailLabel?: string;
   tooltipLines: string[];
-  iconColor: string;
-  bgColor: string;
-}
-
-interface BadgeCluster {
-  dayIdx: number;
-  svgX: number;
-  svgY: number;
-  badges: BadgeEvent[];
+  tooltipColor: string;
 }
 
 // ── Component ────────────────────────────────────────────────
 
 export function WeeklyPatternGrid({ data }: WeeklyPatternGridProps) {
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
-  // Use STATE (not ref) so layout triggers re-render for badge positioning
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [zoomIdx, setZoomIdx] = useState(0);
+  const prevZoomIdx = useRef(0);
+
+  const zoom = ZOOM_LEVELS[zoomIdx];
+  const VIEWBOX_H = zoom.viewboxH;
+  const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
+
+  // At higher zoom, show more time marks (every hour at 3×)
+  const activeTimeMarks = useMemo(() => {
+    if (zoomIdx === 0) return TIME_MARKS;
+    // Show every hour at 2×+
+    const marks: { hour: number; label: string }[] = [];
+    for (let i = 0; i < 24; i++) {
+      const hour = (WINDOW_START + i) % 24;
+      const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const period = hour >= 12 ? 'PM' : 'AM';
+      marks.push({ hour, label: `${h12} ${period}` });
+    }
+    return marks;
+  }, [zoomIdx]);
+
+  const hourToY = useCallback((windowHour: number): number => {
+    const fraction = (windowHour - WINDOW_START) / WINDOW_HOURS;
+    return PAD.top + fraction * PLOT_H;
+  }, [PLOT_H]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    setContainerSize((prev) => {
-      if (prev.width === width && prev.height === height) return prev;
-      return { width, height };
-    });
+    setContainerWidth(e.nativeEvent.layout.width);
   }, []);
 
   const colWidth = PLOT_W / data.length;
 
   const showTooltip = useCallback((svgX: number, svgY: number, lines: string[], color: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { width, height } = containerSize;
-    setTooltip({
-      x: (svgX / VIEWBOX_W) * width,
-      y: (svgY / VIEWBOX_H) * height,
-      lines,
-      color,
-    });
-  }, [containerSize]);
+    setTooltip({ x: (svgX / VIEWBOX_W) * containerWidth, y: svgY, lines, color });
+  }, [containerWidth]);
 
   const dismissTooltip = useCallback(() => setTooltip(null), []);
 
-  // Precompute sleep rects (SVG) and badge clusters (native overlay)
-  const { sleepRects, badgeClusters } = useMemo(() => {
-    const rects: React.ReactNode[] = [];
-    const clusters: BadgeCluster[] = [];
+  const handleZoomIn = useCallback(() => {
+    setTooltip(null);
+    setZoomIdx((prev) => {
+      const next = Math.min(prev + 1, ZOOM_LEVELS.length - 1);
+      // Reward haptic when details first reveal (entering 2×)
+      if (prev === 0 && next >= 1) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        Haptics.selectionAsync();
+      }
+      prevZoomIdx.current = next;
+      return next;
+    });
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setTooltip(null);
+    setZoomIdx((prev) => {
+      const next = Math.max(prev - 1, 0);
+      Haptics.selectionAsync();
+      prevZoomIdx.current = next;
+      return next;
+    });
+  }, []);
+
+  // The rendered SVG height in points (for ScrollView)
+  const svgDisplayHeight = useMemo(() => {
+    if (!containerWidth) return 400;
+    return (VIEWBOX_H / VIEWBOX_W) * containerWidth;
+  }, [containerWidth, VIEWBOX_H]);
+
+  const svgElements = useMemo(() => {
+    const elements: React.ReactNode[] = [];
+
+    // Scaled block heights for zoomed view — taller at 2×+ so detail labels fit
+    const scaledEventBlockH = EVENT_BLOCK_H * (zoomIdx === 0 ? 1 : zoomIdx === 1 ? 1.8 : 2.4);
+    const scaledMinBlockH = MIN_BLOCK_H * (zoomIdx === 0 ? 1 : zoomIdx === 1 ? 1.5 : 2);
+    const labelMinH = zoomIdx === 0 ? 20 : 16;
+    const fontSize = zoomIdx === 0 ? 7 : zoomIdx === 1 ? 8 : 9;
 
     data.forEach((day, dayIdx) => {
       const colX = PAD.left + dayIdx * colWidth;
+      const blockWidth = colWidth - COL_PAD * 2;
+      const blockX = colX + COL_PAD;
       const colCenter = colX + colWidth / 2;
-      const barWidth = colWidth * 0.65;
-      const barX = colCenter - barWidth / 2;
 
-      // ── Sleep blocks → SVG rects with inline duration labels ──
-      day.sleep.forEach((block, j) => {
+      const blocks: CalBlock[] = [];
+
+      // ── Sleep blocks ──
+      day.sleep.forEach((block) => {
         const startW = toWindowHour(block.startHour);
         let endW = toWindowHour(block.endHour);
         if (endW <= startW) endW += 24;
@@ -201,376 +242,298 @@ export function WeeklyPatternGrid({ data }: WeeklyPatternGridProps) {
 
         const y1 = hourToY(clampedStart);
         const y2 = hourToY(clampedEnd);
-        const h = y2 - y1;
+        const h = Math.max(y2 - y1, scaledMinBlockH);
         const isNight = block.type === 'night';
         const duration = endW - startW;
-        const showInlineLabel = h >= INLINE_LABEL_MIN_H;
 
-        rects.push(
-          <React.Fragment key={`s-${dayIdx}-${j}`}>
-            <Rect
-              x={barX}
-              y={y1}
-              width={barWidth}
-              height={h}
-              rx={4}
-              fill={isNight ? NIGHT_COLOR_LIGHT : NAP_COLOR_LIGHT}
-              stroke={isNight ? NIGHT_COLOR : NAP_COLOR}
-              strokeWidth={1}
-              strokeOpacity={0.4}
-              onPress={() => showTooltip(
-                colCenter, y1,
-                [
-                  isNight ? 'Night Sleep' : 'Nap',
-                  formatDuration(duration),
-                  `${formatTime12(block.startHour)} – ${formatTime12(block.endHour)}`,
-                ],
-                isNight ? NIGHT_COLOR : NAP_COLOR,
-              )}
-            />
-            {showInlineLabel && (
-              <SvgText
-                x={colCenter}
-                y={y1 + h / 2 + 3}
-                fontSize={8}
-                fontWeight="700"
-                fill={isNight ? NIGHT_COLOR : '#5A6BA8'}
-                textAnchor="middle"
-                onPress={() => showTooltip(
-                  colCenter, y1,
-                  [
-                    isNight ? 'Night Sleep' : 'Nap',
-                    formatDuration(duration),
-                    `${formatTime12(block.startHour)} – ${formatTime12(block.endHour)}`,
-                  ],
-                  isNight ? NIGHT_COLOR : NAP_COLOR,
-                )}
-              >
-                {formatDurationShort(duration)}
-              </SvgText>
-            )}
-          </React.Fragment>
-        );
+        blocks.push({
+          y: y1, h,
+          fill: isNight ? NIGHT_FILL : NAP_FILL,
+          textColor: isNight ? NIGHT_TEXT : NAP_TEXT,
+          label: formatDurationShort(duration),
+          tooltipLines: [
+            isNight ? 'Night Sleep' : 'Nap',
+            formatDuration(duration),
+            `${formatTime12(block.startHour)} – ${formatTime12(block.endHour)}`,
+          ],
+          tooltipColor: isNight ? NIGHT_FILL : NAP_FILL,
+        });
       });
 
-      // ── Collect feed + diaper events, cluster by time proximity ──
-      const allEvents: BadgeEvent[] = [];
-
+      // ── Feed blocks ──
       day.feeds.forEach((feed) => {
         const wh = toWindowHour(feed.hour);
         if (wh < WINDOW_START || wh >= WINDOW_START + WINDOW_HOURS) return;
-        const isBreast = feed.type === 'breast';
-        allEvents.push({
-          hour: feed.hour,
-          kind: feed.type,
-          detail: feed.detail,
+        const y = hourToY(wh);
+        const isPumping = feed.type === 'pumping';
+        const fillColor = isPumping ? PUMPING_FILL : FEED_FILL;
+        const textColor = isPumping ? PUMPING_TEXT : FEED_TEXT;
+        const typeLabel = feed.type === 'breast' ? 'Breast' : feed.type === 'pumping' ? 'Pumping' : 'Bottle';
+
+        // Build concise detail label for zoom reveal
+        let detailLabel: string | undefined;
+        if (feed.detail) {
+          detailLabel = feed.detail;
+        }
+
+        blocks.push({
+          y: y - scaledEventBlockH / 2, h: scaledEventBlockH,
+          fill: fillColor, textColor, detailLabel,
           tooltipLines: [
-            isBreast ? 'Breast Feed' : 'Bottle Feed',
-            feed.detail ?? '',
-            formatTime12(feed.hour),
+            typeLabel,
+            feed.detail ?? '', formatTime12(feed.hour),
           ].filter(Boolean),
-          iconColor: isBreast ? BREAST_COLOR : BOTTLE_COLOR,
-          bgColor: isBreast ? BREAST_BG : BOTTLE_BG,
+          tooltipColor: fillColor,
         });
       });
 
+      // ── Diaper blocks ──
       day.diapers.forEach((diaper) => {
         const wh = toWindowHour(diaper.hour);
         if (wh < WINDOW_START || wh >= WINDOW_START + WINDOW_HOURS) return;
-        const isWet = diaper.type === 'wet';
-        allEvents.push({
-          hour: diaper.hour,
-          kind: diaper.type,
+        const y = hourToY(wh);
+        blocks.push({
+          y: y - scaledEventBlockH / 2, h: scaledEventBlockH,
+          fill: DIAPER_FILL, textColor: DIAPER_TEXT,
+          detailLabel: diaper.type === 'wet' ? 'Wet' : 'Dirty',
           tooltipLines: [
-            isWet ? 'Wet Diaper' : 'Dirty Diaper',
+            diaper.type === 'wet' ? 'Wet' : 'Dirty',
             formatTime12(diaper.hour),
           ],
-          iconColor: isWet ? WET_COLOR : DIRTY_COLOR,
-          bgColor: isWet ? WET_BG : DIRTY_BG,
+          tooltipColor: DIAPER_FILL,
         });
       });
 
-      allEvents.sort((a, b) => toWindowHour(a.hour) - toWindowHour(b.hour));
+      blocks.sort((a, b) => a.y - b.y);
 
-      let currentCluster: BadgeEvent[] = [];
-      let clusterAnchorHour = -999;
-
-      const flushCluster = () => {
-        if (currentCluster.length === 0) return;
-        const avgHour = currentCluster.reduce((s, e) => s + toWindowHour(e.hour), 0) / currentCluster.length;
-        clusters.push({
-          dayIdx,
-          svgX: colCenter,
-          svgY: hourToY(avgHour),
-          badges: [...currentCluster],
-        });
-        currentCluster = [];
-      };
-
-      allEvents.forEach((evt) => {
-        const wh = toWindowHour(evt.hour);
-        if (wh - clusterAnchorHour > 0.5) {
-          flushCluster();
-          clusterAnchorHour = wh;
+      // Resolve overlaps
+      for (let i = 1; i < blocks.length; i++) {
+        const prevBottom = blocks[i - 1].y + blocks[i - 1].h + 1;
+        if (blocks[i].y < prevBottom) {
+          blocks[i].y = prevBottom;
         }
-        currentCluster.push(evt);
+      }
+
+      // Detail labels visible only at 2×+
+      const showDetails = zoomIdx >= 1;
+      const detailFontSize = zoomIdx === 1 ? 6.5 : 7.5;
+
+      blocks.forEach((block, j) => {
+        const showLabel = block.h >= labelMinH && block.label;
+        const showDetail = showDetails && block.detailLabel;
+        elements.push(
+          <React.Fragment key={`b-${dayIdx}-${j}`}>
+            <Rect
+              x={blockX} y={block.y} width={blockWidth} height={block.h} rx={3}
+              fill={block.fill}
+              onPress={() => showTooltip(colCenter, block.y, block.tooltipLines, block.tooltipColor)}
+            />
+            {showLabel && (
+              <SvgText
+                x={colCenter} y={block.y + block.h / 2 + 3}
+                fontSize={fontSize} fontWeight="700"
+                fill={block.textColor} textAnchor="middle"
+              >
+                {block.label}
+              </SvgText>
+            )}
+            {showDetail && !showLabel && (
+              <SvgText
+                x={colCenter} y={block.y + block.h / 2 + (detailFontSize / 2.5)}
+                fontSize={detailFontSize} fontWeight="600"
+                fill={block.textColor} textAnchor="middle"
+                opacity={zoomIdx >= 2 ? 1 : 0.85}
+              >
+                {block.detailLabel}
+              </SvgText>
+            )}
+          </React.Fragment>,
+        );
       });
-      flushCluster();
     });
 
-    return { sleepRects: rects, badgeClusters: clusters };
-  }, [data, colWidth, showTooltip]);
+    return elements;
+  }, [data, colWidth, hourToY, showTooltip, zoomIdx]);
+
+  // ── Day headers (sticky at top, outside ScrollView) ──
+  const dayHeaders = useMemo(() => (
+    <Svg width="100%" height="20" viewBox={`0 0 ${VIEWBOX_W} 20`}>
+      {data.map((day, i) => (
+        <SvgText
+          key={`hdr-${i}`}
+          x={PAD.left + (i + 0.5) * colWidth} y={14}
+          fontSize={10} fill={LABEL_COLOR} fontWeight="600" textAnchor="middle"
+        >
+          {day.label}
+        </SvgText>
+      ))}
+    </Svg>
+  ), [data, colWidth]);
+
+  const gridContent = (
+    <Svg
+      width="100%"
+      height={zoom.scrollable ? svgDisplayHeight : '100%'}
+      viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+    >
+      {/* Time grid lines */}
+      {activeTimeMarks.map((mark) => {
+        const wh = toWindowHour(mark.hour);
+        const y = hourToY(wh);
+        const isMajor = mark.hour === 12 || mark.hour === 0 || mark.hour === 18;
+        return (
+          <React.Fragment key={`tm-${mark.hour}`}>
+            <Line
+              x1={PAD.left} y1={y} x2={VIEWBOX_W - PAD.right} y2={y}
+              stroke={isMajor ? GRID_COLOR_STRONG : GRID_COLOR}
+              strokeWidth={isMajor ? 1 : 0.5}
+            />
+            <SvgText
+              x={PAD.left - 4} y={y + 3.5}
+              fontSize={8} fill={LABEL_COLOR} fontWeight="500" textAnchor="end"
+            >
+              {mark.label}
+            </SvgText>
+          </React.Fragment>
+        );
+      })}
+
+      {/* Column dividers */}
+      {data.map((_, i) => {
+        if (i === 0) return null;
+        const x = PAD.left + i * colWidth;
+        return (
+          <Line key={`vl-${i}`}
+            x1={x} y1={PAD.top} x2={x} y2={PAD.top + PLOT_H}
+            stroke={GRID_COLOR} strokeWidth={0.5}
+          />
+        );
+      })}
+
+      {/* Event blocks */}
+      {svgElements}
+    </Svg>
+  );
 
   return (
-    <View>
+    <View onLayout={onLayout}>
+      {/* Zoom controls */}
+      <View style={styles.zoomBar}>
+        <Pressable
+          style={[styles.zoomBtn, zoomIdx === 0 && styles.zoomBtnDisabled]}
+          onPress={handleZoomOut}
+          disabled={zoomIdx === 0}
+          hitSlop={8}
+        >
+          <Feather name="minus" size={14} color={zoomIdx === 0 ? '#CCC' : LABEL_COLOR} />
+        </Pressable>
+        <Text style={styles.zoomLabel}>{zoom.label}</Text>
+        <Pressable
+          style={[styles.zoomBtn, zoomIdx === ZOOM_LEVELS.length - 1 && styles.zoomBtnDisabled]}
+          onPress={handleZoomIn}
+          disabled={zoomIdx === ZOOM_LEVELS.length - 1}
+          hitSlop={8}
+        >
+          <Feather name="plus" size={14} color={zoomIdx === ZOOM_LEVELS.length - 1 ? '#CCC' : LABEL_COLOR} />
+        </Pressable>
+      </View>
+
+      {/* Sticky day headers */}
+      {dayHeaders}
+
+      {/* Grid — scrollable when zoomed */}
       <Pressable onPress={dismissTooltip}>
-        <View onLayout={onLayout} style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
-          {/* SVG layer: grid + sleep blocks */}
-          <Svg width="100%" height="100%" viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}>
-            {data.map((day, i) => {
-              const x = PAD.left + (i + 0.5) * colWidth;
-              return (
-                <SvgText
-                  key={`hdr-${i}`}
-                  x={x} y={PAD.top - 6}
-                  fontSize={10} fill={LABEL_COLOR} fontWeight="600" textAnchor="middle"
-                >
-                  {day.label}
-                </SvgText>
-              );
-            })}
-
-            {TIME_MARKS.map((mark) => {
-              const wh = toWindowHour(mark.hour);
-              const y = hourToY(wh);
-              const isMajor = mark.hour === 12 || mark.hour === 0 || mark.hour === 18;
-              return (
-                <React.Fragment key={`tm-${mark.hour}`}>
-                  <Line
-                    x1={PAD.left} y1={y} x2={VIEWBOX_W - PAD.right} y2={y}
-                    stroke={isMajor ? GRID_COLOR_STRONG : GRID_COLOR}
-                    strokeWidth={isMajor ? 1 : 0.5}
-                  />
-                  <SvgText
-                    x={PAD.left - 4} y={y + 3.5}
-                    fontSize={8} fill={LABEL_COLOR} fontWeight="500" textAnchor="end"
-                  >
-                    {mark.label}
-                  </SvgText>
-                </React.Fragment>
-              );
-            })}
-
-            {data.map((_, i) => {
-              if (i === 0) return null;
-              const x = PAD.left + i * colWidth;
-              return (
-                <Line
-                  key={`vl-${i}`}
-                  x1={x} y1={PAD.top} x2={x} y2={PAD.top + PLOT_H}
-                  stroke={GRID_COLOR} strokeWidth={0.5}
-                />
-              );
-            })}
-
-            {sleepRects}
-          </Svg>
-
-          {/* Native overlay: icon badges for feeds + diapers */}
-          {containerSize.width > 0 && badgeClusters.map((cluster, ci) => {
-            const viewX = (cluster.svgX / VIEWBOX_W) * containerSize.width;
-            const viewY = (cluster.svgY / VIEWBOX_H) * containerSize.height;
-            const count = cluster.badges.length;
-            const totalWidth = BADGE_SIZE + (count - 1) * (BADGE_SIZE - BADGE_OVERLAP);
-
-            return (
-              <View
-                key={`cl-${ci}`}
-                style={[
-                  styles.clusterContainer,
-                  {
-                    left: viewX - totalWidth / 2,
-                    top: viewY - BADGE_SIZE / 2,
-                    zIndex: 10,
-                    elevation: 5,
-                  },
-                ]}
-              >
-                {cluster.badges.map((badge, bi) => (
-                  <Pressable
-                    key={bi}
-                    style={[
-                      styles.badge,
-                      {
-                        backgroundColor: badge.bgColor,
-                        marginLeft: bi > 0 ? -BADGE_OVERLAP : 0,
-                        zIndex: count - bi,
-                      },
-                    ]}
-                    onPress={() => showTooltip(
-                      cluster.svgX, cluster.svgY,
-                      badge.tooltipLines,
-                      badge.iconColor,
-                    )}
-                    hitSlop={4}
-                  >
-                    <BadgeIcon kind={badge.kind} color={badge.iconColor} />
-                  </Pressable>
-                ))}
-              </View>
-            );
-          })}
-
-          {/* Tooltip overlay */}
-          {tooltip && (
-            <View
-              style={[
-                styles.tooltip,
-                {
-                  left: tooltip.x,
-                  top: tooltip.y - 16,
-                  transform: [{ translateX: -72 }, { translateY: -48 }],
-                  borderLeftColor: tooltip.color,
-                },
-              ]}
-              pointerEvents="none"
-            >
-              {tooltip.lines.map((line, i) => (
-                <Text
-                  key={i}
-                  style={i === 0 ? styles.tooltipTitle : styles.tooltipDetail}
-                >
-                  {line}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
+        {zoom.scrollable ? (
+          <ScrollView
+            style={styles.scrollContainer}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            {gridContent}
+          </ScrollView>
+        ) : (
+          <View style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
+            {gridContent}
+          </View>
+        )}
       </Pressable>
 
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendGroup}>
-          <View style={[styles.legendSwatch, { backgroundColor: NIGHT_COLOR_LIGHT, borderColor: NIGHT_COLOR }]} />
+          <View style={[styles.legendBlock, { backgroundColor: NIGHT_FILL }]} />
           <Text style={styles.legendLabel}>Night</Text>
         </View>
         <View style={styles.legendGroup}>
-          <View style={[styles.legendSwatch, { backgroundColor: NAP_COLOR_LIGHT, borderColor: NAP_COLOR }]} />
+          <View style={[styles.legendBlock, { backgroundColor: NAP_FILL }]} />
           <Text style={styles.legendLabel}>Nap</Text>
         </View>
         <View style={styles.legendGroup}>
-          <View style={[styles.legendBadge, { backgroundColor: BREAST_BG }]}>
-            <Feather name="droplet" size={8} color={BREAST_COLOR} />
-          </View>
-          <Text style={styles.legendLabel}>Breast</Text>
+          <View style={[styles.legendBlock, { backgroundColor: FEED_FILL }]} />
+          <Text style={styles.legendLabel}>Feed</Text>
         </View>
         <View style={styles.legendGroup}>
-          <View style={[styles.legendBadge, { backgroundColor: BOTTLE_BG }]}>
-            <MaterialCommunityIcons name="baby-bottle-outline" size={8} color={BOTTLE_COLOR} />
-          </View>
-          <Text style={styles.legendLabel}>Bottle</Text>
+          <View style={[styles.legendBlock, { backgroundColor: PUMPING_FILL }]} />
+          <Text style={styles.legendLabel}>Pump</Text>
         </View>
         <View style={styles.legendGroup}>
-          <View style={[styles.legendBadge, { backgroundColor: WET_BG }]}>
-            <MaterialCommunityIcons name="baby-face-outline" size={8} color={WET_COLOR} />
-          </View>
+          <View style={[styles.legendBlock, { backgroundColor: DIAPER_FILL }]} />
           <Text style={styles.legendLabel}>Diaper</Text>
         </View>
       </View>
-      <Text style={styles.legendHint}>Tap any item for details</Text>
+      <Text style={styles.legendHint}>Tap any block for details · Zoom in to reveal metrics</Text>
     </View>
   );
-}
-
-// ── Badge Icon ───────────────────────────────────────────────
-
-function BadgeIcon({ kind, color }: { kind: BadgeEvent['kind']; color: string }) {
-  switch (kind) {
-    case 'breast':
-      return <Feather name="droplet" size={10} color={color} />;
-    case 'bottle':
-      return <MaterialCommunityIcons name="baby-bottle-outline" size={10} color={color} />;
-    case 'wet':
-    case 'dirty':
-      return <MaterialCommunityIcons name="baby-face-outline" size={10} color={color} />;
-  }
 }
 
 // ── Styles ───────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  clusterContainer: {
-    position: 'absolute',
+  zoomBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginBottom: 4,
+    paddingRight: 4,
   },
-  badge: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
-    borderRadius: BADGE_SIZE / 2,
+  zoomBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F0ECE6',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
   },
-  tooltip: {
-    position: 'absolute',
-    width: 144,
-    backgroundColor: '#2C3349',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderLeftWidth: 3,
-    zIndex: 100,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+  zoomBtnDisabled: {
+    opacity: 0.5,
   },
-  tooltipTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  tooltipDetail: {
+  zoomLabel: {
     fontSize: 11,
-    fontWeight: '400',
-    color: '#B0B8D0',
-    marginTop: 1,
+    fontWeight: '600',
+    color: '#5C5C66',
+    minWidth: 22,
+    textAlign: 'center',
+  },
+  scrollContainer: {
+    maxHeight: 480,
+    borderRadius: 8,
   },
   legend: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 12,
-    marginTop: 8,
+    gap: 16,
+    marginTop: 10,
   },
   legendGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
-  legendSwatch: {
+  legendBlock: {
     width: 14,
     height: 10,
     borderRadius: 3,
-    borderWidth: 1,
-  },
-  legendBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
   },
   legendLabel: {
     fontSize: 10,

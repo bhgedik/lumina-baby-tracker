@@ -35,25 +35,52 @@ interface GroundedBarChartProps {
 // ── Layout ───────────────────────────────────────────────────
 
 const VIEWBOX_W = 320;
-const VIEWBOX_H = 180;
-const PAD = { top: 12, right: 12, bottom: 28, left: 32 };
+const VIEWBOX_H = 190;
+const PAD = { top: 16, right: 12, bottom: 32, left: 46 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const AXIS_COLOR = '#C4C0B8';
-const GRID_COLOR = '#C4C0B8';
-const LABEL_COLOR = '#5C5C66';
+const AXIS_COLOR = '#D6D3CD';
+const GRID_COLOR = '#E8E5DF';
+const LABEL_COLOR = '#9CA3AF';
+
+// ── Nice step calculation ────────────────────────────────────
+// Picks a "round" step size that yields 3–5 Y-axis ticks.
+
+function niceStep(rawMax: number): number {
+  if (rawMax <= 0) return 1;
+
+  // Target 4 ticks (excluding 0)
+  const rawStep = rawMax / 4;
+
+  // Round to a nice number
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+
+  let niceMultiplier: number;
+  if (normalized <= 1) niceMultiplier = 1;
+  else if (normalized <= 2) niceMultiplier = 2;
+  else if (normalized <= 2.5) niceMultiplier = 2.5;
+  else if (normalized <= 5) niceMultiplier = 5;
+  else niceMultiplier = 10;
+
+  return Math.max(1, niceMultiplier * magnitude);
+}
 
 // ── Component ────────────────────────────────────────────────
 
 export function GroundedBarChart({ data, yUnit = '', legend }: GroundedBarChartProps) {
   const { maxVal, yTicks, scaleY } = useMemo(() => {
+    // Dynamic max from data
     const totals = data.map((d) => d.segments.reduce((s, seg) => s + seg.value, 0));
-    const max = Math.max(1, ...totals);
+    const dataMax = Math.max(1, ...totals);
 
-    // Pick a clean step: 2, 3, 4, or 5
-    const step = max <= 6 ? 2 : max <= 12 ? 3 : max <= 20 ? 5 : 5;
-    const roundedMax = Math.ceil(max / step) * step;
+    // Add 12% headroom so tallest bar never touches the top
+    const bufferedMax = dataMax * 1.12;
+
+    // Calculate nice step and round up
+    const step = niceStep(bufferedMax);
+    const roundedMax = Math.ceil(bufferedMax / step) * step;
 
     const ticks: number[] = [];
     for (let v = 0; v <= roundedMax; v += step) ticks.push(v);
@@ -69,6 +96,12 @@ export function GroundedBarChart({ data, yUnit = '', legend }: GroundedBarChartP
   const barGroupWidth = PLOT_W / data.length;
   const barWidth = barGroupWidth * 0.5;
 
+  // Format Y label: no space before unit, compact
+  const formatYLabel = (val: number): string => {
+    if (yUnit) return `${val}${yUnit}`;
+    return `${val}`;
+  };
+
   return (
     <View>
       <View style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
@@ -80,23 +113,15 @@ export function GroundedBarChart({ data, yUnit = '', legend }: GroundedBarChartP
               x1={PAD.left} y1={scaleY(val)}
               x2={VIEWBOX_W - PAD.right} y2={scaleY(val)}
               stroke={GRID_COLOR}
-              strokeWidth={0.75}
-              strokeDasharray="4,3"
+              strokeWidth={0.5}
+              strokeDasharray="4,4"
             />
           ))}
 
-          {/* Baseline (X-axis at 0) — solid */}
+          {/* Baseline (X-axis at 0) — solid, slightly heavier */}
           <Line
             x1={PAD.left} y1={baselineY}
             x2={VIEWBOX_W - PAD.right} y2={baselineY}
-            stroke={AXIS_COLOR}
-            strokeWidth={1}
-          />
-
-          {/* Y-axis line */}
-          <Line
-            x1={PAD.left} y1={PAD.top}
-            x2={PAD.left} y2={baselineY}
             stroke={AXIS_COLOR}
             strokeWidth={0.75}
           />
@@ -169,7 +194,7 @@ export function GroundedBarChart({ data, yUnit = '', legend }: GroundedBarChartP
             return (
               <SvgText
                 key={`xl-${i}`}
-                x={x} y={VIEWBOX_H - 6}
+                x={x} y={VIEWBOX_H - 8}
                 fontSize={10} fill={LABEL_COLOR} fontWeight="500"
                 textAnchor="middle"
               >
@@ -178,15 +203,18 @@ export function GroundedBarChart({ data, yUnit = '', legend }: GroundedBarChartP
             );
           })}
 
-          {/* Y-axis labels */}
+          {/* Y-axis labels — offset left of plot area, vertically centered on grid */}
           {yTicks.map((val) => (
             <SvgText
               key={`yl-${val}`}
-              x={PAD.left - 6} y={scaleY(val) + 3.5}
-              fontSize={10} fill={LABEL_COLOR} fontWeight="500"
+              x={PAD.left - 8}
+              y={scaleY(val) + 3.5}
+              fontSize={10}
+              fill={LABEL_COLOR}
+              fontWeight="400"
               textAnchor="end"
             >
-              {val}{yUnit}
+              {formatYLabel(val)}
             </SvgText>
           ))}
         </Svg>

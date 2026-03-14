@@ -22,11 +22,15 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
 import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
+import { GrowthChartCard } from '../../../src/modules/growth/components/GrowthChartCard';
+import { useGrowthChartData } from '../../../src/modules/growth/hooks/useGrowthChartData';
 import { useGrowthStore } from '../../../src/stores/growthStore';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { generateUUID } from '../../../src/stores/createSyncedStore';
 import type { GrowthLog } from '../../../src/modules/growth/types';
+
+type GrowthTab = 'log' | 'chart';
 
 const SERIF_FONT = Platform.select({
   ios: 'Georgia',
@@ -104,6 +108,57 @@ const METRICS: MetricInfo[] = [
   },
 ];
 
+function GrowthChartEmptyState({ onLogEntry }: { onLogEntry: () => void }) {
+  return (
+    <View style={styles.emptyContainer}>
+      {/* Decorative chart illustration */}
+      <View style={styles.emptyIllustration}>
+        <View style={styles.emptyChartArea}>
+          {/* Faux grid lines */}
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={[styles.emptyGridLine, { bottom: `${i * 28 + 10}%` }]} />
+          ))}
+          {/* Faux percentile bands */}
+          <View style={styles.emptyBandOuter} />
+          <View style={styles.emptyBandInner} />
+          {/* Faux growth curve */}
+          <View style={styles.emptyCurveDots}>
+            {[
+              { left: '15%' as const, bottom: '20%' as const },
+              { left: '35%' as const, bottom: '38%' as const },
+              { left: '55%' as const, bottom: '52%' as const },
+            ].map((pos, i) => (
+              <View key={i} style={[styles.emptyDot, { left: pos.left, bottom: pos.bottom }]} />
+            ))}
+          </View>
+          {/* Question mark overlay */}
+          <View style={styles.emptyQuestionWrap}>
+            <Feather name="plus" size={24} color={colors.primary[400]} />
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.emptyTitle}>No growth data yet</Text>
+      <Text style={styles.emptyBody}>
+        Log at least 2 measurements to see your baby's growth curve plotted against WHO percentile charts.
+      </Text>
+
+      <Pressable style={[styles.emptyButton, shadows.sm]} onPress={onLogEntry}>
+        <Feather name="edit-3" size={16} color={colors.textInverse} />
+        <Text style={styles.emptyButtonText}>Log First Measurement</Text>
+      </Pressable>
+
+      {/* Educational note */}
+      <View style={styles.emptyNote}>
+        <Feather name="info" size={14} color={colors.primary[500]} />
+        <Text style={styles.emptyNoteText}>
+          Growth charts need multiple data points over time to show meaningful trends. Each checkup or home measurement adds to the picture.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function GrowthLogScreen() {
   const router = useRouter();
   const baby = useBabyStore((s) => s.getActiveBaby());
@@ -112,6 +167,10 @@ export default function GrowthLogScreen() {
   const { addItem } = useGrowthStore();
 
   const isMetric = family?.preferred_units !== 'imperial';
+  const chartData = useGrowthChartData();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<GrowthTab>('log');
 
   // Date navigation
   const [measuredDate, setMeasuredDate] = useState(new Date());
@@ -251,6 +310,40 @@ export default function GrowthLogScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        {/* ── Segmented Control ── */}
+        <View style={styles.segmentedControl}>
+          <Pressable
+            style={[styles.segmentTab, activeTab === 'log' && styles.segmentTabActive]}
+            onPress={() => setActiveTab('log')}
+          >
+            <Feather name="edit-3" size={14} color={activeTab === 'log' ? colors.primary[600] : colors.textTertiary} />
+            <Text style={[styles.segmentTabText, activeTab === 'log' && styles.segmentTabTextActive]}>
+              Log Entry
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.segmentTab, activeTab === 'chart' && styles.segmentTabActive]}
+            onPress={() => setActiveTab('chart')}
+          >
+            <Feather name="trending-up" size={14} color={activeTab === 'chart' ? colors.primary[600] : colors.textTertiary} />
+            <Text style={[styles.segmentTabText, activeTab === 'chart' && styles.segmentTabTextActive]}>
+              Growth Chart
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* ── Chart Tab ── */}
+        {activeTab === 'chart' && (
+          <View style={styles.chartSection}>
+            {chartData.hasData
+              ? <GrowthChartCard />
+              : <GrowthChartEmptyState onLogEntry={() => setActiveTab('log')} />
+            }
+          </View>
+        )}
+
+        {/* ── Log Entry Tab ── */}
+        {activeTab === 'log' && (<>
         {/* Intro */}
         <Text style={styles.introText}>
           Track your baby's growth between checkups.
@@ -409,6 +502,7 @@ export default function GrowthLogScreen() {
         </Pressable>
 
         <View style={{ height: 40 }} />
+        </>)}
       </ScrollView>
 
       <LuminaWhisper
@@ -430,6 +524,42 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingTop: spacing.base,
   },
+  // ── Segmented Control ──
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: colors.neutral[100],
+    borderRadius: borderRadius.xl,
+    padding: 3,
+    marginBottom: spacing.lg,
+  },
+  segmentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.xl - 2,
+  },
+  segmentTabActive: {
+    backgroundColor: colors.surface,
+    ...shadows.sm,
+  },
+  segmentTabText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textTertiary,
+  },
+  segmentTabTextActive: {
+    color: colors.primary[600],
+    fontWeight: typography.fontWeight.semibold,
+  },
+
+  // ── Chart Section ──
+  chartSection: {
+    marginTop: spacing.sm,
+  },
+
   introText: {
     fontFamily: SERIF_FONT,
     fontSize: typography.fontSize.base,
@@ -649,6 +779,127 @@ const styles = StyleSheet.create({
   },
   iosPicker: {
     height: 340,
+  },
+
+  // ── Empty State ──
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyIllustration: {
+    width: 200,
+    height: 160,
+    marginBottom: spacing.xl,
+  },
+  emptyChartArea: {
+    flex: 1,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  emptyGridLine: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    height: 1,
+    backgroundColor: colors.neutral[200],
+    opacity: 0.5,
+  },
+  emptyBandOuter: {
+    position: 'absolute',
+    left: '8%',
+    right: '8%',
+    top: '15%',
+    bottom: '15%',
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.lg,
+    opacity: 0.6,
+  },
+  emptyBandInner: {
+    position: 'absolute',
+    left: '12%',
+    right: '12%',
+    top: '30%',
+    bottom: '30%',
+    backgroundColor: colors.primary[100],
+    borderRadius: borderRadius.md,
+    opacity: 0.5,
+  },
+  emptyCurveDots: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  emptyDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary[300],
+    opacity: 0.7,
+  },
+  emptyQuestionWrap: {
+    position: 'absolute',
+    right: '18%',
+    bottom: '55%',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary[50],
+    borderWidth: 2,
+    borderColor: colors.primary[200],
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    marginBottom: spacing.xl,
+    maxWidth: 280,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.xl,
+  },
+  emptyButtonText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textInverse,
+  },
+  emptyNote: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.xl,
+    padding: spacing.base,
+    maxWidth: 320,
+  },
+  emptyNoteText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[700],
+    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
   },
 
   // ── Save Button ──

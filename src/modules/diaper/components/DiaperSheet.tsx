@@ -26,9 +26,9 @@ interface Props {
 
 const OPTIONS: { type: DiaperType; icon: keyof typeof Feather.glyphMap; label: string; sub: string; color: string }[] = [
   { type: 'dry', icon: 'sun', label: 'Dry', sub: 'No output', color: '#C4943A' },
-  { type: 'wet', icon: 'droplet', label: 'Wet', sub: 'Wet only', color: '#5E8A72' },
+  { type: 'wet', icon: 'droplet', label: 'Wet', sub: 'Wet only', color: '#A78BBA' },
   { type: 'dirty', icon: 'cloud', label: 'Dirty', sub: 'Soiled', color: '#FF9800' },
-  { type: 'both', icon: 'layers', label: 'Both', sub: 'Wet + dirty', color: '#F17C4C' },
+  { type: 'both', icon: 'layers', label: 'Both', sub: 'Wet + dirty', color: '#F2B89C' },
 ];
 
 const TOAST_LABELS: Record<DiaperType, string> = {

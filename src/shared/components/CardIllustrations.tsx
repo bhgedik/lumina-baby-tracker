@@ -37,7 +37,7 @@ function FeedingIllustration({ size = 52, color = '#F49770' }: IllustrationProps
 }
 
 // Sleep — crescent moon with a sleeping face, stars, and a tiny cloud
-function SleepIllustration({ size = 52, color = '#7C9A8E' }: IllustrationProps) {
+function SleepIllustration({ size = 52, color = '#B199CE' }: IllustrationProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 52 52" fill="none">
       <G>
@@ -127,7 +127,7 @@ function HealthIllustration({ size = 52, color = '#E53935' }: IllustrationProps)
 }
 
 // Activity — playful rattle with motion lines
-function ActivityIllustration({ size = 52, color = '#5E8A72' }: IllustrationProps) {
+function ActivityIllustration({ size = 52, color = '#A78BBA' }: IllustrationProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 52 52" fill="none">
       <G>

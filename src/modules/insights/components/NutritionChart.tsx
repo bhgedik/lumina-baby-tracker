@@ -15,7 +15,7 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 40 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const BAR_COLOR = '#8BA88E';
+const BAR_COLOR = '#B199CE';
 const BAR_ESTIMATED_COLOR = '#B5CCB8';
 const GRID_COLOR = '#E8E4DF';
 const LABEL_COLOR = '#8A8A8A';

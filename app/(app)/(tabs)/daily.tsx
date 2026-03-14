@@ -49,8 +49,8 @@ const UI = {
   textSecondary: '#5C5C5C',   // body text — readable on cream
   textMuted: '#8A8A8A',       // labels, captions only
   textLight: '#B0AAA2',
-  accent: '#8BA88E',
-  accentLight: '#EDF3EE',
+  accent: '#B199CE',
+  accentLight: '#F0EBF5',
   warmLight: '#FEF4E8',
   warmTint: '#C4943A',
   blushLight: '#FDF0F0',
@@ -94,7 +94,7 @@ function buildHealthSignals(
       detail: sleepGood
         ? `${sleepHours.toFixed(1)}h today — looking consistent`
         : `${sleepHours.toFixed(1)}h today — might need more rest`,
-      tint: sleepGood ? '#6B8E6F' : UI.warmTint,
+      tint: sleepGood ? '#A78BBA' : UI.warmTint,
       bg: sleepGood ? UI.accentLight : UI.warmLight,
     });
   }
@@ -106,7 +106,7 @@ function buildHealthSignals(
       icon: 'coffee',
       label: 'Feeding',
       detail: `${totalFeeds} feeds today — ${feedFreq}${lastFedAgo ? ` (last ${lastFedAgo})` : ''}`,
-      tint: totalFeeds >= 6 ? '#6B8E6F' : UI.warmTint,
+      tint: totalFeeds >= 6 ? '#A78BBA' : UI.warmTint,
       bg: totalFeeds >= 6 ? UI.accentLight : UI.warmLight,
     });
   }
@@ -117,7 +117,7 @@ function buildHealthSignals(
       icon: 'droplet',
       label: 'Diapers',
       detail: `${totalWet} wet, ${totalDirty} dirty today`,
-      tint: '#6B8E6F',
+      tint: '#A78BBA',
       bg: UI.accentLight,
     });
   }
@@ -168,7 +168,7 @@ function generateSmartSuggestions(
       title: 'Newborn sleep basics',
       snippet: 'Expect 14-17 hours of sleep in short bursts. Day-night confusion is normal and typically resolves by 6-8 weeks.',
       icon: 'moon',
-      tint: '#6B8E6F',
+      tint: '#A78BBA',
     });
   } else if (weeks <= 6) {
     suggestions.push({
@@ -176,7 +176,7 @@ function generateSmartSuggestions(
       title: 'Growth spurt window',
       snippet: 'Around 3-6 weeks, babies often have their first major growth spurt. Increased fussiness and feeding are normal signs.',
       icon: 'trending-up',
-      tint: '#6B8E6F',
+      tint: '#A78BBA',
     });
   } else if (weeks <= 12) {
     suggestions.push({
@@ -355,6 +355,246 @@ function DailyNoteCard({
   );
 }
 
+// ── Pregnancy weekly data ────────────────────────────────────
+
+interface PregnancyWeekInfo {
+  babySize: string;
+  babyDev: string;
+  momBody: string;
+  tip: string;
+  tipIcon: React.ComponentProps<typeof Feather>['name'];
+}
+
+function getPregnancyWeekInfo(week: number): PregnancyWeekInfo {
+  if (week <= 12) return {
+    babySize: 'Lime',
+    babyDev: 'All major organs are forming. Tiny fingers and toes are developing, and baby can make small movements.',
+    momBody: 'Fatigue and nausea are common. Your body is building the placenta — the hardest behind-the-scenes work.',
+    tip: 'Small, frequent meals can ease nausea. Stay hydrated and rest when you can.',
+    tipIcon: 'coffee',
+  };
+  if (week <= 16) return {
+    babySize: 'Avocado',
+    babyDev: 'Baby is growing rapidly. Facial features are becoming more defined, and they may start sucking their thumb.',
+    momBody: 'Energy often returns in the second trimester. You may notice a small bump forming.',
+    tip: 'This is a great time to start prenatal yoga or gentle walks.',
+    tipIcon: 'heart',
+  };
+  if (week <= 20) return {
+    babySize: 'Banana',
+    babyDev: 'Baby can hear sounds now! They\'re developing sleep-wake cycles and you may feel the first flutters of movement.',
+    momBody: 'The "quickening" — first movements you can feel. Round ligament pain is common as your uterus grows.',
+    tip: 'Talk and sing to your baby. They\'re learning to recognize your voice.',
+    tipIcon: 'music',
+  };
+  if (week <= 24) return {
+    babySize: 'Papaya',
+    babyDev: 'Baby\'s lungs are developing rapidly. They respond to light, sound, and touch. Taste buds are forming.',
+    momBody: 'You may feel Braxton Hicks contractions — practice contractions that are irregular and painless.',
+    tip: 'Start thinking about your birth preferences. No pressure to decide yet, just explore.',
+    tipIcon: 'book-open',
+  };
+  if (week <= 28) return {
+    babySize: 'Cauliflower',
+    babyDev: 'Baby can open and close their eyes. Brain development is accelerating rapidly. They dream during REM sleep.',
+    momBody: 'Backaches and leg cramps may increase. Your belly is growing noticeably now.',
+    tip: 'Consider your birth plan and start preparing the nursery at your own pace.',
+    tipIcon: 'home',
+  };
+  if (week <= 32) return {
+    babySize: 'Squash',
+    babyDev: 'Baby is putting on weight and developing fat layers. Bones are hardening except the skull, which stays flexible for birth.',
+    momBody: 'Shortness of breath and heartburn are common as baby takes up more space.',
+    tip: 'Pack your hospital bag. It\'s early, but one less thing to worry about later.',
+    tipIcon: 'briefcase',
+  };
+  if (week <= 36) return {
+    babySize: 'Honeydew melon',
+    babyDev: 'Baby is nearly fully developed. They\'re gaining about half a pound per week and settling into head-down position.',
+    momBody: 'Nesting instinct may kick in. Braxton Hicks may become more frequent.',
+    tip: 'Practice breathing techniques. Rest as much as possible — your body is doing incredible work.',
+    tipIcon: 'wind',
+  };
+  return {
+    babySize: 'Watermelon',
+    babyDev: 'Baby is full-term and ready! Lungs are mature, reflexes are coordinated, and they\'re just putting on final weight.',
+    momBody: 'Baby may "drop" lower. You might feel pressure but also breathe easier. The finish line is near!',
+    tip: 'Trust your body and your instincts. You\'re about to meet someone amazing.',
+    tipIcon: 'star',
+  };
+}
+
+interface PregnancyWellnessTip {
+  id: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  title: string;
+  body: string;
+  tint: string;
+  bg: string;
+}
+
+function getPregnancyWellnessTips(week: number): PregnancyWellnessTip[] {
+  const tips: PregnancyWellnessTip[] = [
+    {
+      id: 'hydration',
+      icon: 'droplet',
+      title: 'Stay hydrated',
+      body: 'Aim for 8-10 glasses of water daily. Proper hydration supports amniotic fluid levels and helps with fatigue.',
+      tint: '#5B9BD5',
+      bg: '#EBF3FB',
+    },
+    {
+      id: 'prenatal',
+      icon: 'shield',
+      title: 'Prenatal vitamins',
+      body: 'Folic acid, iron, and DHA are essential. Take them with food to reduce nausea.',
+      tint: '#6BAF7B',
+      bg: '#EDF7EF',
+    },
+    {
+      id: 'movement',
+      icon: 'activity',
+      title: 'Gentle movement',
+      body: 'Walking, swimming, or prenatal yoga for 30 minutes most days supports circulation and mood.',
+      tint: '#A78BBA',
+      bg: UI.accentLight,
+    },
+  ];
+
+  if (week >= 28) {
+    tips.push({
+      id: 'kicks',
+      icon: 'zap',
+      title: 'Count the kicks',
+      body: 'From week 28, track baby\'s movements daily. 10 movements in 2 hours during baby\'s active time is a good sign.',
+      tint: '#E8945A',
+      bg: '#FEF4E8',
+    });
+  }
+
+  if (week >= 20) {
+    tips.push({
+      id: 'sleep-position',
+      icon: 'moon',
+      title: 'Sleep on your side',
+      body: 'Left side sleeping improves blood flow to baby. Use pillows between knees and behind your back for comfort.',
+      tint: '#735A88',
+      bg: '#E8DDF3',
+    });
+  }
+
+  tips.push({
+    id: 'self-care',
+    icon: 'heart',
+    title: 'A moment for you',
+    body: 'Your wellbeing matters deeply. Even 5 minutes of calm breathing or a warm (not hot) bath can reset your whole day.',
+    tint: '#C47A7A',
+    bg: UI.blushLight,
+  });
+
+  return tips;
+}
+
+// ── Pregnancy Daily View ─────────────────────────────────────
+
+function PregnancyDailyView({ week, parentName }: { week: number; parentName: string }) {
+  const weekInfo = useMemo(() => getPregnancyWeekInfo(week), [week]);
+  const wellnessTips = useMemo(() => getPregnancyWellnessTips(week), [week]);
+  const [expandedTips, setExpandedTips] = useState<Record<string, boolean>>({});
+
+  const toggleTip = useCallback((id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedTips((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+
+  const trimester = week <= 13 ? '1st' : week <= 27 ? '2nd' : '3rd';
+
+  return (
+    <>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Daily</Text>
+        <Text style={styles.headerSubtitle}>
+          Week {week} · {trimester} trimester
+        </Text>
+      </View>
+
+      {/* ── Baby This Week Card ── */}
+      <View style={styles.healthCard}>
+        <View style={styles.healthHeader}>
+          <View style={[styles.healthIconWrap, { backgroundColor: '#FEF4E8' }]}>
+            <Feather name="heart" size={18} color="#E8945A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.healthTitle}>Baby This Week</Text>
+            <Text style={styles.healthAge}>Size of a {weekInfo.babySize.toLowerCase()}</Text>
+          </View>
+        </View>
+        <Text style={styles.pregCardBody}>{weekInfo.babyDev}</Text>
+      </View>
+
+      {/* ── Your Body Card ── */}
+      <View style={styles.healthCard}>
+        <View style={styles.healthHeader}>
+          <View style={[styles.healthIconWrap, { backgroundColor: UI.blushLight }]}>
+            <Feather name="user" size={18} color={UI.blushTint} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.healthTitle}>Your Body</Text>
+          </View>
+        </View>
+        <Text style={styles.pregCardBody}>{weekInfo.momBody}</Text>
+      </View>
+
+      {/* ── Weekly Tip Highlight ── */}
+      <View style={[styles.healthCard, { backgroundColor: '#FDFAF5', borderWidth: 1, borderColor: '#F0EAE1' }]}>
+        <View style={styles.healthHeader}>
+          <View style={[styles.healthIconWrap, { backgroundColor: '#FEF4E8' }]}>
+            <Feather name={weekInfo.tipIcon} size={18} color={UI.warmTint} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.healthTitle}>Tip of the Week</Text>
+          </View>
+        </View>
+        <Text style={styles.pregCardBody}>{weekInfo.tip}</Text>
+      </View>
+
+      {/* ── Wellness Checklist ── */}
+      <View style={styles.smartFeedSection}>
+        <Text style={styles.sectionLabel}>DAILY WELLNESS</Text>
+        {wellnessTips.map((tip) => {
+          const isExpanded = expandedTips[tip.id] ?? false;
+          return (
+            <Pressable
+              key={tip.id}
+              style={styles.suggestionCard}
+              onPress={() => toggleTip(tip.id)}
+            >
+              <View style={styles.suggestionLeft}>
+                <View style={[styles.suggestionIconWrap, { backgroundColor: tip.bg }]}>
+                  <Feather name={tip.icon} size={18} color={tip.tint} />
+                </View>
+              </View>
+              <View style={styles.suggestionContent}>
+                <Text style={styles.suggestionTitle}>{tip.title}</Text>
+                <Text
+                  style={styles.suggestionSnippet}
+                  numberOfLines={isExpanded ? undefined : 2}
+                >
+                  {tip.body}
+                </Text>
+                {!isExpanded && (
+                  <Text style={styles.readMoreText}>Read more</Text>
+                )}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────
 
 export default function DailyScreen() {
@@ -362,6 +602,9 @@ export default function DailyScreen() {
   const { nudges, stageLabel } = useExpertInsights();
   const dismiss = useInsightDismissStore((s) => s.dismiss);
   const {
+    isPregnant,
+    gestationalWeek,
+    parentName,
     totalFeedsToday,
     totalWetToday,
     totalDirtyToday,
@@ -403,109 +646,118 @@ export default function DailyScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Daily</Text>
-          <Text style={styles.headerSubtitle}>
-            Personalized guidance for {displayName}
-          </Text>
-        </View>
-
-        {/* ── Health Check Card ── */}
-        <View style={styles.healthCard}>
-          <View style={styles.healthHeader}>
-            <View style={styles.healthIconWrap}>
-              <Feather name="activity" size={18} color={UI.accent} />
+        {isPregnant ? (
+          <PregnancyDailyView
+            week={gestationalWeek}
+            parentName={parentName || 'mama'}
+          />
+        ) : (
+          <>
+            {/* ── Header ── */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Daily</Text>
+              <Text style={styles.headerSubtitle}>
+                Personalized guidance for {displayName}
+              </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.healthTitle}>{displayName}'s Health Check</Text>
-              {ageDisplay ? (
-                <Text style={styles.healthAge}>{ageDisplay}</Text>
-              ) : null}
-            </View>
-          </View>
 
-          {healthSignals.length > 0 ? (
-            <View style={styles.healthSignals}>
-              {healthSignals.map((signal) => (
-                <View key={signal.label} style={styles.signalRow}>
-                  <View style={[styles.signalIcon, { backgroundColor: signal.bg }]}>
-                    <Feather name={signal.icon} size={14} color={signal.tint} />
-                  </View>
-                  <View style={styles.signalText}>
-                    <Text style={styles.signalLabel}>{signal.label}</Text>
-                    <Text style={styles.signalDetail}>{signal.detail}</Text>
-                  </View>
+            {/* ── Health Check Card ── */}
+            <View style={styles.healthCard}>
+              <View style={styles.healthHeader}>
+                <View style={styles.healthIconWrap}>
+                  <Feather name="activity" size={18} color={UI.accent} />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.healthTitle}>{displayName}'s Health Check</Text>
+                  {ageDisplay ? (
+                    <Text style={styles.healthAge}>{ageDisplay}</Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {healthSignals.length > 0 ? (
+                <View style={styles.healthSignals}>
+                  {healthSignals.map((signal) => (
+                    <View key={signal.label} style={styles.signalRow}>
+                      <View style={[styles.signalIcon, { backgroundColor: signal.bg }]}>
+                        <Feather name={signal.icon} size={14} color={signal.tint} />
+                      </View>
+                      <View style={styles.signalText}>
+                        <Text style={styles.signalLabel}>{signal.label}</Text>
+                        <Text style={styles.signalDetail}>{signal.detail}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.healthEmpty}>
+                  Log feeds, sleep, and diapers to see {displayName}'s daily health summary here.
+                </Text>
+              )}
+            </View>
+
+            {/* ── Developmental Nudges ── */}
+            {nudges.length > 0 && (
+              <View style={styles.nudgeSection}>
+                {nudges.map((nudge) => (
+                  <DevelopmentalNudgeCard
+                    key={nudge.slug}
+                    insight={nudge}
+                    stageLabel={stageLabel}
+                    onDismiss={(slug) => dismiss(`nudge-${slug}`)}
+                    onAskAI={(n) => handleOpenChat({
+                      id: n.slug,
+                      contentHash: `nudge-${n.slug}`,
+                      tag: CATEGORY_TO_TAG[n.category] ?? 'general',
+                      tagLabel: CATEGORY_CONFIG[n.category]?.label ?? 'Insight',
+                      tagIcon: CATEGORY_CONFIG[n.category]?.icon ?? 'book-open',
+                      hook: `Source: ${n.source}`,
+                      title: n.title,
+                      body: n.body,
+                      priority: 'medium',
+                      createdAt: Date.now(),
+                      actionItems: n.action_items ?? undefined,
+                    })}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* ── Daily Note ── */}
+            {dailyNurseCard && (
+              <DailyNoteCard
+                card={dailyNurseCard}
+                onAskAI={() => handleOpenChat(dailyNurseCard)}
+              />
+            )}
+
+            {/* ── Smart Feed ── */}
+            <View style={styles.smartFeedSection}>
+              <Text style={styles.sectionLabel}>SUGGESTED FOR YOU</Text>
+              {smartSuggestions.map((suggestion) => (
+                <SuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  onAskAI={(s) =>
+                    handleOpenChat({
+                      id: s.id,
+                      contentHash: `suggestion-${s.id}`,
+                      tag: 'general',
+                      tagLabel: 'Lumina',
+                      tagIcon: s.icon as string,
+                      hook: '',
+                      title: s.title,
+                      body: s.snippet,
+                      priority: 'low',
+                      createdAt: Date.now(),
+                      visualGuide: s.visualGuide,
+                    })
+                  }
+                />
               ))}
             </View>
-          ) : (
-            <Text style={styles.healthEmpty}>
-              Log feeds, sleep, and diapers to see {displayName}'s daily health summary here.
-            </Text>
-          )}
-        </View>
-
-        {/* ── Developmental Nudges ── */}
-        {nudges.length > 0 && (
-          <View style={styles.nudgeSection}>
-            {nudges.map((nudge) => (
-              <DevelopmentalNudgeCard
-                key={nudge.slug}
-                insight={nudge}
-                stageLabel={stageLabel}
-                onDismiss={(slug) => dismiss(`nudge-${slug}`)}
-                onAskAI={(n) => handleOpenChat({
-                  id: n.slug,
-                  contentHash: `nudge-${n.slug}`,
-                  tag: CATEGORY_TO_TAG[n.category] ?? 'general',
-                  tagLabel: CATEGORY_CONFIG[n.category]?.label ?? 'Insight',
-                  tagIcon: CATEGORY_CONFIG[n.category]?.icon ?? 'book-open',
-                  hook: `Source: ${n.source}`,
-                  title: n.title,
-                  body: n.body,
-                  priority: 'medium',
-                  createdAt: Date.now(),
-                  actionItems: n.action_items ?? undefined,
-                })}
-              />
-            ))}
-          </View>
+          </>
         )}
-
-        {/* ── Daily Note ── */}
-        {dailyNurseCard && (
-          <DailyNoteCard
-            card={dailyNurseCard}
-            onAskAI={() => handleOpenChat(dailyNurseCard)}
-          />
-        )}
-
-        {/* ── Smart Feed ── */}
-        <View style={styles.smartFeedSection}>
-          <Text style={styles.sectionLabel}>SUGGESTED FOR YOU</Text>
-          {smartSuggestions.map((suggestion) => (
-            <SuggestionCard
-              key={suggestion.id}
-              suggestion={suggestion}
-              onAskAI={(s) =>
-                handleOpenChat({
-                  id: s.id,
-                  contentHash: `suggestion-${s.id}`,
-                  tag: 'general',
-                  tagLabel: 'Lumina',
-                  tagIcon: s.icon as string,
-                  hook: '',
-                  title: s.title,
-                  body: s.snippet,
-                  priority: 'low',
-                  createdAt: Date.now(),
-                  visualGuide: s.visualGuide,
-                })
-              }
-            />
-          ))}
-        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -624,6 +876,13 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: UI.textSecondary,
     lineHeight: 20,
+  },
+  pregCardBody: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: UI.textSecondary,
+    lineHeight: 21,
+    marginTop: 4,
   },
 
   // ── Nudge section ──

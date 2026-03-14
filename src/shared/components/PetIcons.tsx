@@ -15,7 +15,7 @@ export interface PetIconProps {
 }
 
 // Happy — content, just-logged: dot eyes, big smile arc, rosy cheeks, hair tuft
-function HappyIcon({ size = 40, color = '#5E8A72' }: PetIconProps) {
+function HappyIcon({ size = 40, color = '#A78BBA' }: PetIconProps) {
   const fill = color + '18';
   return (
     <Svg width={size} height={size} viewBox="0 0 40 40" fill="none">

@@ -15,11 +15,10 @@ import {
   Animated,
   Easing,
   StyleSheet,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
+import { colors, typography, spacing, shadows } from '../../../src/shared/constants/theme';
 import { useBabyStore } from '../../../src/stores/babyStore';
 import { useMilestoneStore } from '../../../src/stores/milestoneStore';
 import { useCorrectedAge } from '../../../src/modules/baby/hooks/useCorrectedAge';
@@ -30,12 +29,9 @@ import {
 } from '../../../src/modules/milestones/data/definitions';
 import type { MilestoneDef, DevelopmentalPeriod } from '../../../src/modules/milestones/data/definitions';
 
-const SERIF_FONT = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
-
-
 // ── Confetti (used for box opening + milestone celebration) ──
 
-const CONFETTI_COLORS = ['#8EBA9B', '#B3D1BC', '#5E8A72', '#F17C4C', '#F5A882', '#F5E6D0'];
+const CONFETTI_COLORS = ['#BEA8DA', '#D4C4E8', '#A78BBA', '#F2B89C', '#F5A882', '#F5E6D0'];
 
 function generateConfetti(count = 20) {
   return Array.from({ length: count }, () => ({
@@ -419,7 +415,7 @@ export default function ProgressScreen() {
   const { celebrated, openedBoxes, celebrate, uncelebrate, openBox, hydrate } = useMilestoneStore();
   useEffect(() => { hydrate(); }, [hydrate]);
 
-  const babyName = baby?.name ?? 'your baby';
+  const babyName = baby?.name?.trim() || 'Baby';
   const effectiveAgeWeeks = Math.floor((age?.effectiveAgeDays ?? 0) / 7);
   const ageDisplay = age?.forDisplay?.primary ?? '';
   const isPreterm = age?.isPreterm ?? false;
@@ -514,6 +510,7 @@ export default function ProgressScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
     </SafeAreaView>
   );
 }
@@ -527,9 +524,8 @@ const styles = StyleSheet.create({
   // Header — editorial
   header: { marginBottom: spacing.xl, paddingTop: spacing.sm },
   screenTitle: {
-    fontFamily: SERIF_FONT,
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -557,11 +553,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   chapterTitle: {
-    fontFamily: SERIF_FONT,
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '700',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   chapterMeta: {
     flexDirection: 'row',
@@ -666,9 +661,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sealedTitle: {
-    fontFamily: SERIF_FONT,
     fontSize: typography.fontSize.lg,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.neutral[400],
   },
   sealedSubtitle: {
@@ -821,8 +815,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   footerText: {
-    fontFamily: SERIF_FONT,
     fontSize: typography.fontSize.base,
+    fontWeight: '400',
     color: colors.textTertiary,
     textAlign: 'center',
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,

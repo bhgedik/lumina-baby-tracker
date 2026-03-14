@@ -27,6 +27,7 @@ import { ChatSheet } from '../../../src/modules/insights/components/ChatSheet';
 import { FeedingSheet } from '../../../src/modules/feeding/components/FeedingSheet';
 import { SleepSheet } from '../../../src/modules/sleep/components/SleepSheet';
 import { DiaperSheet } from '../../../src/modules/diaper/components/DiaperSheet';
+import { PumpingSheet } from '../../../src/modules/pumping/components/PumpingSheet';
 
 import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
 import { useBabyStore } from '../../../src/stores/babyStore';
@@ -56,10 +57,10 @@ const UI = {
   text: '#3D3D3D',
   textSecondary: '#5C5C5C',  // body text — readable on cream
   textMuted: '#8A8A8A',      // small labels, captions
-  accent: '#8BA88E',
+  accent: '#B199CE',
   card: '#FFFFFF',
   logBg: '#F0EAE1',
-  secondary: '#F17C4C',
+  secondary: '#F2B89C',
 };
 
 const SOFT_SHADOW = {
@@ -71,15 +72,21 @@ const SOFT_SHADOW = {
 };
 
 // ── Action grid — split into primary (daily) and secondary (occasional) ──
-const PRIMARY_ACTIONS = [
-  { id: 'feeding', label: 'Feed', icon: 'droplet' as const, bg: '#F5F0E8', tint: '#A08B6E', route: '/(app)/log/feeding' },
-  { id: 'sleep', label: 'Sleep', icon: 'moon' as const, bg: '#EDF3EE', tint: '#6B8E6F', route: '/(app)/log/sleep' },
-  { id: 'diaper', label: 'Diaper', icon: 'diaper' as const, bg: '#F3EFE8', tint: '#A0927D', route: '/(app)/log/diaper' },
-  { id: 'activity', label: 'Play Time', icon: 'smile' as const, bg: '#F2EDE6', tint: '#9A8872', route: '/(app)/log/activity' },
+// Row 1: Sleep (full width), Row 2: Feed + Pump, Row 3: Diaper + Play Time
+const PRIMARY_ACTIONS_ROW1 = [
+  { id: 'sleep', label: 'Sleep', icon: 'moon' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/sleep' },
+];
+const PRIMARY_ACTIONS_ROW2 = [
+  { id: 'feeding', label: 'Feed', icon: 'droplet' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/feeding' },
+  { id: 'pumping', label: 'Pump', icon: 'zap' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/pumping' },
+];
+const PRIMARY_ACTIONS_ROW3 = [
+  { id: 'diaper', label: 'Diaper', icon: 'diaper' as const, iconBg: '#F0ECE6', iconTint: '#7A6B5A', route: '/(app)/log/diaper' },
+  { id: 'activity', label: 'Play Time', icon: 'smile' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/activity' },
 ];
 
 const SECONDARY_ACTIONS = [
-  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', icon: 'trending-up' as const, tint: '#6B8E6F', route: '/(app)/log/growth' },
+  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', icon: 'trending-up' as const, tint: '#A78BBA', route: '/(app)/log/growth' },
   { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', icon: 'thermometer' as const, tint: '#A88978', route: '/(app)/health' },
 ];
 
@@ -424,6 +431,7 @@ export default function HomeScreen() {
   const [showFeedingSheet, setShowFeedingSheet] = useState(false);
   const [showSleepSheet, setShowSleepSheet] = useState(false);
   const [showDiaperSheet, setShowDiaperSheet] = useState(false);
+  const [showPumpingSheet, setShowPumpingSheet] = useState(false);
   const [smartText, setSmartText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -802,13 +810,14 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Primary Actions (2×2 grid) ── */}
+        {/* ── Primary Actions (Row 1: Sleep, Row 2: Feed+Pump, Row 3: Diaper+Play) ── */}
         <View style={styles.actionGrid}>
-          {PRIMARY_ACTIONS.map((action) => {
+          {[...PRIMARY_ACTIONS_ROW1, ...PRIMARY_ACTIONS_ROW2, ...PRIMARY_ACTIONS_ROW3].map((action, idx) => {
             const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
             const isSleepLive = action.id === 'sleep' && !!sleepTimer;
             const isLive = isFeedingLive || isSleepLive;
-            const liveColor = isFeedingLive ? '#5E8A72' : '#6B5B8A';
+            const liveColor = isFeedingLive ? '#A78BBA' : '#6B5B8A';
+            const isFullWidth = idx === 0; // Sleep is first, full width
 
             const liveSub = isFeedingLive
               ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
@@ -821,29 +830,31 @@ export default function HomeScreen() {
                 key={action.id}
                 style={[
                   styles.actionButton,
+                  isFullWidth && styles.actionButtonFull,
                   isLive && { borderWidth: 1.5, borderColor: liveColor + '40' },
                 ]}
                 onPress={() => {
                   if (action.id === 'feeding') setShowFeedingSheet(true);
                   else if (action.id === 'sleep') setShowSleepSheet(true);
                   else if (action.id === 'diaper') setShowDiaperSheet(true);
+                  else if (action.id === 'pumping') setShowPumpingSheet(true);
                   else router.push(action.route as any);
                 }}
                 accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
               >
                 <View style={[
                   styles.actionIconWrap,
-                  { backgroundColor: action.bg },
+                  { backgroundColor: action.iconBg },
                   isLive && { borderWidth: 2, borderColor: liveColor },
                 ]}>
                   {action.icon === 'diaper' ? (
-                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={isLive ? liveColor : action.tint} />
+                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={isLive ? liveColor : action.iconTint} />
                   ) : (
-                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.tint} />
+                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
                   )}
                 </View>
                 <View>
-                  <Text style={[styles.actionLabel, { color: isLive ? liveColor : action.tint }]}>
+                  <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
                     {isLive ? formatTimerSeconds(timerElapsed) : action.label}
                   </Text>
                   {isLive && liveSub && (
@@ -938,6 +949,17 @@ export default function HomeScreen() {
           setShowToast(true);
         }}
       />
+      <PumpingSheet
+        visible={showPumpingSheet}
+        onClose={() => setShowPumpingSheet(false)}
+        babyId={activeBaby?.id ?? ''}
+        familyId={activeBaby?.family_id ?? ''}
+        loggedBy={loggedBy}
+        onLogged={(msg) => {
+          setToastMsg(msg);
+          setShowToast(true);
+        }}
+      />
 
       {/* Lumina Whisper */}
       <LuminaWhisper
@@ -1002,7 +1024,7 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 16,
     marginBottom: 20,
-    shadowColor: '#4A7A5E',
+    shadowColor: '#8E72A4',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -1091,12 +1113,16 @@ const styles = StyleSheet.create({
     width: '47.5%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UI.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius['2xl'],
     paddingVertical: 18,
     paddingHorizontal: 16,
     gap: 14,
     ...SOFT_SHADOW,
+  },
+  actionButtonFull: {
+    width: '100%',
+    justifyContent: 'center',
   },
   actionIconWrap: {
     width: 48,
@@ -1107,7 +1133,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     letterSpacing: 0.2,
   },
   actionLiveSub: {

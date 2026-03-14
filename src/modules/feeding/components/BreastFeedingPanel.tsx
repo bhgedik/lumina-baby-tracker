@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     minHeight: 64,
   },
   pillActive: {
-    backgroundColor: '#8BA88E',
+    backgroundColor: '#B199CE',
   },
   pillDimmed: {
     opacity: 0.5,

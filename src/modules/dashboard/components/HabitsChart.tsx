@@ -15,8 +15,8 @@ const PAD = { top: 12, right: 12, bottom: 28, left: 32 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const FEED_COLOR = '#8BA88E';
-const DIAPER_COLOR = '#F17C4C';
+const FEED_COLOR = '#B199CE';
+const DIAPER_COLOR = '#F2B89C';
 const AXIS_COLOR = '#C8C2B8';
 const GRID_COLOR = '#EAE6E0';
 const LABEL_COLOR = '#8A8A8A';

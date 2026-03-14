@@ -336,7 +336,7 @@ export default function HealthHubScreen() {
             {/* ── DUE NOW ── */}
             <SectionHeader
               icon="shield"
-              iconBg={dueNowItems.length > 0 ? '#FFF3E0' : '#EDF3EE'}
+              iconBg={dueNowItems.length > 0 ? '#FFF3E0' : '#F0EBF5'}
               iconTint={dueNowItems.length > 0 ? '#BF5A00' : colors.primary[500]}
               title="Due Now"
               subtitle={dueNowItems.length > 0

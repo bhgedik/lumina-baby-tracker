@@ -1,34 +1,34 @@
 // ============================================================
 // Lumina — Design System Tokens
-// Warm, calming palette inspired by nursery aesthetics
+// Soft pastel palette — playful lavender meets warm peach
 // ============================================================
 
 export const colors = {
-  // Primary — Sage Green (trust, calm, nature)
+  // Primary — Soft Lavender (playful, dreamy, nurturing)
   primary: {
-    50: '#F0F5F2',
-    100: '#D8E8DD',
-    200: '#B3D1BC',
-    300: '#8EBA9B',
-    400: '#7C9A8E',
-    500: '#5E8A72',
-    600: '#4A7A5E',
-    700: '#3A6249',
-    800: '#2A4A35',
-    900: '#1A3221',
+    50: '#F5F0FA',
+    100: '#E8DDF3',
+    200: '#D4C4E8',
+    300: '#BEA8DA',
+    400: '#B199CE',
+    500: '#A78BBA',
+    600: '#8E72A4',
+    700: '#735A88',
+    800: '#58446A',
+    900: '#3D2E4C',
   },
-  // Secondary — Warm Blush (nurturing, gentle)
+  // Secondary — Pastel Peach (warm, soft, play-dough)
   secondary: {
-    50: '#FEF5F0',
-    100: '#FDE8DB',
-    200: '#FACDB7',
-    300: '#F7B293',
-    400: '#F49770',
-    500: '#F17C4C',
-    600: '#D66A3D',
-    700: '#B2582F',
-    800: '#8E4621',
-    900: '#6A3413',
+    50: '#FFF5F0',
+    100: '#FEE8DC',
+    200: '#FCD5C0',
+    300: '#F8C1A4',
+    400: '#F5ADA0',
+    500: '#F2B89C',
+    600: '#D89B7E',
+    700: '#B87E63',
+    800: '#966249',
+    900: '#744830',
   },
   // Neutral — Warm Grays
   neutral: {
@@ -48,7 +48,7 @@ export const colors = {
   success: '#4CAF50',
   warning: '#FF9800',
   error: '#E53935',
-  info: '#5E8A72',
+  info: '#A78BBA',
 
   // Backgrounds
   background: '#F8F5F0',
@@ -124,28 +124,28 @@ export const borderRadius = {
 
 export const shadows = {
   sm: {
-    shadowColor: '#8E7A68',
+    shadowColor: '#8E7A9E',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 1,
   },
   md: {
-    shadowColor: '#8E7A68',
+    shadowColor: '#8E7A9E',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
   },
   lg: {
-    shadowColor: '#8E7A68',
+    shadowColor: '#8E7A9E',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 14,
     elevation: 5,
   },
   soft: {
-    shadowColor: '#C9A88C',
+    shadowColor: '#B8A0CC',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 20,

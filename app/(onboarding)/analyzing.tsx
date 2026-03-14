@@ -1,138 +1,166 @@
 // ============================================================
-// Lumina — Analyzing Screen
-// Artificial 3-4s loading screen after onboarding quiz,
-// before the paywall. Pulsing animation + phased text.
+// Lumina — Magic Loading Screen
+// Cross-fading onboarding images, personalized text,
+// animated progress bar. Auto-routes to paywall.
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet, Dimensions, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing } from '../../src/shared/constants/theme';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
 
-const PHASE_TEXTS = (name: string) => [
-  `Analyzing ${name}'s developmental stage...`,
-  'Customizing your Nurture-First dashboard...',
-  'Almost ready...',
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const TOTAL_DURATION = 3500;
+
+const ONBOARDING_IMAGES = [
+  require('../../assets/images/onboarding-1.png'),
+  require('../../assets/images/onboarding-2.png'),
+  require('../../assets/images/onboarding-3.png'),
+];
+
+const getPhaseTexts = (parentName: string, babyName: string) => [
+  `Building ${parentName}'s personalized experience...`,
+  babyName
+    ? `Preparing ${babyName}'s developmental profile...`
+    : 'Setting up your baby tracker...',
+  'Almost ready — your plan is coming together...',
 ];
 
 export default function AnalyzingScreen() {
   const router = useRouter();
-  const babyName = useOnboardingStore((s) => s.babyName) || 'your baby';
+  const parentName = useOnboardingStore((s) => s.parentName) || 'your';
+  const babyName = useOnboardingStore((s) => s.babyName);
 
-  const [phase, setPhase] = useState(1);
-  const [dots, setDots] = useState('.');
+  const [phase, setPhase] = useState(0);
+  const texts = getPhaseTexts(parentName, babyName);
 
-  // Pulse animation values
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.6)).current;
+  // Image cross-fade opacities (one per image)
+  const imageOpacities = useRef(
+    ONBOARDING_IMAGES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0)),
+  ).current;
 
-  // Text crossfade opacity
+  // Text crossfade
   const textOpacity = useRef(new Animated.Value(1)).current;
 
-  const texts = PHASE_TEXTS(babyName);
+  // Progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Start pulsing circle animation
+  // Cross-fade images
+  const crossFadeToImage = useCallback(
+    (index: number) => {
+      const animations = imageOpacities.map((opacity, i) =>
+        Animated.timing(opacity, {
+          toValue: i === index ? 1 : 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      );
+      Animated.parallel(animations).start();
+    },
+    [imageOpacities],
+  );
+
+  // Cross-fade text
+  const crossFadeText = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(textOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(textOpacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [textOpacity]);
+
+  // Animate progress bar continuously
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.2,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 1.0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.6,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseScale, pulseOpacity]);
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: TOTAL_DURATION,
+      useNativeDriver: false,
+    }).start();
+  }, [progressAnim]);
 
   // Phase timers + navigation
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(2), 1500);
-    const t2 = setTimeout(() => setPhase(3), 3000);
-    const t3 = setTimeout(() => router.replace('/(onboarding)/paywall'), 3500);
+    const t1 = setTimeout(() => {
+      setPhase(1);
+      crossFadeToImage(1);
+      crossFadeText();
+      Haptics.selectionAsync();
+    }, 1200);
+
+    const t2 = setTimeout(() => {
+      setPhase(2);
+      crossFadeToImage(2);
+      crossFadeText();
+      Haptics.selectionAsync();
+    }, 2400);
+
+    const t3 = setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/(onboarding)/paywall');
+    }, TOTAL_DURATION);
+
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, []);
-
-  // Text crossfade on phase change
-  const crossfade = useCallback(() => {
-    Animated.timing(textOpacity, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      Animated.timing(textOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [textOpacity]);
-
-  useEffect(() => {
-    if (phase > 1) {
-      crossfade();
-    }
-  }, [phase, crossfade]);
-
-  // Progress dots cycling
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? '.' : prev + '.'));
-    }, 400);
-    return () => clearInterval(interval);
-  }, []);
+  }, [crossFadeToImage, crossFadeText, router]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Pulsing circle */}
-        <Animated.View
-          style={[
-            styles.outerCircle,
-            {
-              transform: [{ scale: pulseScale }],
-              opacity: pulseOpacity,
-            },
-          ]}
-        >
-          <View style={styles.innerCircle} />
+    <View style={styles.container}>
+      {/* Stacked background images */}
+      {ONBOARDING_IMAGES.map((source, i) => (
+        <Animated.View key={i} style={[styles.imageContainer, { opacity: imageOpacities[i] }]}>
+          <Image source={source} style={styles.backgroundImage} resizeMode="cover" blurRadius={8} />
+          <View style={styles.imageOverlay} />
         </Animated.View>
+      ))}
 
-        {/* Phase text */}
-        <Animated.Text style={[styles.phaseText, { opacity: textOpacity }]}>
-          {texts[phase - 1]}
-        </Animated.Text>
+      {/* Content overlay */}
+      <SafeAreaView style={styles.contentContainer}>
+        <View style={styles.spacer} />
 
-        {/* Progress dots */}
-        <Text style={styles.dotsText}>{dots}</Text>
-      </View>
-    </SafeAreaView>
+        <View style={styles.centerContent}>
+          {/* Logo */}
+          <View style={styles.logoBadge}>
+            <Text style={styles.logoText}>L</Text>
+          </View>
+
+          {/* Phase text */}
+          <Animated.Text style={[styles.phaseText, { opacity: textOpacity }]}>
+            {texts[phase]}
+          </Animated.Text>
+        </View>
+
+        {/* Progress bar at bottom */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressLabel}>Personalizing your experience</Text>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -141,39 +169,73 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  imageContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  backgroundImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(248, 245, 240, 0.75)',
+  },
+  contentContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
   },
-  outerCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary[100],
+  spacer: { flex: 1 },
+  centerContent: {
+    alignItems: 'center',
+  },
+  logoBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: colors.primary[500],
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing['2xl'],
+    shadowColor: colors.primary[700],
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  innerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary[500],
+  logoText: {
+    fontSize: 32,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textInverse,
   },
   phaseText: {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: typography.fontSize.md * typography.lineHeight.normal,
+    lineHeight: typography.fontSize.md * typography.lineHeight.relaxed,
+    paddingHorizontal: spacing.xl,
   },
-  dotsText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textTertiary,
-    fontWeight: typography.fontWeight.medium,
-    letterSpacing: 2,
+  progressSection: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: spacing['3xl'],
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.neutral[200],
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary[500],
+  },
+  progressLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

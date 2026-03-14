@@ -388,10 +388,10 @@ export function SleepSheet({ visible, onClose, babyId, familyId, loggedBy, onTim
       {/* Start Timer Cards */}
       <View style={styles.timerRow}>
         <Pressable style={styles.timerCard} onPress={() => handleSleepNow('nap')}>
-          <View style={[styles.iconWrap, { backgroundColor: '#EDF3EE' }]}>
-            <Feather name="moon" size={24} color="#6B8E6F" />
+          <View style={[styles.iconWrap, { backgroundColor: '#F0EBF5' }]}>
+            <Feather name="moon" size={24} color="#A78BBA" />
           </View>
-          <Text style={[styles.cardLabel, { color: '#6B8E6F' }]}>Nap Now</Text>
+          <Text style={[styles.cardLabel, { color: '#A78BBA' }]}>Nap Now</Text>
           <Text style={styles.cardSub}>Start nap timer</Text>
         </Pressable>
 
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: '#EDF3EE',
+    backgroundColor: '#F0EBF5',
   },
   timerBadgeNight: {
     backgroundColor: '#EDE8F5',
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   timerBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B8E6F',
+    color: '#A78BBA',
   },
   timerBadgeTextNight: {
     color: '#6B5B8A',

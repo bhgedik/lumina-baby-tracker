@@ -32,7 +32,7 @@ interface SleepTrendLineProps {
 
 const VIEWBOX_W = 320;
 const VIEWBOX_H = 160;
-const PAD = { top: 16, right: 16, bottom: 28, left: 36 };
+const PAD = { top: 16, right: 16, bottom: 28, left: 44 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
@@ -112,9 +112,9 @@ export function SleepTrendLine({
               />
               <SvgText
                 x={PAD.left - 6} y={scaleY(val) + 3.5}
-                fontSize={10} fill={LABEL_COLOR} fontWeight="500" textAnchor="end"
+                fontSize={9} fill={LABEL_COLOR} fontWeight="500" textAnchor="end"
               >
-                {val}h
+                {val} h
               </SvgText>
             </React.Fragment>
           ))}

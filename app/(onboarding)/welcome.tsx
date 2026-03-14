@@ -11,6 +11,7 @@ import {
   Animated,
   ScrollView,
   Dimensions,
+  Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -19,6 +20,12 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
+
+const ONBOARDING_IMAGES = [
+  require('../../assets/images/onboarding-1.png'),
+  require('../../assets/images/onboarding-2.png'),
+  require('../../assets/images/onboarding-3.png'),
+];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDE_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
@@ -126,11 +133,13 @@ export default function WelcomeScreen() {
             decelerationRate="fast"
             snapToInterval={SLIDE_WIDTH}
           >
-            {SLIDES.map((slide) => (
+            {SLIDES.map((slide, index) => (
               <View key={slide.title} style={styles.slide}>
-                <View style={styles.slideIconWrap}>
-                  <Feather name={slide.icon} size={32} color={colors.primary[500]} />
-                </View>
+                <Image
+                  source={ONBOARDING_IMAGES[index]}
+                  style={styles.slideImage}
+                  resizeMode="contain"
+                />
                 <Text style={styles.slideTitle}>{slide.title}</Text>
                 <Text style={styles.slideDescription}>{slide.description}</Text>
               </View>
@@ -154,10 +163,10 @@ export default function WelcomeScreen() {
         {/* CTA */}
         <Pressable
           style={[styles.button, shadows.md]}
-          onPress={() => router.push('/(onboarding)/baby-profile')}
+          onPress={() => router.push('/(onboarding)/step1-parent')}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Let's meet your baby</Text>
+          <Text style={styles.buttonText}>Let's personalize your experience</Text>
           <Feather name="arrow-right" size={20} color={colors.textInverse} />
         </Pressable>
       </Animated.View>
@@ -212,14 +221,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  slideIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary[50],
-    justifyContent: 'center',
-    alignItems: 'center',
+  slideImage: {
+    width: SLIDE_WIDTH * 0.65,
+    height: SLIDE_WIDTH * 0.65,
     marginBottom: spacing.lg,
+    borderRadius: 24,
   },
   slideTitle: {
     fontSize: typography.fontSize.xl,

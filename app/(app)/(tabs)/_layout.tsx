@@ -58,7 +58,7 @@ export default function TabsLayout() {
         headerTitle: '',
         headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
         headerLeft: () => <SettingsButton />,
-        headerRight: () => <CalendarButton />,
+        headerRight: isPregnant ? undefined : () => <CalendarButton />,
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.primary[600],
         tabBarInactiveTintColor: colors.neutral[400],
@@ -76,24 +76,13 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 2. Daily — postpartum only / Checklist — pregnancy only */}
+      {/* 2. Daily — always visible */}
       <Tabs.Screen
         name="daily"
         options={{
           title: 'Daily',
-          href: isPregnant ? null : undefined,
           tabBarIcon: ({ color }) => (
             <Feather name="sun" size={26} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="checklist"
-        options={{
-          title: 'Checklist',
-          href: isPregnant ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <Feather name="check-square" size={26} color={color} />
           ),
         }}
       />
@@ -126,7 +115,18 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 5. Progress — postpartum only */}
+      {/* 5a. Checklist — pregnancy only */}
+      <Tabs.Screen
+        name="checklist"
+        options={{
+          title: 'Checklist',
+          href: isPregnant ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <Feather name="check-square" size={26} color={color} />
+          ),
+        }}
+      />
+      {/* 5b. Milestones — postpartum only */}
       <Tabs.Screen
         name="progress"
         options={{

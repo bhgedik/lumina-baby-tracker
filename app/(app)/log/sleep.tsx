@@ -32,7 +32,7 @@ const UI = {
   text: '#3D3D3D',
   textSecondary: '#5C5C5C',  // body text — readable on cream
   textMuted: '#8A8A8A',      // small labels, captions
-  accent: '#8BA88E',
+  accent: '#B199CE',
 };
 
 const SOFT_SHADOW = {
@@ -74,10 +74,10 @@ const SLEEP_STATES: SleepState[] = [
     label: 'Deep Sleep',
     description: 'Baby is now in the crib, sound asleep.',
     icon: 'moon',
-    iconBg: '#EDF3EE',
-    iconTint: '#6B8E6F',
+    iconBg: '#F0EBF5',
+    iconTint: '#A78BBA',
     activeBg: '#E8F0E9',
-    activeBorder: '#8BA88E',
+    activeBorder: '#B199CE',
   },
   {
     id: 'waking_up',

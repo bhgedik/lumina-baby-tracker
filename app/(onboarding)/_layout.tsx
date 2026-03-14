@@ -11,14 +11,13 @@ export default function OnboardingLayout() {
       }}
     >
       <Stack.Screen name="welcome" />
-      <Stack.Screen name="parent-profile" />
-      <Stack.Screen name="baby-profile" />
-      <Stack.Screen name="challenge" />
+      <Stack.Screen name="step1-parent" />
+      <Stack.Screen name="step2-journey" />
+      <Stack.Screen name="step3-baby" />
+      <Stack.Screen name="step4-focus" />
       <Stack.Screen name="analyzing" options={{ animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
       <Stack.Screen name="create-account" />
-      <Stack.Screen name="gestational-age" />
-      <Stack.Screen name="preferences" />
     </Stack>
   );
 }

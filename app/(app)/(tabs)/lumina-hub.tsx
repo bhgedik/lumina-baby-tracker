@@ -28,9 +28,9 @@ const UI = {
   textSecondary: '#5C5C5C',
   textMuted: '#8A8A8A',
   textLight: '#B0AAA2',
-  accent: '#8BA88E',
-  accentLight: '#EDF3EE',
-  accentDark: '#5E8A72',
+  accent: '#B199CE',
+  accentLight: '#F0EBF5',
+  accentDark: '#A78BBA',
 };
 
 const SOFT_SHADOW = {

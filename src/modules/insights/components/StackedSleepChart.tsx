@@ -15,7 +15,7 @@ const PAD = { top: 12, right: 12, bottom: 28, left: 36 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const NIGHT_COLOR = '#6B8E6F';
+const NIGHT_COLOR = '#A78BBA';
 const NAP_COLOR = '#B5CCB8';
 const AXIS_COLOR = '#C8C2B8';
 const GRID_COLOR = '#EAE6E0';

@@ -14,8 +14,8 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 32 };
 const PLOT_W = VIEWBOX_W - PAD.left - PAD.right;
 const PLOT_H = VIEWBOX_H - PAD.top - PAD.bottom;
 
-const LINE_COLOR = '#8BA88E';
-const DOT_COLOR = '#8BA88E';
+const LINE_COLOR = '#B199CE';
+const DOT_COLOR = '#B199CE';
 const REF_COLOR = '#D4CFC8';
 const REF_LABEL_COLOR = '#B0AAA2';
 const GRID_COLOR = '#E8E4DF';

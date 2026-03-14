@@ -34,9 +34,9 @@ const UI = {
   text: '#3D3D3D',
   textSecondary: '#5C5C5C',
   textLight: '#B0AAA2',
-  accent: '#8BA88E',
-  accentLight: '#EDF3EE',
-  accentDark: '#5E8A72',
+  accent: '#B199CE',
+  accentLight: '#F0EBF5',
+  accentDark: '#A78BBA',
 };
 
 const SOFT_SHADOW = {

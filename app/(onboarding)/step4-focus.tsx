@@ -1,6 +1,7 @@
 // ============================================================
-// Lumina — Challenge Screen (Quiz Step 3 of 3)
-// Asks parent what their biggest challenge is right now
+// Lumina — Step 4: Primary Focus
+// "What's your primary focus right now?"
+// Updated options: Sleep, Feeds, Patterns, Reassurance
 // ============================================================
 
 import { useState } from 'react';
@@ -8,52 +9,66 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 import { QuizProgressBar } from '../../src/shared/components/QuizProgressBar';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
 
 type Challenge = 'sleep' | 'feeding' | 'fussy' | 'all';
 
-const CHALLENGES: { value: Challenge; icon: keyof typeof Feather.glyphMap; label: string; description: string; iconColors: { bg: string; fg: string } }[] = [
+const FOCUS_OPTIONS: {
+  value: Challenge;
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  description: string;
+  iconColors: { bg: string; fg: string };
+}[] = [
   {
     value: 'sleep',
     icon: 'moon',
     label: 'Sleep',
-    description: 'Getting them to sleep (and stay asleep)',
+    description: 'Help them sleep longer and better',
     iconColors: { bg: '#E8E0F0', fg: '#7C4DFF' },
   },
   {
     value: 'feeding',
     icon: 'coffee',
     label: 'Feeding',
-    description: 'Feeding schedules, amounts, or latch issues',
+    description: 'Track feeds, find a rhythm',
     iconColors: { bg: '#FFF3D6', fg: '#F5A623' },
   },
   {
     value: 'fussy',
-    icon: 'cloud',
-    label: 'Fussiness',
-    description: 'Colic, crying, and soothing',
-    iconColors: { bg: '#FDEAEA', fg: '#E57373' },
+    icon: 'bar-chart-2',
+    label: 'Patterns',
+    description: 'Discover what works and when',
+    iconColors: { bg: '#E0F0E8', fg: colors.primary[600] },
   },
   {
     value: 'all',
-    icon: 'layers',
-    label: 'All of them',
-    description: "Honestly, it's everything right now",
-    iconColors: { bg: colors.primary[100], fg: colors.primary[600] },
+    icon: 'shield',
+    label: 'Reassurance',
+    description: "Just tell me everything's okay",
+    iconColors: { bg: '#FDEAEA', fg: '#E57373' },
   },
 ];
 
-export default function ChallengeScreen() {
+export default function Step4FocusScreen() {
   const router = useRouter();
   const store = useOnboardingStore();
+  const parentName = store.parentName || 'there';
   const [selected, setSelected] = useState<Challenge | null>(store.currentChallenge);
 
   const canContinue = selected !== null;
 
+  const handleSelect = (value: Challenge) => {
+    Haptics.selectionAsync();
+    setSelected(value);
+  };
+
   const handleContinue = () => {
     if (!selected) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     store.setCurrentChallenge({ currentChallenge: selected });
     router.push('/(onboarding)/analyzing');
   };
@@ -66,35 +81,52 @@ export default function ChallengeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Back */}
-        <Pressable style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Go back">
+        <Pressable
+          style={styles.backButton}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.back();
+          }}
+          accessibilityLabel="Go back"
+        >
           <Feather name="chevron-left" size={22} color={colors.textSecondary} />
         </Pressable>
 
         {/* Progress */}
-        <QuizProgressBar currentStep={3} totalSteps={3} />
+        <QuizProgressBar currentStep={4} totalSteps={4} />
 
-        <Text style={styles.title}>What's your biggest challenge right now?</Text>
-        <Text style={styles.subtitle}>This helps us personalize your dashboard from day one</Text>
+        <Text style={styles.title}>Almost there, {parentName}!</Text>
+        <Text style={styles.subtitle}>What's your primary focus right now?</Text>
 
         {/* Options */}
         <View style={styles.optionGroup}>
-          {CHALLENGES.map((c) => {
-            const isSelected = selected === c.value;
+          {FOCUS_OPTIONS.map((opt) => {
+            const isSelected = selected === opt.value;
             return (
               <Pressable
-                key={c.value}
-                style={[styles.optionCard, isSelected ? [styles.optionCardSelected, shadows.md] : shadows.sm]}
-                onPress={() => setSelected(c.value)}
+                key={opt.value}
+                style={[
+                  styles.optionCard,
+                  isSelected ? [styles.optionCardSelected, shadows.md] : shadows.sm,
+                ]}
+                onPress={() => handleSelect(opt.value)}
               >
-                <View style={[styles.optionIconWrap, { backgroundColor: c.iconColors.bg }]}>
-                  <Feather name={c.icon} size={20} color={c.iconColors.fg} />
+                <View style={[styles.optionIconWrap, { backgroundColor: opt.iconColors.bg }]}>
+                  <Feather name={opt.icon} size={20} color={opt.iconColors.fg} />
                 </View>
                 <View style={styles.optionTextWrap}>
-                  <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>{c.label}</Text>
-                  <Text style={styles.optionDescription}>{c.description}</Text>
+                  <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={styles.optionDescription}>{opt.description}</Text>
                 </View>
                 {isSelected && (
-                  <Feather name="check-circle" size={20} color={colors.primary[500]} style={styles.optionCheck} />
+                  <Feather
+                    name="check-circle"
+                    size={20}
+                    color={colors.primary[500]}
+                    style={styles.optionCheck}
+                  />
                 )}
               </Pressable>
             );
@@ -108,7 +140,7 @@ export default function ChallengeScreen() {
           disabled={!canContinue}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>See My Plan</Text>
+          <Text style={styles.buttonText}>Build My Plan</Text>
           <Feather name="arrow-right" size={18} color={colors.textInverse} />
         </Pressable>
       </ScrollView>

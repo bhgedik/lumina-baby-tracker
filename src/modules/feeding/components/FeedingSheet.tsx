@@ -52,9 +52,9 @@ interface CardConfig {
 }
 
 const CARDS: CardConfig[] = [
-  { mode: 'breast', icon: 'heart', label: 'Breast', sub: 'Timer or log past', color: '#5E8A72', bg: '#EDF3EE' },
+  { mode: 'breast', icon: 'heart', label: 'Breast', sub: 'Timer or log past', color: '#A78BBA', bg: '#F0EBF5' },
   { mode: 'bottle_bm', icon: 'droplet', label: 'Bottle · BM', sub: 'Breast milk', color: '#4A7FA5', bg: '#E8F0F7' },
-  { mode: 'bottle_formula', icon: 'droplet', label: 'Bottle · Formula', sub: 'Formula', color: '#F17C4C', bg: '#FDF0EB' },
+  { mode: 'bottle_formula', icon: 'droplet', label: 'Bottle · Formula', sub: 'Formula', color: '#F2B89C', bg: '#FDF0EB' },
   { mode: 'solids', icon: 'coffee', label: 'Solids', sub: 'Food + reactions', color: '#C4943A', bg: '#F9F3E8' },
 ];
 
@@ -432,7 +432,7 @@ export function FeedingSheet({
               <Feather
                 name={feedingTimer.pausedAt ? 'play' : 'pause'}
                 size={18}
-                color="#5E8A72"
+                color="#A78BBA"
               />
               <Text style={styles.timerControlText}>
                 {feedingTimer.pausedAt ? 'Resume' : 'Pause'}
@@ -440,7 +440,7 @@ export function FeedingSheet({
             </Pressable>
             {feedingTimer.type === 'breast' && (
               <Pressable style={styles.timerControlButton} onPress={switchSide}>
-                <Feather name="repeat" size={18} color="#5E8A72" />
+                <Feather name="repeat" size={18} color="#A78BBA" />
                 <Text style={styles.timerControlText}>Switch Side</Text>
               </Pressable>
             )}
@@ -469,7 +469,7 @@ export function FeedingSheet({
               <View style={styles.reviewBreakdown}>
                 {reviewLeftSeconds > 0 && (
                   <View style={styles.reviewSideRow}>
-                    <View style={[styles.reviewSideDot, { backgroundColor: '#5E8A72' }]} />
+                    <View style={[styles.reviewSideDot, { backgroundColor: '#A78BBA' }]} />
                     <Text style={styles.reviewSideLabel}>Left</Text>
                     <Text style={styles.reviewSideValue}>{formatTimerSeconds(reviewLeftSeconds)}</Text>
                   </View>
@@ -682,13 +682,13 @@ export function FeedingSheet({
         <View style={styles.subView}>
           <Text style={styles.subTitle}>Start timer</Text>
           <View style={styles.sideRow}>
-            <Pressable style={[styles.sideButton, { borderColor: '#5E8A72' }]} onPress={() => handleBreastSide('left')}>
-              <Feather name="arrow-left" size={16} color="#5E8A72" />
-              <Text style={[styles.sideText, { color: '#5E8A72' }]}>Left</Text>
+            <Pressable style={[styles.sideButton, { borderColor: '#A78BBA' }]} onPress={() => handleBreastSide('left')}>
+              <Feather name="arrow-left" size={16} color="#A78BBA" />
+              <Text style={[styles.sideText, { color: '#A78BBA' }]}>Left</Text>
             </Pressable>
-            <Pressable style={[styles.sideButton, { borderColor: '#5E8A72' }]} onPress={() => handleBreastSide('right')}>
-              <Text style={[styles.sideText, { color: '#5E8A72' }]}>Right</Text>
-              <Feather name="arrow-right" size={16} color="#5E8A72" />
+            <Pressable style={[styles.sideButton, { borderColor: '#A78BBA' }]} onPress={() => handleBreastSide('right')}>
+              <Text style={[styles.sideText, { color: '#A78BBA' }]}>Right</Text>
+              <Feather name="arrow-right" size={16} color="#A78BBA" />
             </Pressable>
           </View>
 
@@ -1135,18 +1135,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#EDF3EE',
+    backgroundColor: '#F0EBF5',
     borderWidth: 1.5,
-    borderColor: '#5E8A72' + '30',
+    borderColor: '#A78BBA' + '30',
   },
   sidePillActive: {
-    backgroundColor: '#5E8A72',
-    borderColor: '#5E8A72',
+    backgroundColor: '#A78BBA',
+    borderColor: '#A78BBA',
   },
   sidePillText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#5E8A72',
+    color: '#A78BBA',
   },
   sidePillTextActive: {
     color: '#FFFFFF',
@@ -1193,14 +1193,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 14,
-    backgroundColor: '#EDF3EE',
+    backgroundColor: '#F0EBF5',
     borderWidth: 1,
-    borderColor: '#5E8A72' + '30',
+    borderColor: '#A78BBA' + '30',
   },
   timerControlText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#5E8A72',
+    color: '#A78BBA',
   },
   discardButton: {
     paddingVertical: 8,

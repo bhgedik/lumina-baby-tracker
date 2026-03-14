@@ -43,7 +43,7 @@ interface Particle {
 }
 
 // Muted botanical palette
-const LEAF_COLORS = ['#8EBA9B', '#B3D1BC', '#D8E8DD'];
+const LEAF_COLORS = ['#BEA8DA', '#D4C4E8', '#E8DDF3'];
 const SPARKLE_COLORS = ['#D4B96A', '#E8D19A', '#DBC88A'];
 const DOT_COLORS = ['#D4A088', '#EDE0D0', '#C49080', '#F5E6D0'];
 
@@ -149,12 +149,12 @@ function CartoonBabySvg() {
       {/* ── Swaddle blanket — sage green, rounded bundle ── */}
       <Path
         d="M28 48 Q24 62 28 78 Q35 92 50 94 Q65 92 72 78 Q76 62 72 48 Q64 42 50 44 Q36 42 28 48 Z"
-        fill="#B3D1BC"
+        fill="#D4C4E8"
       />
       {/* Blanket V-fold */}
       <Path
         d="M36 50 L50 60 L64 50"
-        stroke="#D8E8DD"
+        stroke="#E8DDF3"
         strokeWidth={2}
         fill="none"
         strokeLinecap="round"
@@ -163,7 +163,7 @@ function CartoonBabySvg() {
       {/* Blanket wrap line */}
       <Path
         d="M32 62 Q50 67 68 62"
-        stroke="#8EBA9B"
+        stroke="#BEA8DA"
         strokeWidth={1.2}
         fill="none"
         strokeLinecap="round"
