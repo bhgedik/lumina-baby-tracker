@@ -33,13 +33,15 @@ export default function TabsLayout() {
   const activeBabyId = useBabyStore((s) => s.activeBabyId);
   const isHydrated = useBabyStore((s) => s.isHydrated);
 
-  const isPregnant = useMemo(() => {
-    if (!isHydrated) return false;
-    const baby = activeBabyId
+  const activeBaby = useMemo(() => {
+    if (!isHydrated) return null;
+    return activeBabyId
       ? babies.find((b) => b.id === activeBabyId) ?? babies[0]
       : babies[0];
-    return baby?.is_pregnant ?? false;
   }, [babies, activeBabyId, isHydrated]);
+
+  const isPregnant = activeBaby?.is_pregnant ?? false;
+  const babyName = activeBaby?.name || null;
 
   return (
     <Tabs
@@ -74,7 +76,7 @@ export default function TabsLayout() {
         name="daily"
         options={{
           title: 'Journal',
-          headerLeft: () => <HeaderTitle title="Journal" />,
+          headerLeft: () => <HeaderTitle title={babyName ? `${babyName}'s Journal` : 'Journal'} />,
           tabBarIcon: ({ color }) => (
             <Feather name="book" size={26} color={color} />
           ),

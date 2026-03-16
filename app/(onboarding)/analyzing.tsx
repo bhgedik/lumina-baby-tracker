@@ -26,7 +26,9 @@ const getPhaseTexts = (parentName: string, babyName: string) => [
   babyName
     ? `Preparing ${babyName}'s developmental profile...`
     : 'Setting up your baby tracker...',
-  'Almost ready — your plan is coming together...',
+  babyName
+    ? `Welcome to the family, ${babyName}! Almost ready...`
+    : 'Almost ready — your plan is coming together...',
 ];
 
 export default function AnalyzingScreen() {

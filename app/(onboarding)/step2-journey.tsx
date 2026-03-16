@@ -36,10 +36,18 @@ export default function Step2JourneyScreen() {
   const [journey, setJourney] = useState<'pregnant' | 'born' | null>(
     store.isPregnant ? 'pregnant' : store.dateOfBirth ? 'born' : null,
   );
+  const [babyName, setBabyName] = useState(store.babyName);
   const [dueDate, setDueDate] = useState(() => fromISO(store.dueDate));
   const [gestationalWeeks, setGestationalWeeks] = useState<number | null>(
     store.isPregnant ? store.gestationalWeeks : null,
   );
+
+  const [nameFocused, setNameFocused] = useState(false);
+  const nameFocusAnim = useRef(new Animated.Value(0)).current;
+  const nameBorderColor = nameFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.neutral[100], colors.primary[400]],
+  });
 
   const [dateFocused, setDateFocused] = useState(false);
   const dateFocusAnim = useRef(new Animated.Value(0)).current;
@@ -68,7 +76,7 @@ export default function Step2JourneyScreen() {
 
     if (journey === 'pregnant') {
       store.setBabyProfile({
-        babyName: store.babyName,
+        babyName: babyName.trim(),
         dateOfBirth: '',
         gender: store.gender ?? 'other',
         feedingMethod: store.feedingMethod ?? 'mixed',
@@ -81,7 +89,7 @@ export default function Step2JourneyScreen() {
     } else {
       store.setBabyProfile({
         ...store,
-        babyName: store.babyName,
+        babyName: babyName.trim(),
         dateOfBirth: store.dateOfBirth,
         gender: store.gender ?? 'other',
         feedingMethod: store.feedingMethod ?? 'mixed',
@@ -172,6 +180,47 @@ export default function Step2JourneyScreen() {
             )}
           </Pressable>
         </View>
+
+        {/* Baby name — shown once a journey is selected */}
+        {journey !== null && (
+          <View style={styles.section}>
+            <Text style={styles.label}>
+              {journey === 'pregnant' ? "What will you call your little one?" : "What's your baby's name?"}
+            </Text>
+            <Animated.View
+              style={[
+                styles.inputWrap,
+                { borderColor: nameBorderColor },
+                nameFocused && styles.inputWrapFocused,
+              ]}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Emma, Liam..."
+                placeholderTextColor={colors.neutral[300]}
+                value={babyName}
+                onChangeText={setBabyName}
+                autoCapitalize="words"
+                onFocus={() => {
+                  setNameFocused(true);
+                  Animated.timing(nameFocusAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: false,
+                  }).start();
+                }}
+                onBlur={() => {
+                  setNameFocused(false);
+                  Animated.timing(nameFocusAnim, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: false,
+                  }).start();
+                }}
+              />
+            </Animated.View>
+          </View>
+        )}
 
         {/* Pregnant details */}
         {journey === 'pregnant' && (

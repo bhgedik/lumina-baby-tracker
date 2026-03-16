@@ -139,7 +139,7 @@ export default function Step3BabyScreen() {
             >
               <TextInput
                 style={styles.input}
-                placeholder="Optional — you can add this later"
+                placeholder="Your baby's name"
                 placeholderTextColor={colors.neutral[300]}
                 value={name}
                 onChangeText={setName}
