@@ -730,13 +730,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
+      <View style={styles.mainContent}>
         {/* ── Greeting ── */}
         <View style={styles.greetingBlock}>
           <Text style={styles.greetingTitle}>
@@ -866,28 +860,26 @@ export default function HomeScreen() {
           })}
         </View>
 
-        {/* ── Secondary Actions (Health & Growth) ── */}
+        {/* ── Secondary Actions (Growth & Health) ── */}
         <View style={styles.secondarySection}>
-          <Text style={styles.secondarySectionTitle}>Health & Growth</Text>
-          {SECONDARY_ACTIONS.map((action) => (
-            <Pressable
-              key={action.id}
-              style={styles.secondaryRow}
-              onPress={() => router.push(action.route as any)}
-              accessibilityLabel={`Log ${action.label}`}
-            >
-              <View style={[styles.secondaryIcon, { backgroundColor: action.tint + '15' }]}>
-                <Feather name={action.icon} size={20} color={action.tint} />
-              </View>
-              <View style={{ flex: 1 }}>
+          <Text style={styles.secondarySectionTitle}>Growth & Health</Text>
+          <View style={styles.secondaryGrid}>
+            {SECONDARY_ACTIONS.map((action) => (
+              <Pressable
+                key={action.id}
+                style={styles.secondaryButton}
+                onPress={() => router.push(action.route as any)}
+                accessibilityLabel={`Log ${action.label}`}
+              >
+                <View style={[styles.actionIconWrap, { backgroundColor: action.tint + '15' }]}>
+                  <Feather name={action.icon} size={20} color={action.tint} />
+                </View>
                 <Text style={styles.secondaryLabel}>{action.label}</Text>
-                <Text style={styles.secondarySubtitle}>{action.subtitle}</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={UI.textMuted} />
-            </Pressable>
-          ))}
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Voice recording overlay */}
       {isRecording && (
@@ -986,7 +978,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.base,
     paddingTop: 8,
-    paddingBottom: 20,
+    paddingBottom: 40,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: spacing.base,
+    paddingTop: 8,
+    paddingBottom: 12,
+    justifyContent: 'space-between',
   },
 
   // ── Greeting ──
@@ -1019,6 +1018,7 @@ const styles = StyleSheet.create({
 
   // ── Lumina AI Hub ──
   luminaHub: {
+    flexShrink: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
@@ -1106,8 +1106,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 14,
-    marginBottom: 24,
+    rowGap: 10,
+    marginBottom: 18,
   },
   actionButton: {
     width: '47.5%',
@@ -1115,9 +1115,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius['2xl'],
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
     ...SOFT_SHADOW,
   },
   actionButtonFull: {
@@ -1125,9 +1125,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // ── Secondary Actions (Health & Growth) ──
+  // ── Secondary Actions (Growth & Health) ──
   secondarySection: {
     flex: 1,
     marginBottom: 8,
@@ -1153,39 +1153,30 @@ const styles = StyleSheet.create({
     color: UI.textMuted,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
+    textAlign: 'center',
     marginBottom: 10,
-    paddingHorizontal: 2,
   },
-  secondaryRow: {
-    flex: 1,
+  secondaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  secondaryButton: {
+    width: '47.5%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: UI.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius['2xl'],
-    paddingVertical: 20,
-    paddingHorizontal: 18,
-    gap: 14,
-    marginBottom: 10,
-    minHeight: 72,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
     ...SOFT_SHADOW,
   },
-  secondaryIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   secondaryLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: UI.text,
-    marginBottom: 2,
-  },
-  secondarySubtitle: {
-    fontSize: 13,
-    color: UI.textMuted,
   },
 
   // ── Voice Recording Overlay ──
