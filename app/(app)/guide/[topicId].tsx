@@ -173,6 +173,16 @@ export default function TopicHubScreen() {
           </View>
         )}
 
+        {/* ── Medical Disclaimer ── */}
+        <View style={styles.disclaimerBox}>
+          <View style={styles.disclaimerIconRow}>
+            <Feather name="shield" size={14} color="#8A9DB0" />
+          </View>
+          <Text style={styles.disclaimerText}>
+            Lumina provides information based on international pediatric guidelines (WHO, AAP, NHS, UNICEF). However, every baby is unique. This is not medical advice. Always consult your pediatrician before making health decisions.
+          </Text>
+        </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -370,5 +380,26 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: UI.textMuted,
+  },
+
+  // ── Medical Disclaimer ──
+  disclaimerBox: {
+    marginTop: 24,
+    marginHorizontal: 20,
+    backgroundColor: '#F5F4F2',
+    borderRadius: 14,
+    padding: 18,
+    alignItems: 'center',
+  },
+  disclaimerIconRow: {
+    marginBottom: 8,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    color: '#8A8A8A',
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });

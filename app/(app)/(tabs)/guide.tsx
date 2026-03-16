@@ -1,6 +1,7 @@
 // ============================================================
-// Lumina — Knowledge Library
+// Lumina — Knowledge Library + Myth Buster
 // Non-linear, age-aware encyclopedia for baby care
+// with "Common Misconceptions" accordion section
 // ============================================================
 
 import React, { useState, useMemo } from 'react';
@@ -10,12 +11,14 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LIBRARY_CATEGORIES, STAGE_FEATURED } from '../../../src/modules/guide/guideData';
 import type { LibraryCard, LibraryCategory, ApplicableAge } from '../../../src/modules/guide/guideData';
+import { MYTHS_DATABASE } from '../guide/myths';
 
 // ── Design tokens ────────────────────────────────────────────
 const UI = {
@@ -31,6 +34,14 @@ const UI = {
   pillTextActive: '#FFFFFF',
   stageBg: '#F5F0FA',
   stageAccent: '#A78BBA',
+  mythAmber: '#B8860B',
+  mythAmberBg: '#FDF6E8',
+  mythAmberBorder: '#F0E0C0',
+  factGreen: '#4A8C5E',
+  factGreenBg: '#EFF8F2',
+  factGreenBorder: '#D0E8D6',
+  sourceBlue: '#5A7A9E',
+  sourceBlueBg: '#EEF3F8',
 };
 
 const SOFT_SHADOW = {
@@ -40,6 +51,41 @@ const SOFT_SHADOW = {
   shadowRadius: 16,
   elevation: 3,
 };
+
+// ── Myth Carousel Preview Card ───────────────────────────────
+
+function MythPreviewCard({
+  myth,
+  onPress,
+}: {
+  myth: typeof MYTHS_DATABASE[number];
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.mythCarouselCard,
+        SOFT_SHADOW,
+        pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] },
+      ]}
+      onPress={onPress}
+    >
+      <View style={[styles.mythCarouselIcon, { backgroundColor: UI.mythAmberBg }]}>
+        <Feather name="help-circle" size={16} color={UI.mythAmber} />
+      </View>
+      <View style={styles.mythCarouselBadge}>
+        <Text style={styles.mythCarouselBadgeText}>DID YOU KNOW?</Text>
+      </View>
+      <Text style={styles.mythCarouselTitle} numberOfLines={2}>{myth.myth}</Text>
+      <View style={styles.mythCarouselFooter}>
+        <Text style={styles.mythCarouselCategory}>
+          {myth.category.charAt(0).toUpperCase() + myth.category.slice(1)}
+        </Text>
+        <Feather name="arrow-right" size={12} color={UI.textLight} />
+      </View>
+    </Pressable>
+  );
+}
 
 // ── Filter pill data ─────────────────────────────────────────
 const FILTERS = [
@@ -52,7 +98,6 @@ const FILTERS = [
 ];
 
 // ── Mock: current baby stage (replace with real data later) ──
-const MOCK_BABY_NAME = 'Baby';
 const MOCK_STAGE: ApplicableAge = '0-3m';
 
 // ── Geometric decoration (soft abstract shape behind icon) ───
@@ -131,21 +176,16 @@ function LibraryCardView({
       ]}
       onPress={onPress}
     >
-      {/* Highlighted accent strip */}
       {card.isHighlighted && (
         <View style={[styles.highlightStrip, { backgroundColor: card.accentColor }]} />
       )}
-
-      {/* Master folder indicator */}
       {card.isMaster && (
         <View style={[styles.masterTab, { backgroundColor: card.accentColor + '18' }]}>
           <Feather name="folder" size={10} color={card.accentColor} />
           <Text style={[styles.masterTabText, { color: card.accentColor }]}>Collection</Text>
         </View>
       )}
-
       <View style={styles.cardBody}>
-        {/* Icon area with geometric decoration */}
         <View style={[styles.iconArea, { backgroundColor: card.cardBg }]}>
           <GeoDecoration color={card.accentColor} />
           <Feather
@@ -154,8 +194,6 @@ function LibraryCardView({
             color={card.accentColor}
           />
         </View>
-
-        {/* Text content */}
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={1}>{card.title}</Text>
           <Text style={styles.cardSubtitle} numberOfLines={2}>{card.subtitle}</Text>
@@ -192,13 +230,10 @@ function SectionHeader({ category }: { category: LibraryCategory }) {
 export default function GuideScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('all');
-
-  // Collect all cards flat for featured lookup
   const allCards = useMemo(() =>
     LIBRARY_CATEGORIES.flatMap((cat) => cat.cards),
   []);
 
-  // Featured cards for current stage
   const featuredCards = useMemo(() => {
     const ids = STAGE_FEATURED[MOCK_STAGE] ?? STAGE_FEATURED.all;
     return ids
@@ -207,9 +242,12 @@ export default function GuideScreen() {
   }, [allCards]);
 
   const filteredCategories = useMemo(() => {
-    if (activeFilter === 'all') return LIBRARY_CATEGORIES;
-    return LIBRARY_CATEGORIES.filter((cat) => cat.id === activeFilter);
+    return activeFilter === 'all'
+      ? LIBRARY_CATEGORIES
+      : LIBRARY_CATEGORIES.filter((cat) => cat.id === activeFilter);
   }, [activeFilter]);
+
+  const mythsPreview = MYTHS_DATABASE.slice(0, 5);
 
   const openTopicHub = (cardId: string) => {
     router.push({
@@ -218,15 +256,18 @@ export default function GuideScreen() {
     });
   };
 
+  const showMyths = activeFilter === 'all' || activeFilter === 'health';
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Knowledge Library</Text>
+          <Text style={styles.headerTitle}>Lumina Guide</Text>
           <Text style={styles.headerSubtitle}>
             Expert guides for every stage, at your own pace
           </Text>
@@ -236,9 +277,7 @@ export default function GuideScreen() {
         <View style={styles.stageSection}>
           <View style={styles.stageLabelRow}>
             <Feather name="star" size={13} color={UI.stageAccent} />
-            <Text style={styles.stageLabel}>
-              Current Focus
-            </Text>
+            <Text style={styles.stageLabel}>Current Focus</Text>
           </View>
           <ScrollView
             horizontal
@@ -267,10 +306,7 @@ export default function GuideScreen() {
             return (
               <Pressable
                 key={f.id}
-                style={[
-                  styles.filterPill,
-                  isActive && styles.filterPillActive,
-                ]}
+                style={[styles.filterPill, isActive && styles.filterPillActive]}
                 onPress={() => setActiveFilter(f.id)}
               >
                 <Feather
@@ -278,12 +314,7 @@ export default function GuideScreen() {
                   size={13}
                   color={isActive ? UI.pillTextActive : UI.pillText}
                 />
-                <Text
-                  style={[
-                    styles.filterPillText,
-                    isActive && styles.filterPillTextActive,
-                  ]}
-                >
+                <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
                   {f.label}
                 </Text>
               </Pressable>
@@ -305,13 +336,83 @@ export default function GuideScreen() {
           </View>
         ))}
 
+        {/* ── Myth Buster Carousel ── */}
+        {showMyths && mythsPreview.length > 0 && (
+          <View style={styles.mythSection}>
+            <View style={styles.mythSectionHeader}>
+              <View style={styles.mythSectionLeft}>
+                <Feather name="help-circle" size={13} color={UI.mythAmber} />
+                <Text style={styles.mythSectionTitle}>Common Misconceptions</Text>
+              </View>
+              <Pressable
+                style={styles.seeAllButton}
+                onPress={() => router.push('/(app)/guide/myths')}
+                hitSlop={8}
+              >
+                <Text style={styles.seeAllText}>See All</Text>
+                <Feather name="chevron-right" size={14} color={UI.stageAccent} />
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mythCarouselRow}
+            >
+              {mythsPreview.map((myth) => (
+                <MythPreviewCard
+                  key={myth.id}
+                  myth={myth}
+                  onPress={() => router.push({
+                    pathname: '/(app)/guide/myths',
+                    params: { expandId: myth.id },
+                  })}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Scientific Sources Footer ── */}
+        <View style={styles.sourcesFooter}>
+          <View style={styles.sourcesIconRow}>
+            <View style={styles.sourcesBadge}>
+              <Feather name="award" size={14} color={UI.sourceBlue} />
+            </View>
+          </View>
+          <Text style={styles.sourcesTitle}>Scientific Sources</Text>
+          <Text style={styles.sourcesBody}>
+            All content in the Lumina Guide is based on peer-reviewed research and guidelines from leading health organizations:
+          </Text>
+          <View style={styles.sourcesList}>
+            {[
+              { abbr: 'WHO', name: 'World Health Organization' },
+              { abbr: 'AAP', name: 'American Academy of Pediatrics' },
+              { abbr: 'NHS', name: 'National Health Service (UK)' },
+              { abbr: 'UNICEF', name: 'United Nations Children\'s Fund' },
+              { abbr: 'AAPD', name: 'American Academy of Pediatric Dentistry' },
+              { abbr: 'CDC', name: 'Centers for Disease Control and Prevention' },
+              { abbr: 'FDA', name: 'U.S. Food and Drug Administration' },
+            ].map((org) => (
+              <View key={org.abbr} style={styles.sourceItem}>
+                <View style={styles.sourceAbbr}>
+                  <Text style={styles.sourceAbbrText}>{org.abbr}</Text>
+                </View>
+                <Text style={styles.sourceOrgName}>{org.name}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.sourcesDisclaimer}>
+            This guide is for informational purposes only and does not replace professional medical advice. Always consult your pediatrician for concerns about your child's health.
+          </Text>
+        </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────
+// ── Main Styles ──────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -566,5 +667,171 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: UI.textLight,
     letterSpacing: 0.2,
+  },
+
+  // ── Myth Carousel ──
+  mythSection: {
+    marginTop: 18,
+  },
+  mythSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
+  mythSectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mythSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: UI.text,
+    letterSpacing: -0.1,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI.stageAccent,
+  },
+  mythCarouselRow: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  mythCarouselCard: {
+    width: 160,
+    backgroundColor: UI.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  mythCarouselIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  mythCarouselBadge: {
+    backgroundColor: UI.mythAmberBg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: UI.mythAmberBorder,
+  },
+  mythCarouselBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: UI.mythAmber,
+    letterSpacing: 0.8,
+  },
+  mythCarouselTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI.text,
+    lineHeight: 17,
+    marginBottom: 8,
+  },
+  mythCarouselFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mythCarouselCategory: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: UI.mythAmber,
+    letterSpacing: 0.2,
+    textTransform: 'capitalize',
+  },
+
+  // ── Scientific Sources Footer ──
+  sourcesFooter: {
+    marginTop: 32,
+    marginHorizontal: 20,
+    backgroundColor: UI.sourceBlueBg,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(90,122,158,0.15)',
+  },
+  sourcesIconRow: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sourcesBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(90,122,158,0.2)',
+  },
+  sourcesTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#3A5A7A',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sourcesBody: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#5A7A9E',
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  sourcesList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  sourceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sourceAbbr: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(90,122,158,0.15)',
+    minWidth: 48,
+    alignItems: 'center',
+  },
+  sourceAbbrText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#3A5A7A',
+    letterSpacing: 0.3,
+  },
+  sourceOrgName: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#5A7A9E',
+  },
+  sourcesDisclaimer: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: '#8A9DB0',
+    lineHeight: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
