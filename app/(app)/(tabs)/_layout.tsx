@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { View, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/shared/constants/theme';
+import { colors, typography, spacing } from '../../../src/shared/constants/theme';
 import { useBabyStore } from '../../../src/stores/babyStore';
 
-function SettingsButton() {
+function ProfileButton() {
   const router = useRouter();
   return (
     <Pressable
@@ -13,25 +13,18 @@ function SettingsButton() {
       hitSlop={10}
       style={styles.headerButton}
       accessibilityRole="button"
-      accessibilityLabel="Settings"
+      accessibilityLabel="Profile"
     >
       <Feather name="user" size={22} color={colors.neutral[500]} />
     </Pressable>
   );
 }
 
-function CalendarButton() {
-  const router = useRouter();
+function HeaderTitle({ title }: { title: string }) {
   return (
-    <Pressable
-      onPress={() => router.push('/(app)/calendar' as any)}
-      hitSlop={10}
-      style={styles.headerButton}
-      accessibilityRole="button"
-      accessibilityLabel="Calendar & History"
-    >
-      <Feather name="calendar" size={22} color={colors.neutral[500]} />
-    </Pressable>
+    <View style={styles.headerTitleWrap}>
+      <Text style={styles.headerTitleText}>{title}</Text>
+    </View>
   );
 }
 
@@ -41,7 +34,6 @@ export default function TabsLayout() {
   const isHydrated = useBabyStore((s) => s.isHydrated);
 
   const isPregnant = useMemo(() => {
-    // Don't flip tab visibility until store is hydrated
     if (!isHydrated) return false;
     const baby = activeBabyId
       ? babies.find((b) => b.id === activeBabyId) ?? babies[0]
@@ -57,8 +49,8 @@ export default function TabsLayout() {
         headerTransparent: false,
         headerTitle: '',
         headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
-        headerLeft: () => <SettingsButton />,
-        headerRight: isPregnant ? undefined : () => <CalendarButton />,
+        headerLeft: () => null,
+        headerRight: () => <ProfileButton />,
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.primary[600],
         tabBarInactiveTintColor: colors.neutral[400],
@@ -71,18 +63,20 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
+          headerLeft: () => <HeaderTitle title="Home" />,
           tabBarIcon: ({ color }) => (
             <Feather name="home" size={26} color={color} />
           ),
         }}
       />
-      {/* 2. Daily — always visible */}
+      {/* 2. Journal */}
       <Tabs.Screen
         name="daily"
         options={{
-          title: 'Daily',
+          title: 'Journal',
+          headerLeft: () => <HeaderTitle title="Journal" />,
           tabBarIcon: ({ color }) => (
-            <Feather name="sun" size={26} color={color} />
+            <Feather name="book" size={26} color={color} />
           ),
         }}
       />
@@ -91,14 +85,11 @@ export default function TabsLayout() {
         name="lumina-hub"
         options={{
           title: '',
+          headerShown: false,
           tabBarIcon: () => (
             <View style={styles.fabContainer}>
               <View style={styles.fabCircle}>
-                <Feather
-                  name="message-circle"
-                  size={26}
-                  color="#FFFFFF"
-                />
+                <Feather name="message-circle" size={26} color="#FFFFFF" />
               </View>
             </View>
           ),
@@ -110,6 +101,7 @@ export default function TabsLayout() {
         name="guide"
         options={{
           title: 'Guide',
+          headerLeft: () => <HeaderTitle title="Guide" />,
           tabBarIcon: ({ color }) => (
             <Feather name="book-open" size={26} color={color} />
           ),
@@ -120,6 +112,7 @@ export default function TabsLayout() {
         name="checklist"
         options={{
           title: 'Checklist',
+          headerLeft: () => <HeaderTitle title="Checklist" />,
           href: isPregnant ? undefined : null,
           tabBarIcon: ({ color }) => (
             <Feather name="check-square" size={26} color={color} />
@@ -131,13 +124,14 @@ export default function TabsLayout() {
         name="progress"
         options={{
           title: 'Milestones',
+          headerLeft: () => <HeaderTitle title="Milestones" />,
           href: isPregnant ? null : undefined,
           tabBarIcon: ({ color }) => (
             <Feather name="trending-up" size={26} color={color} />
           ),
         }}
       />
-      {/* Profile — hidden from tab bar, accessed via gear icon */}
+      {/* Profile — hidden from tab bar */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -174,6 +168,15 @@ const styles = StyleSheet.create({
   headerButton: {
     marginHorizontal: spacing.base,
     padding: spacing.xs,
+  },
+  headerTitleWrap: {
+    marginLeft: spacing.base + 4,
+  },
+  headerTitleText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.neutral[800],
+    letterSpacing: -0.3,
   },
   fabContainer: {
     alignItems: 'center',

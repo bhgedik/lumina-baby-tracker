@@ -4,14 +4,16 @@
 // with "Common Misconceptions" accordion section
 // ============================================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Pressable,
+  LayoutAnimation,
   Platform,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -19,6 +21,15 @@ import { useRouter } from 'expo-router';
 import { LIBRARY_CATEGORIES, STAGE_FEATURED } from '../../../src/modules/guide/guideData';
 import type { LibraryCard, LibraryCategory, ApplicableAge } from '../../../src/modules/guide/guideData';
 import { MYTHS_DATABASE } from '../guide/myths';
+import { ChatSheet } from '../../../src/modules/insights/components/ChatSheet';
+import { VisualGuide } from '../../../src/modules/insights/components/VisualGuide';
+import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
+import type { VisualGuide as VisualGuideData } from '../../../src/modules/insights/types';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ── Design tokens ────────────────────────────────────────────
 const UI = {
@@ -51,6 +62,173 @@ const SOFT_SHADOW = {
   shadowRadius: 16,
   elevation: 3,
 };
+
+// ── Today's Insight (migrated from Daily) ────────────────────
+
+interface SmartSuggestion {
+  id: string;
+  title: string;
+  snippet: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  tint: string;
+  visualGuide?: VisualGuideData;
+}
+
+function generateSmartSuggestions(
+  ageDays: number | null,
+  totalFeeds: number,
+  sleepHours: number | null,
+): SmartSuggestion[] {
+  const suggestions: SmartSuggestion[] = [];
+  const weeks = ageDays ? Math.floor(ageDays / 7) : 0;
+
+  if (weeks <= 2) {
+    suggestions.push({
+      id: 'colostrum',
+      title: 'Early feeding patterns',
+      snippet: 'Newborns feed 8-12 times a day. Cluster feeding in the evening is completely normal and helps establish your supply.',
+      icon: 'coffee',
+      tint: '#A08B6E',
+      visualGuide: {
+        type: 'step_by_step',
+        media_url: 'https://placeholder.lumina.app/guides/early-feeding',
+        action_text: 'Early feeding basics',
+        steps: [
+          { step: 1, instruction: 'Watch for feeding cues: rooting, lip smacking, hand-to-mouth', icon: 'eye' },
+          { step: 2, instruction: 'Feed on demand — don\'t wait for crying', icon: 'clock' },
+          { step: 3, instruction: 'Track wet diapers: 6+ per day by day 4 means adequate intake', icon: 'check-circle' },
+        ],
+      },
+    });
+    suggestions.push({
+      id: 'newborn-sleep',
+      title: 'Newborn sleep basics',
+      snippet: 'Expect 14-17 hours of sleep in short bursts. Day-night confusion is normal and typically resolves by 6-8 weeks.',
+      icon: 'moon',
+      tint: '#A78BBA',
+    });
+  } else if (weeks <= 6) {
+    suggestions.push({
+      id: 'growth-spurt',
+      title: 'Growth spurt window',
+      snippet: 'Around 3-6 weeks, babies often have their first major growth spurt. Increased fussiness and feeding are normal signs.',
+      icon: 'trending-up',
+      tint: '#A78BBA',
+    });
+  } else if (weeks <= 12) {
+    suggestions.push({
+      id: 'social-smile',
+      title: 'Social milestones emerging',
+      snippet: 'Between 6-12 weeks, watch for your baby\'s first social smile — a real response to your face, not just a reflex.',
+      icon: 'smile',
+      tint: '#9B7DB8',
+    });
+  } else if (weeks <= 20) {
+    suggestions.push({
+      id: 'routine',
+      title: 'Building a flexible routine',
+      snippet: 'Around 3-4 months, babies start showing predictable patterns. Follow their cues rather than the clock.',
+      icon: 'clock',
+      tint: '#A08B6E',
+    });
+  }
+
+  if (sleepHours !== null && sleepHours < 3) {
+    suggestions.push({
+      id: 'low-sleep',
+      title: 'Managing wake windows',
+      snippet: 'Short on sleep today? Watch for drowsy cues — yawning, eye rubbing, looking away. Catching the window early makes settling easier.',
+      icon: 'eye',
+      tint: '#C4943A',
+      visualGuide: {
+        type: 'step_by_step',
+        media_url: 'https://placeholder.lumina.app/guides/wake-windows',
+        action_text: 'Spotting drowsy cues',
+        steps: [
+          { step: 1, instruction: 'Watch for yawning, eye rubbing, or looking away', icon: 'eye' },
+          { step: 2, instruction: 'Start wind-down routine immediately when cues appear', icon: 'moon' },
+          { step: 3, instruction: 'Dim lights, reduce stimulation, gentle rocking', icon: 'sun' },
+        ],
+      },
+    });
+  }
+
+  if (totalFeeds >= 10) {
+    suggestions.push({
+      id: 'cluster-feed',
+      title: 'Cluster feeding is normal',
+      snippet: 'High feeding frequency often signals a growth spurt or comfort nursing. Both are healthy and help regulate supply.',
+      icon: 'repeat',
+      tint: '#A08B6E',
+    });
+  }
+
+  suggestions.push({
+    id: 'parent-care',
+    title: 'A moment for you',
+    snippet: 'Parental wellbeing matters. Even 5 minutes of quiet breathing or a warm drink can help reset your nervous system.',
+    icon: 'heart',
+    tint: '#C47A7A',
+  });
+
+  return suggestions;
+}
+
+function SuggestionCard({
+  suggestion,
+  onAskAI,
+}: {
+  suggestion: SmartSuggestion;
+  onAskAI: (suggestion: SmartSuggestion) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpand = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded((prev) => !prev);
+  }, []);
+
+  return (
+    <View style={styles.suggestionCard}>
+      <View style={styles.suggestionLeft}>
+        <View style={[styles.suggestionIconWrap, { backgroundColor: suggestion.tint + '15' }]}>
+          <Feather name={suggestion.icon} size={18} color={suggestion.tint} />
+        </View>
+      </View>
+      <View style={styles.suggestionContent}>
+        <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
+        <Text
+          style={styles.suggestionSnippet}
+          numberOfLines={expanded ? undefined : 2}
+        >
+          {suggestion.snippet}
+        </Text>
+        <Pressable onPress={toggleExpand} hitSlop={6}>
+          <Text style={styles.readMoreText}>
+            {expanded ? 'Show less' : 'Read more'}
+          </Text>
+        </Pressable>
+        {expanded && (
+          <>
+            {suggestion.visualGuide && (
+              <View style={styles.expandedVisualGuide}>
+                <VisualGuide guide={suggestion.visualGuide} />
+              </View>
+            )}
+            <Pressable
+              style={styles.askAIButton}
+              onPress={() => onAskAI(suggestion)}
+              hitSlop={4}
+            >
+              <Feather name="message-circle" size={14} color={UI.stageAccent} />
+              <Text style={styles.askAIText}>Ask Lumina about this</Text>
+            </Pressable>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
 
 // ── Myth Carousel Preview Card ───────────────────────────────
 
@@ -230,6 +408,17 @@ function SectionHeader({ category }: { category: LibraryCategory }) {
 export default function GuideScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('all');
+  const [showChat, setShowChat] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
+
+  const { babyAge, totalFeedsToday, sleepSummary, babyName } = useDashboardData();
+  const babyAgeDays = babyAge?.days ?? null;
+  const sleepHours = sleepSummary?.total_sleep_hours ?? null;
+  const smartSuggestions = useMemo(
+    () => generateSmartSuggestions(babyAgeDays, totalFeedsToday, sleepHours),
+    [babyAgeDays, totalFeedsToday, sleepHours],
+  );
+
   const allCards = useMemo(() =>
     LIBRARY_CATEGORIES.flatMap((cat) => cat.cards),
   []);
@@ -265,13 +454,25 @@ export default function GuideScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Lumina Guide</Text>
-          <Text style={styles.headerSubtitle}>
-            Expert guides for every stage, at your own pace
-          </Text>
-        </View>
+        {/* ── Today's Insight ── */}
+        {smartSuggestions.length > 0 && (
+          <View style={styles.insightSection}>
+            <View style={styles.insightHeader}>
+              <Feather name="sunrise" size={13} color={UI.stageAccent} />
+              <Text style={styles.insightLabel}>Today's Insight</Text>
+            </View>
+            {smartSuggestions.map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                onAskAI={(s) => {
+                  setChatInitialMessage(`Tell me more about: ${s.title}`);
+                  setShowChat(true);
+                }}
+              />
+            ))}
+          </View>
+        )}
 
         {/* ── Featured: For Baby's Stage ── */}
         <View style={styles.stageSection}>
@@ -408,6 +609,16 @@ export default function GuideScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <ChatSheet
+        visible={showChat}
+        onClose={() => { setShowChat(false); setChatInitialMessage(undefined); }}
+        insight={null}
+        babyName={babyName ?? null}
+        babyAgeDays={babyAgeDays}
+        feedingMethod=""
+        initialMessage={chatInitialMessage}
+      />
     </SafeAreaView>
   );
 }
@@ -423,24 +634,73 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  // ── Header ──
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 4,
+  // ── Today's Insight ──
+  insightSection: {
+    paddingHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 8,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+  insightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  insightLabel: {
+    fontSize: 15,
+    fontWeight: '700',
     color: UI.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.1,
+  },
+  suggestionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  suggestionLeft: {},
+  suggestionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: UI.text,
     marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 15,
+  suggestionSnippet: {
+    fontSize: 14,
     fontWeight: '400',
-    color: UI.textMuted,
-    lineHeight: 21,
+    color: UI.textSecondary,
+    lineHeight: 20,
+  },
+  readMoreText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI.stageAccent,
+    marginTop: 4,
+  },
+  expandedVisualGuide: {
+    marginTop: 10,
+  },
+  askAIButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 6,
+  },
+  askAIText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI.stageAccent,
   },
 
   // ── Stage Featured Section ──
