@@ -13,6 +13,7 @@ import {
   ScrollView,
   Platform,
   Animated,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -102,6 +103,10 @@ export default function Step2JourneyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -285,6 +290,7 @@ export default function Step2JourneyScreen() {
         )}
 
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Sticky Continue button */}
       <View style={styles.stickyFooter}>
@@ -304,8 +310,9 @@ export default function Step2JourneyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   scrollView: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, paddingTop: spacing.sm, paddingBottom: 120 },
+  content: { padding: spacing.xl, paddingTop: spacing.sm, paddingBottom: 180 },
   backButton: {
     width: 44,
     height: 44,

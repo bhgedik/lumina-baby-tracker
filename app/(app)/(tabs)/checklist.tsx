@@ -37,7 +37,7 @@ const CATEGORY_META: Record<string, { icon: IconName; color: string; bg: string;
   'Safety':              { icon: 'shield',    color: '#2E7D32', bg: '#E8F5E9', tagline: 'Making your home a safe haven' },
   'Hospital Bag':        { icon: 'briefcase', color: colors.secondary[600], bg: colors.secondary[50], tagline: 'Everything you need, packed and ready' },
   'Diaper Station':      { icon: 'layers',    color: '#F57F17', bg: '#FFF8E1', tagline: 'Your command center for changes' },
-  'Feeding Prep':        { icon: 'coffee',    color: '#5E35B1', bg: '#EDE7F6', tagline: 'Ready for every feed, day and night' },
+  'Feeding Prep':        { icon: 'droplet',    color: '#5E35B1', bg: '#EDE7F6', tagline: 'Ready for every feed, day and night' },
   'Bath Time':           { icon: 'droplet',   color: '#0288D1', bg: '#E1F5FE', tagline: 'Gentle care for delicate skin' },
   'Postpartum Recovery': { icon: 'heart',     color: colors.secondary[500], bg: colors.secondary[50], tagline: 'Because your healing matters too' },
 };

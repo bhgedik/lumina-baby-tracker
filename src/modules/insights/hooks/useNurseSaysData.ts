@@ -48,7 +48,7 @@ const NURSE_CATEGORY_TAG: Record<string, InsightTag> = {
   Bonding: 'general',
 };
 const NURSE_CATEGORY_ICON: Record<string, string> = {
-  Feeding: 'coffee',
+  Feeding: 'droplet',
   Recovery: 'heart',
   Sleep: 'moon',
   Bonding: 'sun',

@@ -55,7 +55,7 @@ const CARDS: CardConfig[] = [
   { mode: 'breast', icon: 'heart', label: 'Breast', sub: 'Timer or log past', color: '#A78BBA', bg: '#F0EBF5' },
   { mode: 'bottle_bm', icon: 'droplet', label: 'Bottle · BM', sub: 'Breast milk', color: '#4A7FA5', bg: '#E8F0F7' },
   { mode: 'bottle_formula', icon: 'droplet', label: 'Bottle · Formula', sub: 'Formula', color: '#F2B89C', bg: '#FDF0EB' },
-  { mode: 'solids', icon: 'coffee', label: 'Solids', sub: 'Food + reactions', color: '#C4943A', bg: '#F9F3E8' },
+  { mode: 'solids', icon: 'sunrise', label: 'Solids', sub: 'Food + reactions', color: '#C4943A', bg: '#F9F3E8' },
 ];
 
 export function FeedingSheet({

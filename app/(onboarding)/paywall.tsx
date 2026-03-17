@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
+import { flushOnboardingToStores } from '../../src/services/onboardingFlush';
 
 const PREMIUM_FEATURES = [
   'Unlimited Lumina AI Consultations',
@@ -26,12 +27,20 @@ export default function PaywallScreen() {
   const babyName = useOnboardingStore((s) => s.babyName) || 'your baby';
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>('annual');
 
+  const finishOnboarding = async () => {
+    await flushOnboardingToStores({
+      userId: 'local-user-' + Date.now(),
+      userEmail: 'user@lumina.local',
+    });
+    router.replace('/(app)/(tabs)/home');
+  };
+
   const handleContinue = () => {
-    router.push('/(onboarding)/create-account');
+    finishOnboarding();
   };
 
   const handleSkip = () => {
-    router.push('/(onboarding)/create-account');
+    finishOnboarding();
   };
 
   return (

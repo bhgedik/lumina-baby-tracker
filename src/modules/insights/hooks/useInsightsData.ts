@@ -30,7 +30,7 @@ const NURSE_CATEGORY_TAG: Record<string, InsightTag> = {
   Bonding: 'general',
 };
 const NURSE_CATEGORY_ICON: Record<string, string> = {
-  Feeding: 'coffee',
+  Feeding: 'droplet',
   Recovery: 'heart',
   Sleep: 'moon',
   Bonding: 'sun',
@@ -123,7 +123,7 @@ export function useInsightsData(): InsightsState {
           contentHash: `feeding-ontrack-${day}`,
           tag: 'feeding_insight',
           tagLabel: 'Feeding Pattern',
-          tagIcon: 'coffee',
+          tagIcon: 'droplet',
           hook: `Based on ${totalFeeds} feeds logged today and ${name}'s ${ageLabel} development...`,
           title: `${name}'s feeding is right on track`,
           body: `You're doing a wonderful job keeping up with feeds. At **${ageLabel}**, ${isNewborn ? '8-12 feeds per day is exactly what we expect' : 'this feeding frequency supports healthy growth'}. ${name}'s stomach is growing, and your routine is clearly working.\n\n**Pro tip from the nursery:** Watch for ${name}'s early hunger cues — hand-to-mouth movements and lip smacking — rather than waiting for crying. Catching feeds early means **less stress for both of you** and more efficient feeding sessions.`,
@@ -136,7 +136,7 @@ export function useInsightsData(): InsightsState {
           contentHash: `feeding-low-${day}`,
           tag: 'feeding_insight',
           tagLabel: 'Feeding Pattern',
-          tagIcon: 'coffee',
+          tagIcon: 'droplet',
           hook: `Based on ${totalFeeds} feeds so far today (${ageLabel})...`,
           title: 'A gentle feeding reminder',
           body: `I've noticed ${totalFeeds} feed${totalFeeds > 1 ? 's' : ''} so far today. At **${ageLabel}**, we typically want to see **${expectedMin}-${expectedMin + 4} feeds in 24 hours**. **Forgot to log a couple?** That happens — tap below to catch up. If the count is accurate, no stress — some babies cluster their feeds later in the day.\n\n**What to watch for:** If ${name} seems content, has good wet diapers, and is gaining weight, the pattern is likely fine. But if you're noticing fewer wet diapers too, it's worth a quick check-in with your pediatrician.`,
@@ -386,7 +386,7 @@ export function useInsightsData(): InsightsState {
       activeMeds.length === 0 ? 'no_data' : overdueMeds.length > 0 ? 'attention' : 'good';
 
     const domains: PulseDomain[] = [
-      { key: 'feeding', label: 'Feeding', status: feedingStatus, icon: 'coffee' },
+      { key: 'feeding', label: 'Feeding', status: feedingStatus, icon: 'droplet' },
       { key: 'sleep', label: 'Sleep', status: sleepStatus, icon: 'moon' },
       { key: 'diapers', label: 'Diapers', status: diaperStatus, icon: 'droplet' },
       { key: 'meds', label: 'Meds', status: medsStatus, icon: 'thermometer' },

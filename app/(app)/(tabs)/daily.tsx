@@ -93,7 +93,7 @@ function buildHealthSignals(
   if (totalFeeds > 0) {
     const feedFreq = totalFeeds >= 6 ? 'on track' : 'fewer than usual';
     signals.push({
-      icon: 'coffee',
+      icon: 'droplet',
       label: 'Feeding',
       detail: `${totalFeeds} feeds today — ${feedFreq}${lastFedAgo ? ` (last ${lastFedAgo})` : ''}`,
       tint: totalFeeds >= 6 ? '#A78BBA' : UI.warmTint,
@@ -131,7 +131,7 @@ function getPregnancyWeekInfo(week: number): PregnancyWeekInfo {
     babyDev: 'All major organs are forming. Tiny fingers and toes are developing, and baby can make small movements.',
     momBody: 'Fatigue and nausea are common. Your body is building the placenta — the hardest behind-the-scenes work.',
     tip: 'Small, frequent meals can ease nausea. Stay hydrated and rest when you can.',
-    tipIcon: 'coffee',
+    tipIcon: 'droplet',
   };
   if (week <= 16) return {
     babySize: 'Avocado',
@@ -1434,6 +1434,7 @@ export default function JournalScreen() {
     isPregnant,
     gestationalWeek,
     parentName,
+    babyName,
     totalFeedsToday,
     totalWetToday,
     totalDirtyToday,
@@ -1445,7 +1446,7 @@ export default function JournalScreen() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
 
-  const displayName = 'Baby';
+  const displayName = babyName || 'Baby';
   const ageDisplay = babyAge?.display ?? '';
   const sleepHours = sleepSummary?.total_sleep_hours ?? null;
 
@@ -1469,41 +1470,6 @@ export default function JournalScreen() {
           />
         ) : (
           <>
-            {/* ── Health Check Card ── */}
-            <View style={healthStyles.healthCard}>
-              <View style={healthStyles.healthHeader}>
-                <View style={healthStyles.healthIconWrap}>
-                  <Feather name="activity" size={18} color={UI.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={healthStyles.healthTitle}>{displayName}'s Health Check</Text>
-                  {ageDisplay ? (
-                    <Text style={healthStyles.healthAge}>{ageDisplay}</Text>
-                  ) : null}
-                </View>
-              </View>
-
-              {healthSignals.length > 0 ? (
-                <View style={healthStyles.healthSignals}>
-                  {healthSignals.map((signal) => (
-                    <View key={signal.label} style={healthStyles.signalRow}>
-                      <View style={[healthStyles.signalIcon, { backgroundColor: signal.bg }]}>
-                        <Feather name={signal.icon} size={14} color={signal.tint} />
-                      </View>
-                      <View style={healthStyles.signalText}>
-                        <Text style={healthStyles.signalLabel}>{signal.label}</Text>
-                        <Text style={healthStyles.signalDetail}>{signal.detail}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={healthStyles.healthEmpty}>
-                  Log feeds, sleep, and diapers to see {displayName}'s daily health summary here.
-                </Text>
-              )}
-            </View>
-
             {/* ── Segment Tabs ── */}
             <View style={calStyles.segmentRow}>
               {SEGMENTS.map((seg) => (
@@ -1562,6 +1528,41 @@ export default function JournalScreen() {
             ) : (
               <MonthlyView />
             )}
+
+            {/* ── Health Check Card ── */}
+            <View style={healthStyles.healthCard}>
+              <View style={healthStyles.healthHeader}>
+                <View style={healthStyles.healthIconWrap}>
+                  <Feather name="activity" size={18} color={UI.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={healthStyles.healthTitle}>{displayName}'s Health Check</Text>
+                  {ageDisplay ? (
+                    <Text style={healthStyles.healthAge}>{ageDisplay}</Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {healthSignals.length > 0 ? (
+                <View style={healthStyles.healthSignals}>
+                  {healthSignals.map((signal) => (
+                    <View key={signal.label} style={healthStyles.signalRow}>
+                      <View style={[healthStyles.signalIcon, { backgroundColor: signal.bg }]}>
+                        <Feather name={signal.icon} size={14} color={signal.tint} />
+                      </View>
+                      <View style={healthStyles.signalText}>
+                        <Text style={healthStyles.signalLabel}>{signal.label}</Text>
+                        <Text style={healthStyles.signalDetail}>{signal.detail}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={healthStyles.healthEmpty}>
+                  Log feeds, sleep, and diapers to see {displayName}'s daily health summary here.
+                </Text>
+              )}
+            </View>
           </>
         )}
 
@@ -1590,6 +1591,7 @@ const healthStyles = StyleSheet.create({
     backgroundColor: UI.card,
     borderRadius: 28,
     padding: 20,
+    marginTop: 20,
     marginBottom: 28,
     ...SOFT_SHADOW,
   },

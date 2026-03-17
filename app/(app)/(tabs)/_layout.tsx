@@ -23,7 +23,7 @@ function ProfileButton() {
 function HeaderTitle({ title }: { title: string }) {
   return (
     <View style={styles.headerTitleWrap}>
-      <Text style={styles.headerTitleText}>{title}</Text>
+      <Text style={styles.headerTitleText} numberOfLines={1}>{title}</Text>
     </View>
   );
 }

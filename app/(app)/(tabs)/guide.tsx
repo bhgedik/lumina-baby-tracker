@@ -87,7 +87,7 @@ function generateSmartSuggestions(
       id: 'colostrum',
       title: 'Early feeding patterns',
       snippet: 'Newborns feed 8-12 times a day. Cluster feeding in the evening is completely normal and helps establish your supply.',
-      icon: 'coffee',
+      icon: 'droplet',
       tint: '#A08B6E',
       visualGuide: {
         type: 'step_by_step',
@@ -637,14 +637,14 @@ const styles = StyleSheet.create({
   // ── Today's Insight ──
   insightSection: {
     paddingHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 16,
+    marginBottom: 12,
   },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   insightLabel: {
     fontSize: 15,

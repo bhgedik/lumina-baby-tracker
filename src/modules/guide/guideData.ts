@@ -453,7 +453,7 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         id: 'starting-solids',
         title: 'Starting Solids',
         subtitle: 'When, what, and how to introduce food safely',
-        icon: 'coffee',
+        icon: 'sunrise',
         accentColor: '#7A9B6B',
         cardBg: '#F3F7F0',
         applicableAge: '6-12m',

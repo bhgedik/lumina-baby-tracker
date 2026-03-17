@@ -35,7 +35,7 @@ export const VET_CATEGORY_TAG: Record<string, InsightTag> = {
 };
 export const VET_CATEGORY_ICON: Record<string, string> = {
   hydration: 'droplet',
-  feeding: 'coffee',
+  feeding: 'droplet',
   routine: 'book-open',
   grooming: 'scissors',
   medication: 'thermometer',

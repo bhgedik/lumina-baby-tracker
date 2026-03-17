@@ -17,7 +17,7 @@ import type { ExpertInsight } from '../services/expertInsightsService';
 const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   motor: { label: 'MOTOR DEVELOPMENT', icon: 'move' },
   sleep: { label: 'SLEEP INSIGHT', icon: 'moon' },
-  feeding: { label: 'FEEDING TIP', icon: 'coffee' },
+  feeding: { label: 'FEEDING TIP', icon: 'droplet' },
   health: { label: 'HEALTH NOTE', icon: 'heart' },
   growth: { label: 'GROWTH NOTE', icon: 'trending-up' },
   milestone: { label: 'MILESTONE WATCH', icon: 'star' },

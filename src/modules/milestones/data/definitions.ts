@@ -879,7 +879,7 @@ export const MILESTONES: MilestoneDef[] = [
     targetWeek: 46,
     observationPrompt: 'When you hold an open cup to {babyName}\'s lips, can they take sips — even if some dribbles out?',
     nurseTip: 'Start with a small open cup with just a tiny amount of water. Open cup drinking develops better oral motor skills than sippy cups. AAP recommends introducing open cups from 6 months. Expect mess — it\'s part of learning.',
-    badgeIcon: 'coffee',
+    badgeIcon: 'droplet',
     badgeLabel: 'Sipper',
   },
   {

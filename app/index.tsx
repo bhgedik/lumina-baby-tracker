@@ -39,12 +39,6 @@ export default function Index() {
           return;
         }
 
-        // Onboarding completed but not authenticated → resume auth
-        if (isSupabaseConfigured && !isAuthenticated) {
-          router.replace('/(onboarding)/create-account');
-          return;
-        }
-
         // Fully ready → app
         router.replace('/(app)/(tabs)/home');
       } catch (e) {

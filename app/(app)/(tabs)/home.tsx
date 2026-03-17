@@ -730,14 +730,21 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <View style={styles.mainContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* ── Greeting ── */}
         <View style={styles.greetingBlock}>
           <Text style={styles.greetingTitle}>
             {greeting}{parentName ? `, ${parentName}` : ''}.
           </Text>
           {babyAge && babyName && (
-            <Text style={styles.greetingAge}>{babyName} is {babyAge.display}</Text>
+            <Text style={styles.greetingAge} numberOfLines={1}>{babyName} is {babyAge.display}</Text>
           )}
           {babyAge && !babyName && (
             <Text style={styles.greetingAge}>{babyAge.display}</Text>
@@ -761,7 +768,7 @@ export default function HomeScreen() {
           {/* Input bar */}
           <Pressable style={styles.luminaInputBar} onPress={() => setShowNurseChat(true)}>
             <Feather name="search" size={18} color={UI.textMuted} />
-            <Text style={styles.luminaInputPlaceholder}>
+            <Text style={styles.luminaInputPlaceholder} numberOfLines={1}>
               {babyName ? `What's on your mind about ${babyName}?` : 'Ask me anything...'}
             </Text>
             <Pressable
@@ -806,80 +813,105 @@ export default function HomeScreen() {
 
         {/* ── Primary Actions (Row 1: Sleep, Row 2: Feed+Pump, Row 3: Diaper+Play) ── */}
         <View style={styles.actionGrid}>
-          {[...PRIMARY_ACTIONS_ROW1, ...PRIMARY_ACTIONS_ROW2, ...PRIMARY_ACTIONS_ROW3].map((action, idx) => {
-            const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
-            const isSleepLive = action.id === 'sleep' && !!sleepTimer;
-            const isLive = isFeedingLive || isSleepLive;
-            const liveColor = isFeedingLive ? '#A78BBA' : '#6B5B8A';
-            const isFullWidth = idx === 0; // Sleep is first, full width
-
-            const liveSub = isFeedingLive
-              ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
-              : isSleepLive
-              ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap')
-              : null;
-
-            return (
+          {/* Row 1: Sleep (full width) */}
+          <View style={styles.actionRow}>
+            {PRIMARY_ACTIONS_ROW1.map((action) => {
+              const isLive = action.id === 'sleep' && !!sleepTimer;
+              const liveColor = '#6B5B8A';
+              const liveSub = isLive ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap') : null;
+              return (
+                <Pressable
+                  key={action.id}
+                  style={[styles.actionButton, styles.actionButtonFull, isLive && { borderWidth: 1.5, borderColor: liveColor + '40' }]}
+                  onPress={() => setShowSleepSheet(true)}
+                  accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
+                >
+                  <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }, isLive && { borderWidth: 2, borderColor: liveColor }]}>
+                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
+                  </View>
+                  <View>
+                    <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
+                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                    </Text>
+                    {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+          {/* Row 2: Feed + Pump */}
+          <View style={styles.actionRow}>
+            {PRIMARY_ACTIONS_ROW2.map((action) => {
+              const isLive = action.id === 'feeding' && !!feedingTimer;
+              const liveColor = '#A78BBA';
+              const liveSub = isLive
+                ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
+                : null;
+              return (
+                <Pressable
+                  key={action.id}
+                  style={[styles.actionButton, isLive && { borderWidth: 1.5, borderColor: liveColor + '40' }]}
+                  onPress={() => {
+                    if (action.id === 'feeding') setShowFeedingSheet(true);
+                    else if (action.id === 'pumping') setShowPumpingSheet(true);
+                    else router.push(action.route as any);
+                  }}
+                  accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
+                >
+                  <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }, isLive && { borderWidth: 2, borderColor: liveColor }]}>
+                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
+                  </View>
+                  <View>
+                    <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
+                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                    </Text>
+                    {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+          {/* Row 3: Diaper + Play Time */}
+          <View style={styles.actionRow}>
+            {PRIMARY_ACTIONS_ROW3.map((action) => (
               <Pressable
                 key={action.id}
-                style={[
-                  styles.actionButton,
-                  isFullWidth && styles.actionButtonFull,
-                  isLive && { borderWidth: 1.5, borderColor: liveColor + '40' },
-                ]}
+                style={styles.actionButton}
                 onPress={() => {
-                  if (action.id === 'feeding') setShowFeedingSheet(true);
-                  else if (action.id === 'sleep') setShowSleepSheet(true);
-                  else if (action.id === 'diaper') setShowDiaperSheet(true);
-                  else if (action.id === 'pumping') setShowPumpingSheet(true);
+                  if (action.id === 'diaper') setShowDiaperSheet(true);
                   else router.push(action.route as any);
                 }}
-                accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
+                accessibilityLabel={`Log ${action.label}`}
               >
-                <View style={[
-                  styles.actionIconWrap,
-                  { backgroundColor: action.iconBg },
-                  isLive && { borderWidth: 2, borderColor: liveColor },
-                ]}>
+                <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }]}>
                   {action.icon === 'diaper' ? (
-                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={isLive ? liveColor : action.iconTint} />
+                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={action.iconTint} />
                   ) : (
-                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
+                    <Feather name={action.icon} size={24} color={action.iconTint} />
                   )}
                 </View>
-                <View>
-                  <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
-                    {isLive ? formatTimerSeconds(timerElapsed) : action.label}
-                  </Text>
-                  {isLive && liveSub && (
-                    <Text style={styles.actionLiveSub}>{liveSub}</Text>
-                  )}
-                </View>
+                <Text style={[styles.actionLabel, { color: '#33302B' }]}>{action.label}</Text>
               </Pressable>
-            );
-          })}
-        </View>
-
-        {/* ── Secondary Actions (Growth & Health) ── */}
-        <View style={styles.secondarySection}>
-          <Text style={styles.secondarySectionTitle}>Growth & Health</Text>
-          <View style={styles.secondaryGrid}>
+            ))}
+          </View>
+          {/* Row 4: Growth + Health */}
+          <View style={styles.actionRow}>
             {SECONDARY_ACTIONS.map((action) => (
               <Pressable
                 key={action.id}
-                style={styles.secondaryButton}
+                style={styles.actionButton}
                 onPress={() => router.push(action.route as any)}
                 accessibilityLabel={`Log ${action.label}`}
               >
                 <View style={[styles.actionIconWrap, { backgroundColor: action.tint + '15' }]}>
                   <Feather name={action.icon} size={20} color={action.tint} />
                 </View>
-                <Text style={styles.secondaryLabel}>{action.label}</Text>
+                <Text style={[styles.actionLabel, { color: '#33302B' }]}>{action.label}</Text>
               </Pressable>
             ))}
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Voice recording overlay */}
       {isRecording && (
@@ -978,14 +1010,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.base,
     paddingTop: 8,
-    paddingBottom: 40,
-  },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: spacing.base,
-    paddingTop: 8,
-    paddingBottom: 12,
-    justifyContent: 'space-between',
+    paddingBottom: 100,
   },
 
   // ── Greeting ──
@@ -1018,7 +1043,6 @@ const styles = StyleSheet.create({
 
   // ── Lumina AI Hub ──
   luminaHub: {
-    flexShrink: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
@@ -1101,16 +1125,17 @@ const styles = StyleSheet.create({
     color: colors.primary[700],
   },
 
-  // ── Primary Action Grid (2×2) ──
+  // ── Action Grid ──
   actionGrid: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 10,
-    marginBottom: 18,
+    gap: 10,
   },
   actionButton: {
-    width: '47.5%',
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -1121,7 +1146,6 @@ const styles = StyleSheet.create({
     ...SOFT_SHADOW,
   },
   actionButtonFull: {
-    width: '100%',
     justifyContent: 'center',
   },
   actionIconWrap: {
@@ -1140,43 +1164,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8A8A8A',
     marginTop: 1,
-  },
-
-  // ── Secondary Actions (Growth & Health) ──
-  secondarySection: {
-    flex: 1,
-    marginBottom: 8,
-  },
-  secondarySectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: UI.textMuted,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  secondaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 10,
-  },
-  secondaryButton: {
-    width: '47.5%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius['2xl'],
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-    ...SOFT_SHADOW,
-  },
-  secondaryLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: UI.text,
   },
 
   // ── Voice Recording Overlay ──

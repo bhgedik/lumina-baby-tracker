@@ -32,7 +32,7 @@ const FOCUS_OPTIONS: {
   },
   {
     value: 'feeding',
-    icon: 'coffee',
+    icon: 'droplet',
     label: 'Feeding',
     description: 'Track feeds, find a rhythm',
     iconColors: { bg: '#FFF3D6', fg: '#F5A623' },
