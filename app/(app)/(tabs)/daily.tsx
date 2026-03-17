@@ -26,6 +26,8 @@ import { ChatSheet } from '../../../src/modules/insights/components/ChatSheet';
 import { KeyboardDoneBar } from '../../../src/shared/components/KeyboardDoneBar';
 import { VisualGuide } from '../../../src/modules/insights/components/VisualGuide';
 import { DevelopmentalNudgeCard, CATEGORY_CONFIG } from '../../../src/modules/insights/components/DevelopmentalNudgeCard';
+import { CardIllustrationMap } from '../../../src/shared/components/CardIllustrations';
+import { ClayIcon } from '../../../src/shared/components/ClayIcons';
 import { useNurseSaysData } from '../../../src/modules/insights/hooks/useNurseSaysData';
 import { useExpertInsights } from '../../../src/modules/insights/hooks/useExpertInsights';
 import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
@@ -58,11 +60,11 @@ const UI = {
 };
 
 const SOFT_SHADOW = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowColor: '#B0A090',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.15,
+  shadowRadius: 14,
+  elevation: 4,
 };
 
 // ── Health status helpers ────────────────────────────────────
@@ -258,8 +260,20 @@ function SuggestionCard({
   return (
     <View style={styles.suggestionCard}>
       <View style={styles.suggestionLeft}>
-        <View style={[styles.suggestionIconWrap, { backgroundColor: suggestion.tint + '15' }]}>
-          <Feather name={suggestion.icon} size={18} color={suggestion.tint} />
+        <View style={styles.suggestionIconWrap}>
+          {suggestion.icon === 'coffee' || suggestion.icon === 'repeat' ? (
+            <CardIllustrationMap.feeding size={44} />
+          ) : suggestion.icon === 'moon' || suggestion.icon === 'eye' || suggestion.icon === 'clock' ? (
+            <CardIllustrationMap.sleep size={44} />
+          ) : suggestion.icon === 'heart' ? (
+            <CardIllustrationMap.health size={44} />
+          ) : suggestion.icon === 'trending-up' ? (
+            <CardIllustrationMap.growth size={44} />
+          ) : suggestion.icon === 'smile' ? (
+            <CardIllustrationMap.activity size={44} />
+          ) : (
+            <Feather name={suggestion.icon} size={18} color={suggestion.tint} />
+          )}
         </View>
       </View>
       <View style={styles.suggestionContent}>
@@ -294,7 +308,7 @@ function SuggestionCard({
               onPress={() => onAskAI(suggestion)}
               hitSlop={4}
             >
-              <Feather name="message-circle" size={14} color={UI.accent} />
+              <Feather name="message-circle" size={14} color="#FFFFFF" />
               <Text style={styles.askAIText}>Ask Lumina about this</Text>
             </Pressable>
           </>
@@ -324,7 +338,7 @@ function DailyNoteCard({
     <View style={styles.dailyNote}>
       <View style={styles.dailyNoteHeader}>
         <View style={styles.dailyNoteIcon}>
-          <Feather name="sun" size={16} color={UI.warmTint} />
+          <ClayIcon name="sun-dry" size={36} />
         </View>
         <Text style={styles.dailyNoteTitle}>{card.title}</Text>
       </View>
@@ -347,7 +361,7 @@ function DailyNoteCard({
           onPress={onAskAI}
           hitSlop={4}
         >
-          <Feather name="message-circle" size={14} color={UI.accent} />
+          <Feather name="message-circle" size={14} color="#FFFFFF" />
           <Text style={styles.askAIText}>Ask Lumina about this</Text>
         </Pressable>
       )}
@@ -547,7 +561,7 @@ function PregnancyDailyView({ week, parentName }: { week: number; parentName: st
       </View>
 
       {/* ── Weekly Tip Highlight ── */}
-      <View style={[styles.healthCard, { backgroundColor: '#FDFAF5', borderWidth: 1, borderColor: '#F0EAE1' }]}>
+      <View style={[styles.healthCard, { backgroundColor: '#FDFAF5' }]}>
         <View style={styles.healthHeader}>
           <View style={[styles.healthIconWrap, { backgroundColor: '#FEF4E8' }]}>
             <Feather name={weekInfo.tipIcon} size={18} color={UI.warmTint} />
@@ -571,7 +585,7 @@ function PregnancyDailyView({ week, parentName }: { week: number; parentName: st
               onPress={() => toggleTip(tip.id)}
             >
               <View style={styles.suggestionLeft}>
-                <View style={[styles.suggestionIconWrap, { backgroundColor: tip.bg }]}>
+                <View style={styles.suggestionIconWrap}>
                   <Feather name={tip.icon} size={18} color={tip.tint} />
                 </View>
               </View>
@@ -664,9 +678,6 @@ export default function DailyScreen() {
             {/* ── Health Check Card ── */}
             <View style={styles.healthCard}>
               <View style={styles.healthHeader}>
-                <View style={styles.healthIconWrap}>
-                  <Feather name="activity" size={18} color={UI.accent} />
-                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.healthTitle}>{displayName}'s Health Check</Text>
                   {ageDisplay ? (
@@ -680,7 +691,15 @@ export default function DailyScreen() {
                   {healthSignals.map((signal) => (
                     <View key={signal.label} style={styles.signalRow}>
                       <View style={[styles.signalIcon, { backgroundColor: signal.bg }]}>
-                        <Feather name={signal.icon} size={14} color={signal.tint} />
+                        {signal.icon === 'moon' && CardIllustrationMap.sleep ? (
+                          <CardIllustrationMap.sleep size={44} />
+                        ) : signal.icon === 'coffee' && CardIllustrationMap.feeding ? (
+                          <CardIllustrationMap.feeding size={44} />
+                        ) : signal.icon === 'droplet' && CardIllustrationMap.diaper ? (
+                          <CardIllustrationMap.diaper size={44} />
+                        ) : (
+                          <Feather name={signal.icon} size={14} color={signal.tint} />
+                        )}
                       </View>
                       <View style={styles.signalText}>
                         <Text style={styles.signalLabel}>{signal.label}</Text>
@@ -797,8 +816,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700',
+    color: '#2D2A26',
     letterSpacing: -0.3,
   },
   headerSubtitle: {
@@ -811,9 +830,11 @@ const styles = StyleSheet.create({
   // ── Health Card ──
   healthCard: {
     backgroundColor: UI.card,
-    borderRadius: 28,
+    borderRadius: 22,
     padding: 20,
     marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
     ...SOFT_SHADOW,
   },
   healthHeader: {
@@ -825,20 +846,20 @@ const styles = StyleSheet.create({
   healthIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 22,
     backgroundColor: UI.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   healthTitle: {
     fontSize: 17,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   healthAge: {
     fontSize: 13,
     fontWeight: '400',
-    color: UI.textMuted,
+    color: '#A08060',
     marginTop: 1,
   },
   healthSignals: {
@@ -848,11 +869,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 6,
   },
   signalIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -861,8 +883,8 @@ const styles = StyleSheet.create({
   },
   signalLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   signalDetail: {
     fontSize: 13,
@@ -892,19 +914,22 @@ const styles = StyleSheet.create({
 
   // ── Section labels ──
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: UI.textMuted,
-    letterSpacing: 1.2,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8A8A8A',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginBottom: 10,
   },
 
   // ── Daily note ──
   dailyNote: {
     backgroundColor: UI.card,
-    borderRadius: 28,
+    borderRadius: 22,
     padding: 16,
     marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
     ...SOFT_SHADOW,
   },
   dailyNoteHeader: {
@@ -914,18 +939,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dailyNoteIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: UI.warmLight,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dailyNoteTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   dailyNoteBody: {
     fontSize: 14,
@@ -941,18 +965,22 @@ const styles = StyleSheet.create({
   suggestionCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8E4DF',
+    padding: 14,
+    marginBottom: 12,
+    backgroundColor: UI.card,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
     gap: 14,
+    ...SOFT_SHADOW,
   },
   suggestionLeft: {
     paddingTop: 2,
   },
   suggestionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -962,8 +990,8 @@ const styles = StyleSheet.create({
   },
   suggestionTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   suggestionSnippet: {
     fontSize: 14,
@@ -975,8 +1003,8 @@ const styles = StyleSheet.create({
   // ── Expandable card extras ──
   readMoreText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: UI.accent,
+    fontWeight: '600',
+    color: '#7C9A8E',
     marginTop: 4,
   },
   expandedVisualGuide: {
@@ -990,14 +1018,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    backgroundColor: UI.accentLight,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: UI.accent + '30',
+    backgroundColor: '#7C9A8E',
+    borderRadius: 22,
   },
   askAIText: {
     fontSize: 13,
     fontWeight: '500',
-    color: UI.accent,
+    color: '#FFFFFF',
   },
 });

@@ -31,7 +31,7 @@ import type { MilestoneDef, DevelopmentalPeriod } from '../../../src/modules/mil
 
 // ── Confetti (used for box opening + milestone celebration) ──
 
-const CONFETTI_COLORS = ['#BEA8DA', '#D4C4E8', '#A78BBA', '#F2B89C', '#F5A882', '#F5E6D0'];
+const CONFETTI_COLORS = ['#B199CE', '#D4C4E8', '#7C9A8E', '#A08060', '#F49770', '#EDE8E2'];
 
 function generateConfetti(count = 20) {
   return Array.from({ length: count }, () => ({
@@ -124,7 +124,7 @@ function MilestoneCard({
     >
       {/* Header: icon + title */}
       <View style={styles.cardHeader}>
-        <View style={[styles.domainBadge, { backgroundColor: domainInfo.bg }]}>
+        <View style={[styles.domainBadge, { backgroundColor: '#F7F4F0', borderWidth: 1, borderColor: '#EDE8E2' }]}>
           <Feather name={domainInfo.icon as any} size={16} color={domainInfo.color} />
         </View>
         <Text style={styles.cardTitle} numberOfLines={2}>
@@ -146,7 +146,7 @@ function MilestoneCard({
       {/* CTA */}
       {isCelebrated ? (
         <Pressable onPress={handleCelebrate} style={styles.achievedRow}>
-          <Feather name="check-circle" size={16} color={colors.primary[500]} />
+          <Feather name="check-circle" size={16} color="#7C9A8E" />
           <Text style={styles.achievedText}>
             Noticed{celebratedEntry?.achievedDate
               ? ` on ${formatAchievedDate(celebratedEntry.achievedDate)}`
@@ -156,7 +156,7 @@ function MilestoneCard({
         </Pressable>
       ) : (
         <Pressable onPress={handleCelebrate} style={styles.celebrateButton}>
-          <Feather name="check" size={14} color={colors.primary[700]} />
+          <Feather name="check" size={14} color="#FFFFFF" />
           <Text style={styles.celebrateButtonText}>Mark as Achieved</Text>
         </Pressable>
       )}
@@ -200,7 +200,7 @@ function SealedChapter({ period }: { period: DevelopmentalPeriod }) {
         <Text style={styles.sealedTitle}>{period.title}</Text>
         <Text style={styles.sealedSubtitle}>{period.subtitle}</Text>
       </View>
-      <Feather name="lock" size={14} color={colors.neutral[300]} />
+      <Feather name="lock" size={14} color="#A08060" />
     </View>
   );
 }
@@ -239,7 +239,7 @@ function ReadyChapter({
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <Pressable onPress={onOpen} style={styles.readyCta}>
           <View style={styles.readyCtaIcon}>
-            <Feather name="gift" size={22} color={colors.secondary[500]} />
+            <Feather name="gift" size={22} color="#7C9A8E" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.readyCtaText}>
@@ -247,7 +247,7 @@ function ReadyChapter({
             </Text>
             <Text style={styles.readyCtaHint}>Tap to reveal this chapter</Text>
           </View>
-          <Feather name="chevron-right" size={18} color={colors.secondary[400]} />
+          <Feather name="chevron-right" size={18} color="#A08060" />
         </Pressable>
       </Animated.View>
     </View>
@@ -518,7 +518,7 @@ export default function ProgressScreen() {
 // ── Styles ──
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: '#F7F4F0' },
   scrollContent: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
 
   // Header — editorial
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#2D2A26',
     letterSpacing: -0.5,
   },
   headerMeta: {
@@ -536,12 +536,12 @@ const styles = StyleSheet.create({
   },
   ageLabel: {
     fontSize: typography.fontSize.base,
-    color: colors.primary[600],
+    color: '#A08060',
     fontWeight: typography.fontWeight.medium,
   },
   celebrationSummaryText: {
     fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    color: '#7B5EA7',
     fontWeight: typography.fontWeight.medium,
   },
 
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   chapterTitle: {
     fontSize: 26,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#2D2A26',
     letterSpacing: -0.3,
   },
   chapterMeta: {
@@ -566,22 +566,22 @@ const styles = StyleSheet.create({
   },
   chapterSubtitle: {
     fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    color: '#A08060',
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
   chapterBadge: {
-    backgroundColor: colors.primary[100],
+    backgroundColor: '#F7F4F0',
     paddingHorizontal: 10, paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: 22,
   },
   chapterBadgeText: {
     fontSize: typography.fontSize.xs,
     fontWeight: '600',
-    color: colors.primary[700],
+    color: '#7B5EA7',
   },
   chapterReassurance: {
     fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    color: '#A08060',
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
     marginBottom: spacing.md,
   },
@@ -603,9 +603,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.primary[200],
+    backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: colors.primary[300],
+    borderColor: '#B199CE',
     marginTop: 22,
     zIndex: 1,
   },
@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
+    backgroundColor: '#7C9A8E',
+    borderColor: '#7C9A8E',
     marginTop: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   timelineLine: {
     width: 2,
     flex: 1,
-    backgroundColor: colors.primary[100],
+    backgroundColor: '#EDE8E2',
     marginTop: -1,
   },
   timelineCardWrapper: {
@@ -647,14 +647,14 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#F7F4F0',
     borderWidth: 2,
-    borderColor: colors.neutral[300],
+    borderColor: '#EDE8E2',
   },
   sealedLine: {
     width: 2,
     height: 24,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#EDE8E2',
     marginTop: 4,
   },
   sealedContent: {
@@ -663,11 +663,11 @@ const styles = StyleSheet.create({
   sealedTitle: {
     fontSize: typography.fontSize.lg,
     fontWeight: '600',
-    color: colors.neutral[400],
+    color: '#A08060',
   },
   sealedSubtitle: {
     fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
+    color: '#A08060',
     marginTop: 2,
   },
 
@@ -679,44 +679,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 22,
     padding: spacing.lg,
     marginTop: spacing.md,
     gap: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1.5,
-    borderColor: colors.secondary[200],
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   readyCtaIcon: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.secondary[50],
+    backgroundColor: '#F7F4F0',
     alignItems: 'center', justifyContent: 'center',
   },
   readyCtaText: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.secondary[600],
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   readyCtaHint: {
     fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    color: '#A08060',
     marginTop: 2,
   },
 
   // Milestone card — premium floating journal card
   milestoneCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 22,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -731,11 +733,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: '#2C2C2E',
+    color: '#2D2A26',
   },
   observationPrompt: {
     fontSize: 15,
-    color: '#48484A',
+    color: '#5C5C5C',
     lineHeight: 22,
     marginTop: spacing.md,
   },
@@ -745,12 +747,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   nurseTipLabel: {
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: '700',
+    color: '#7B5EA7',
   },
   nurseTipText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#A08060',
     lineHeight: 20,
   },
 
@@ -763,15 +765,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     paddingVertical: 10,
     paddingHorizontal: 18,
-    backgroundColor: colors.primary[50],
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
+    backgroundColor: '#7C9A8E',
+    borderRadius: 22,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   celebrateButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary[700],
+    color: '#FFFFFF',
   },
   achievedRow: {
     flexDirection: 'row',
@@ -781,12 +783,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     paddingVertical: 10,
     paddingHorizontal: 18,
-    backgroundColor: colors.primary[50],
-    borderRadius: 20,
+    backgroundColor: '#E8F0ED',
+    borderRadius: 22,
   },
   achievedText: {
     fontSize: 14,
-    color: colors.primary[600],
+    color: '#7C9A8E',
     fontWeight: '500',
   },
   undoText: {
@@ -817,15 +819,14 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: typography.fontSize.base,
     fontWeight: '400',
-    color: colors.textTertiary,
+    color: '#A08060',
     textAlign: 'center',
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
   footerSource: {
     fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    color: '#C0B8A8',
     textAlign: 'center',
     marginTop: spacing.xs,
-    opacity: 0.6,
   },
 });

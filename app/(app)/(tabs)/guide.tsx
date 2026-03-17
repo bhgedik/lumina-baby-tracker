@@ -16,29 +16,68 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LIBRARY_CATEGORIES, STAGE_FEATURED } from '../../../src/modules/guide/guideData';
 import type { LibraryCard, LibraryCategory, ApplicableAge } from '../../../src/modules/guide/guideData';
+import { CardIllustrationMap } from '../../../src/shared/components/CardIllustrations';
+import { ClayIcon } from '../../../src/shared/components/ClayIcons';
 
 // ── Design tokens ────────────────────────────────────────────
 const UI = {
-  bg: '#FDFCF5',
+  bg: '#F7F4F0',
   card: '#FFFFFF',
-  text: '#33302B',
+  text: '#2D2A26',
   textSecondary: '#5C5C5C',
-  textMuted: '#8A8A8A',
-  textLight: '#B0AAA2',
-  pillBg: '#F0EDE8',
-  pillBgActive: '#A78BBA',
-  pillText: '#6B6560',
-  pillTextActive: '#FFFFFF',
-  stageBg: '#F5F0FA',
-  stageAccent: '#A78BBA',
+  textMuted: '#A08060',
+  textLight: '#A08060',
+  pillBg: '#F7F4F0',
+  pillBgActive: '#EDE7F6',
+  pillText: '#5C5C5C',
+  pillTextActive: '#7B5EA7',
+  pillBorderActive: '#B199CE',
+  stageBg: '#F7F4F0',
+  stageAccent: '#7C9A8E',
+  sectionTitle: '#8A8A8A',
+  link: '#7C9A8E',
+  cta: '#7C9A8E',
+  inputBg: '#F7F4F0',
+  inputBorder: '#EDE8E2',
 };
 
-const SOFT_SHADOW = {
-  shadowColor: '#8A7A6A',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.06,
-  shadowRadius: 16,
-  elevation: 3,
+const CLAY_SHADOW = {
+  shadowColor: '#B0A090',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.15,
+  shadowRadius: 14,
+  elevation: 4,
+};
+
+// ── Map feather icon names to clay illustration keys ─────────
+const ICON_TO_ILLUSTRATION: Record<string, string> = {
+  heart: 'health',
+  shield: 'health',
+  'alert-triangle': 'health',
+  clipboard: 'health',
+  moon: 'sleep',
+  sun: 'sleep',
+  feather: 'sleep',
+  'trending-up': 'growth',
+  zap: 'activity',
+  cpu: 'activity',
+  link: 'activity',
+  droplet: 'feeding',
+  'battery-charging': 'feeding',
+  sunset: 'feeding',
+  coffee: 'feeding',
+  'volume-2': 'activity',
+  cloud: 'sleep',
+  wind: 'activity',
+};
+
+// ── Map category ids to clay icon names ──────────────────────
+const CATEGORY_TO_CLAY_ICON: Record<string, string> = {
+  soothing: 'music',
+  brain: 'book',
+  sleep: 'moon-night',
+  feeding: 'bottle',
+  health: 'thermometer',
 };
 
 // ── Filter pill data ─────────────────────────────────────────
@@ -55,14 +94,22 @@ const FILTERS = [
 const MOCK_BABY_NAME = 'Baby';
 const MOCK_STAGE: ApplicableAge = '0-3m';
 
-// ── Geometric decoration (soft abstract shape behind icon) ───
-function GeoDecoration({ color }: { color: string }) {
-  return (
-    <View style={styles.geoContainer}>
-      <View style={[styles.geoCircle, { backgroundColor: color + '12' }]} />
-      <View style={[styles.geoDiamond, { backgroundColor: color + '08' }]} />
-    </View>
-  );
+// ── Render clay illustration or fallback to Feather icon ─────
+function renderCardIcon(iconName: string, size: number, accentColor: string) {
+  const illustrationKey = ICON_TO_ILLUSTRATION[iconName];
+  const Illustration = illustrationKey ? CardIllustrationMap[illustrationKey] : null;
+  if (Illustration) {
+    return <Illustration size={size} />;
+  }
+  return <Feather name={iconName as any} size={size} color={accentColor} />;
+}
+
+function renderCategoryIcon(categoryId: string, fallbackIcon: string, size: number, accentColor: string) {
+  const clayIconName = CATEGORY_TO_CLAY_ICON[categoryId];
+  if (clayIconName) {
+    return <ClayIcon name={clayIconName as any} size={size} />;
+  }
+  return <Feather name={fallbackIcon as any} size={size} color={accentColor} />;
 }
 
 // ── Featured Stage Card (horizontal scroll item) ─────────────
@@ -78,21 +125,21 @@ function FeaturedCard({
     <Pressable
       style={({ pressed }) => [
         styles.featuredCard,
-        SOFT_SHADOW,
+        CLAY_SHADOW,
         pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] },
       ]}
       onPress={onPress}
     >
-      <View style={[styles.featuredIconWrap, { backgroundColor: card.accentColor + '14' }]}>
-        <Feather name={card.icon as any} size={20} color={card.accentColor} />
+      <View style={styles.featuredIconWrap}>
+        {renderCardIcon(card.icon, 32, card.accentColor)}
       </View>
       <Text style={styles.featuredTitle} numberOfLines={2}>{card.title}</Text>
       <Text style={styles.featuredSubtitle} numberOfLines={2}>{card.subtitle}</Text>
       <View style={styles.featuredFooter}>
-        <Text style={[styles.featuredAge, { color: card.accentColor }]}>
+        <Text style={[styles.featuredAge, { color: UI.link }]}>
           {formatAge(card.applicableAge)}
         </Text>
-        <Feather name="arrow-right" size={12} color={UI.textLight} />
+        <Feather name="arrow-right" size={12} color={UI.link} />
       </View>
     </Pressable>
   );
@@ -126,7 +173,7 @@ function LibraryCardView({
         styles.card,
         card.isMaster && styles.cardMaster,
         card.isHighlighted && styles.cardHighlighted,
-        SOFT_SHADOW,
+        CLAY_SHADOW,
         pressed && { opacity: 0.92, transform: [{ scale: 0.985 }] },
       ]}
       onPress={onPress}
@@ -145,14 +192,9 @@ function LibraryCardView({
       )}
 
       <View style={styles.cardBody}>
-        {/* Icon area with geometric decoration */}
-        <View style={[styles.iconArea, { backgroundColor: card.cardBg }]}>
-          <GeoDecoration color={card.accentColor} />
-          <Feather
-            name={card.icon as any}
-            size={card.isMaster ? 26 : 22}
-            color={card.accentColor}
-          />
+        {/* Icon area — clay illustration, no background */}
+        <View style={styles.iconArea}>
+          {renderCardIcon(card.icon, card.isMaster ? 44 : 38, card.accentColor)}
         </View>
 
         {/* Text content */}
@@ -165,7 +207,7 @@ function LibraryCardView({
                 ? `${freeCount} free of ${totalCount} guides`
                 : `${totalCount} guides`}
             </Text>
-            <Feather name="chevron-right" size={14} color={UI.textLight} />
+            <Feather name="chevron-right" size={14} color={UI.link} />
           </View>
         </View>
       </View>
@@ -178,10 +220,10 @@ function LibraryCardView({
 function SectionHeader({ category }: { category: LibraryCategory }) {
   return (
     <View style={styles.sectionHeader}>
-      <View style={[styles.sectionIconWrap, { backgroundColor: category.accentColor + '14' }]}>
-        <Feather name={category.icon as any} size={14} color={category.accentColor} />
+      <View style={styles.sectionIconWrap}>
+        {renderCategoryIcon(category.id, category.icon, 20, category.accentColor)}
       </View>
-      <Text style={styles.sectionTitle}>{category.title}</Text>
+      <Text style={styles.sectionTitle}>{category.title.toUpperCase()}</Text>
       <View style={styles.sectionLine} />
     </View>
   );
@@ -237,7 +279,7 @@ export default function GuideScreen() {
           <View style={styles.stageLabelRow}>
             <Feather name="star" size={13} color={UI.stageAccent} />
             <Text style={styles.stageLabel}>
-              Current Focus
+              CURRENT FOCUS
             </Text>
           </View>
           <ScrollView
@@ -354,10 +396,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stageLabel: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
-    color: UI.text,
-    letterSpacing: -0.1,
+    color: UI.sectionTitle,
+    letterSpacing: 0.8,
   },
   featuredRow: {
     paddingHorizontal: 20,
@@ -366,10 +408,10 @@ const styles = StyleSheet.create({
   featuredCard: {
     width: 160,
     backgroundColor: UI.card,
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   featuredIconWrap: {
     width: 40,
@@ -389,7 +431,7 @@ const styles = StyleSheet.create({
   featuredSubtitle: {
     fontSize: 11,
     fontWeight: '400',
-    color: UI.textMuted,
+    color: UI.textSecondary,
     lineHeight: 15,
     marginBottom: 8,
   },
@@ -419,11 +461,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 9,
-    borderRadius: 20,
+    borderRadius: 22,
     backgroundColor: UI.pillBg,
+    borderWidth: 1,
+    borderColor: UI.inputBorder,
   },
   filterPillActive: {
     backgroundColor: UI.pillBgActive,
+    borderColor: UI.pillBorderActive,
   },
   filterPillText: {
     fontSize: 13,
@@ -448,31 +493,30 @@ const styles = StyleSheet.create({
   sectionIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '700',
-    color: UI.text,
-    letterSpacing: -0.2,
+    color: UI.sectionTitle,
+    letterSpacing: 0.8,
   },
   sectionLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E8E4DE',
+    backgroundColor: UI.inputBorder,
     marginLeft: 8,
   },
 
   // ── Card ──
   card: {
     backgroundColor: UI.card,
-    borderRadius: 16,
+    borderRadius: 22,
     marginBottom: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   cardMaster: {
     borderWidth: 1.5,
@@ -514,29 +558,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  geoContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  geoCircle: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  geoDiamond: {
-    position: 'absolute',
-    bottom: -4,
-    left: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    transform: [{ rotate: '45deg' }],
   },
 
   // ── Card Content ──
@@ -552,7 +573,7 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 12,
     fontWeight: '400',
-    color: UI.textMuted,
+    color: UI.textSecondary,
     lineHeight: 17,
     marginBottom: 6,
   },
@@ -564,7 +585,7 @@ const styles = StyleSheet.create({
   cardCount: {
     fontSize: 11,
     fontWeight: '600',
-    color: UI.textLight,
+    color: UI.textMuted,
     letterSpacing: 0.2,
   },
 });
