@@ -16,7 +16,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image as RNImage } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+
+const luminaMascot = require('../../../assets/illustrations/lumina-mascot.png');
 import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
 import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
@@ -28,6 +31,10 @@ import { FeedingSheet } from '../../../src/modules/feeding/components/FeedingShe
 import { SleepSheet } from '../../../src/modules/sleep/components/SleepSheet';
 import { DiaperSheet } from '../../../src/modules/diaper/components/DiaperSheet';
 import { PumpingSheet } from '../../../src/modules/pumping/components/PumpingSheet';
+import { CardIllustrationMap } from '../../../src/shared/components/CardIllustrations';
+import { PetIconMap } from '../../../src/shared/components/PetIcons';
+import type { PetState } from '../../../src/shared/components/PetIcons';
+import { usePumpingStore } from '../../../src/stores/pumpingStore';
 
 import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
 import { useBabyStore } from '../../../src/stores/babyStore';
@@ -58,36 +65,31 @@ const UI = {
   textSecondary: '#5C5C5C',  // body text — readable on cream
   textMuted: '#8A8A8A',      // small labels, captions
   accent: '#B199CE',
-  card: '#FFFFFF',
+  card: '#FEFCFA',
   logBg: '#F0EAE1',
   secondary: '#F2B89C',
 };
 
 const SOFT_SHADOW = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowColor: '#B0A090',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.15,
+  shadowRadius: 14,
+  elevation: 4,
 };
 
-// ── Action grid — split into primary (daily) and secondary (occasional) ──
-// Row 1: Sleep (full width), Row 2: Feed + Pump, Row 3: Diaper + Play Time
-const PRIMARY_ACTIONS_ROW1 = [
-  { id: 'sleep', label: 'Sleep', icon: 'moon' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/sleep' },
-];
-const PRIMARY_ACTIONS_ROW2 = [
-  { id: 'feeding', label: 'Feed', icon: 'droplet' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/feeding' },
-  { id: 'pumping', label: 'Pump', icon: 'zap' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/pumping' },
-];
-const PRIMARY_ACTIONS_ROW3 = [
-  { id: 'diaper', label: 'Diaper', icon: 'diaper' as const, iconBg: '#F0ECE6', iconTint: '#7A6B5A', route: '/(app)/log/diaper' },
-  { id: 'activity', label: 'Play Time', icon: 'smile' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/activity' },
+// ── Action grid — Row 1: Sleep (full), Row 2: Feed+Pump, Row 3: Diaper+Play ──
+const PRIMARY_ACTIONS = [
+  { id: 'sleep', label: 'Sleep', domainColor: '#B199CE', domainColorLight: '#E8DDF3', route: '/(app)/log/sleep', neutralMins: 120, urgentMins: 210 },
+  { id: 'feeding', label: 'Feed', domainColor: '#F49770', domainColorLight: '#FEE8DC', route: '/(app)/log/feeding', neutralMins: 120, urgentMins: 240 },
+  { id: 'pumping', label: 'Pump', domainColor: '#A78BBA', domainColorLight: '#EDE7F6', route: '/(app)/log/pumping', neutralMins: 180, urgentMins: 360 },
+  { id: 'diaper', label: 'Diaper', domainColor: '#FF9800', domainColorLight: '#FFF3E0', route: '/(app)/log/diaper', neutralMins: 120, urgentMins: 240 },
+  { id: 'activity', label: 'Play Time', domainColor: '#A78BBA', domainColorLight: '#F3E5F5', route: '/(app)/log/activity', neutralMins: 240, urgentMins: 480 },
 ];
 
 const SECONDARY_ACTIONS = [
-  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', icon: 'trending-up' as const, tint: '#A78BBA', route: '/(app)/log/growth' },
-  { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', icon: 'thermometer' as const, tint: '#A88978', route: '/(app)/health' },
+  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', domainColor: '#4CAF50', domainColorLight: '#E8F5E9', route: '/(app)/log/growth', neutralMins: 10080, urgentMins: 43200 },
+  { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', domainColor: '#E53935', domainColorLight: '#FFEBEE', route: '/(app)/health', neutralMins: 10080, urgentMins: 43200 },
 ];
 
 // ── Simulator / dev detection ────────────────────────────────
@@ -336,6 +338,25 @@ function getAffirmation(babyName: string | null, ageDays: number | null): string
   return 'Rest when you can. Tomorrow is a new day.';
 }
 
+function getTimeSince(isoDate: string | null | undefined): string | null {
+  if (!isoDate) return null;
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function getPetState(isoDate: string | null | undefined, neutralMins: number, urgentMins: number): PetState {
+  if (!isoDate) return 'neutral';
+  const mins = (Date.now() - new Date(isoDate).getTime()) / 60000;
+  if (mins < neutralMins) return 'happy';
+  if (mins < urgentMins) return 'urgent';
+  return 'neutral';
+}
+
 // ── Voice recording state (visual mock) ──────────────────────
 
 function VoiceRecordingOverlay({ onCancel, onFinish }: { onCancel: () => void; onFinish: () => void }) {
@@ -426,6 +447,27 @@ export default function HomeScreen() {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [feedingTimer, sleepTimer]);
+
+  // Get last log times for each domain
+  const lastFeedingAt = useFeedingStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.started_at : null);
+  const lastSleepAt = useSleepStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.started_at : null);
+  const lastDiaperAt = useDiaperStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.created_at : null);
+
+  const lastLogMap: Record<string, string | null> = {
+    feeding: getTimeSince(lastFeedingAt),
+    sleep: getTimeSince(lastSleepAt),
+    diaper: getTimeSince(lastDiaperAt),
+    pumping: null,
+    activity: null,
+    growth: null,
+    health: null,
+  };
+
+  const petStateMap: Record<string, PetState> = {};
+  [...PRIMARY_ACTIONS, ...SECONDARY_ACTIONS].forEach(a => {
+    const lastAt = a.id === 'feeding' ? lastFeedingAt : a.id === 'sleep' ? lastSleepAt : a.id === 'diaper' ? lastDiaperAt : null;
+    petStateMap[a.id] = getPetState(lastAt, a.neutralMins, a.urgentMins);
+  });
 
   const [showNurseChat, setShowNurseChat] = useState(false);
   const [showFeedingSheet, setShowFeedingSheet] = useState(false);
@@ -748,16 +790,14 @@ export default function HomeScreen() {
           {babyAge && !babyName && (
             <Text style={styles.greetingAge}>{babyAge.display}</Text>
           )}
-          <Text style={styles.greetingAffirmation}>{affirmation}</Text>
+          {/* affirmation text removed */}
         </View>
 
         {/* ── Lumina AI Hub ── */}
         <View style={styles.luminaHub}>
           {/* Header row */}
           <View style={styles.luminaHubHeader}>
-            <View style={styles.luminaHubIcon}>
-              <Feather name="message-circle" size={22} color={colors.primary[600]} />
-            </View>
+            <RNImage source={luminaMascot} style={styles.luminaMascot} resizeMode="contain" />
             <View style={{ flex: 1 }}>
               <Text style={styles.luminaHubTitle}>Lumina</Text>
               <Text style={styles.luminaHubSubtitle}>Your AI parenting companion</Text>
@@ -790,7 +830,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.promptChipsRow}
           >
             {[
-              `Is 38°C a fever?`,
+              `Is 38\u00B0C a fever?`,
               babyName ? `Analyze ${babyName}'s sleep` : 'Analyze sleep patterns',
               `Play ideas for ${babyAgeMonths || 2} months`,
               'When to start solids?',
@@ -811,8 +851,9 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Primary Actions (Row 1: Sleep, Row 2: Feed+Pump, Row 3: Diaper+Play) ── */}
+        <Text style={styles.sectionTitle}>Quick Log</Text>
         <View style={styles.actionGrid}>
-          {[...PRIMARY_ACTIONS_ROW1, ...PRIMARY_ACTIONS_ROW2, ...PRIMARY_ACTIONS_ROW3].map((action, idx) => {
+          {PRIMARY_ACTIONS.map((action, idx) => {
             const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
             const isSleepLive = action.id === 'sleep' && !!sleepTimer;
             const isLive = isFeedingLive || isSleepLive;
@@ -825,13 +866,18 @@ export default function HomeScreen() {
               ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap')
               : null;
 
+            const lastLogged = lastLogMap[action.id];
+            const petState = petStateMap[action.id] || 'neutral';
+            const PetIcon = PetIconMap[petState];
+            const IllustrationComponent = CardIllustrationMap[action.id];
+
             return (
               <Pressable
                 key={action.id}
                 style={[
-                  styles.actionButton,
-                  isFullWidth && styles.actionButtonFull,
-                  isLive && { borderWidth: 1.5, borderColor: liveColor + '40' },
+                  styles.actionCard,
+                  isFullWidth && styles.actionCardFull,
+                  isLive && { borderWidth: 1.5, borderColor: liveColor + '60' },
                 ]}
                 onPress={() => {
                   if (action.id === 'feeding') setShowFeedingSheet(true);
@@ -842,24 +888,39 @@ export default function HomeScreen() {
                 }}
                 accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
               >
-                <View style={[
-                  styles.actionIconWrap,
-                  { backgroundColor: action.iconBg },
-                  isLive && { borderWidth: 2, borderColor: liveColor },
-                ]}>
-                  {action.icon === 'diaper' ? (
-                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={isLive ? liveColor : action.iconTint} />
-                  ) : (
-                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
-                  )}
-                </View>
-                <View>
-                  <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
-                    {isLive ? formatTimerSeconds(timerElapsed) : action.label}
-                  </Text>
-                  {isLive && liveSub && (
-                    <Text style={styles.actionLiveSub}>{liveSub}</Text>
-                  )}
+                {/* Colored background tint */}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent', borderRadius: 22 }]} />
+
+                {/* Plus badge - top right */}
+                {!isLive && (
+                  <View style={[styles.plusBadge, { backgroundColor: action.domainColor + '20' }]}>
+                    <Feather name="plus" size={12} color={action.domainColor} />
+                  </View>
+                )}
+
+                {/* Content — always horizontal: icon + text side by side */}
+                <View style={styles.actionCardContentRow}>
+                  {/* Illustration */}
+                  <View style={styles.actionCardIllustration}>
+                    {IllustrationComponent ? (
+                      <IllustrationComponent size={isFullWidth ? 52 : 44} />
+                    ) : (
+                      <Feather name="zap" size={28} color={action.domainColor} />
+                    )}
+                  </View>
+
+                  {/* Label + last logged */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.actionCardLabel}>
+                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                    </Text>
+                    {lastLogged && !isLive && (
+                      <Text style={styles.actionCardSub}>{lastLogged}</Text>
+                    )}
+                    {isLive && liveSub && (
+                      <Text style={styles.actionCardSub}>{liveSub}</Text>
+                    )}
+                  </View>
                 </View>
               </Pressable>
             );
@@ -869,23 +930,36 @@ export default function HomeScreen() {
         {/* ── Secondary Actions (Health & Growth) ── */}
         <View style={styles.secondarySection}>
           <Text style={styles.secondarySectionTitle}>Health & Growth</Text>
-          {SECONDARY_ACTIONS.map((action) => (
-            <Pressable
-              key={action.id}
-              style={styles.secondaryRow}
-              onPress={() => router.push(action.route as any)}
-              accessibilityLabel={`Log ${action.label}`}
-            >
-              <View style={[styles.secondaryIcon, { backgroundColor: action.tint + '15' }]}>
-                <Feather name={action.icon} size={20} color={action.tint} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.secondaryLabel}>{action.label}</Text>
-                <Text style={styles.secondarySubtitle}>{action.subtitle}</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={UI.textMuted} />
-            </Pressable>
-          ))}
+          {SECONDARY_ACTIONS.map((action) => {
+            const petState = petStateMap[action.id] || 'neutral';
+            const PetIcon = PetIconMap[petState];
+            const IllustrationComponent = CardIllustrationMap[action.id];
+
+            return (
+              <Pressable
+                key={action.id}
+                style={styles.secondaryRow}
+                onPress={() => router.push(action.route as any)}
+                accessibilityLabel={`Log ${action.label}`}
+              >
+                {/* Colored background tint */}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent', borderRadius: 22 }]} />
+
+                <View style={[styles.secondaryIcon, { backgroundColor: action.domainColor + '15' }]}>
+                  {IllustrationComponent ? (
+                    <IllustrationComponent size={44} />
+                  ) : (
+                    <Feather name="trending-up" size={24} color={action.domainColor} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.secondaryLabel}>{action.label}</Text>
+                  <Text style={styles.secondarySubtitle}>{action.subtitle}</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={UI.textMuted} />
+              </Pressable>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -1003,8 +1077,8 @@ const styles = StyleSheet.create({
   },
   greetingAge: {
     fontSize: 15,
-    fontWeight: '500',
-    color: UI.textSecondary,
+    fontWeight: '600',
+    color: '#7C6A55',
     letterSpacing: 0.2,
     marginTop: 2,
   },
@@ -1020,23 +1094,23 @@ const styles = StyleSheet.create({
   // ── Lumina AI Hub ──
   luminaHub: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    paddingBottom: 16,
-    marginBottom: 20,
-    shadowColor: '#8E72A4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    borderRadius: 22,
+    padding: 16,
+    paddingBottom: 14,
+    marginBottom: 24,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: colors.primary[100],
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   luminaHubHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   luminaHubIcon: {
     width: 46,
@@ -1045,6 +1119,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  luminaMascot: {
+    width: 50,
+    height: 50,
   },
   luminaHubTitle: {
     fontSize: 20,
@@ -1059,14 +1137,14 @@ const styles = StyleSheet.create({
   luminaInputBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.neutral[50],
+    backgroundColor: '#F7F4F0',
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    borderColor: '#EDE8E2',
   },
   luminaInputPlaceholder: {
     flex: 1,
@@ -1088,104 +1166,135 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   promptChip: {
-    backgroundColor: colors.primary[50],
+    backgroundColor: '#F7F4F0',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: colors.primary[200],
+    borderColor: '#EDE8E2',
   },
   promptChipText: {
     fontSize: 13,
     fontWeight: '500',
-    color: colors.primary[700],
+    color: '#6B5B4E',
   },
 
-  // ── Primary Action Grid (2×2) ──
+  // ── Action Grid (unified domain cards) ──
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 14,
-    marginBottom: 24,
+    rowGap: 16,
+    marginBottom: 28,
   },
-  actionButton: {
+  actionCard: {
     width: '47.5%',
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius['2xl'],
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    gap: 14,
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 60,
+    overflow: 'hidden',
+    position: 'relative' as const,
     ...SOFT_SHADOW,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
-  actionButtonFull: {
+  actionCardFull: {
     width: '100%',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    minHeight: 60,
   },
-  actionIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+  actionCardContentRow: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
   },
-  actionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+  actionCardIllustration: {
   },
-  actionLiveSub: {
-    fontSize: 11,
+  actionCardLabel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#2D2A26',
+    letterSpacing: 0.1,
+  },
+  actionCardSub: {
+    fontSize: 12,
+    color: '#A08060',
+    marginTop: 2,
+  },
+  petIndicator: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+  },
+  plusBadge: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
     color: '#8A8A8A',
-    marginTop: 1,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
 
   // ── Secondary Actions (Health & Growth) ──
   secondarySection: {
-    flex: 1,
     marginBottom: 8,
   },
   secondarySectionTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: UI.textMuted,
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
     marginBottom: 10,
     paddingHorizontal: 2,
   },
   secondaryRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: UI.card,
-    borderRadius: borderRadius['2xl'],
-    paddingVertical: 20,
-    paddingHorizontal: 18,
-    gap: 14,
-    marginBottom: 10,
-    minHeight: 72,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 12,
+    marginBottom: 12,
+    minHeight: 60,
+    overflow: 'hidden' as const,
+    position: 'relative' as const,
     ...SOFT_SHADOW,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   secondaryIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   secondaryLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: UI.text,
+    fontWeight: '700' as const,
+    color: '#2D2A26',
     marginBottom: 2,
   },
   secondarySubtitle: {
-    fontSize: 13,
-    color: UI.textMuted,
+    fontSize: 12,
+    color: '#A08060',
   },
 
   // ── Voice Recording Overlay ──

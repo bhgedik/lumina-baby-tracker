@@ -10,12 +10,13 @@ import { View, Text, Pressable, Alert, StyleSheet, LayoutAnimation, Platform } f
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BottomSheet } from '../../../shared/components/BottomSheet';
+import { ClayIcon, ClayIconName } from '../../../shared/components/ClayIcons';
 import { ChipSelector } from '../../../shared/components/ChipSelector';
 import { SolidFeedingPanel } from './SolidFeedingPanel';
 import { useFeedingStore } from '../../../stores/feedingStore';
 import { generateUUID } from '../../../stores/createSyncedStore';
 import { formatTime, formatDuration, formatTimerSeconds } from '../../../shared/utils/dateTime';
-import { colors, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
+import { colors, spacing, borderRadius } from '../../../shared/constants/theme';
 import type { BreastSide, BottleContentType } from '../../../shared/types/common';
 import type { FeedingLog, SolidFoodEntry } from '../types';
 
@@ -45,6 +46,7 @@ const SIDE_OPTIONS = [
 interface CardConfig {
   mode: FeedingMode;
   icon: keyof typeof Feather.glyphMap;
+  clayIcon?: ClayIconName;
   label: string;
   sub: string;
   color: string;
@@ -52,10 +54,10 @@ interface CardConfig {
 }
 
 const CARDS: CardConfig[] = [
-  { mode: 'breast', icon: 'heart', label: 'Breast', sub: 'Timer or log past', color: '#A78BBA', bg: '#F0EBF5' },
-  { mode: 'bottle_bm', icon: 'droplet', label: 'Bottle · BM', sub: 'Breast milk', color: '#4A7FA5', bg: '#E8F0F7' },
-  { mode: 'bottle_formula', icon: 'droplet', label: 'Bottle · Formula', sub: 'Formula', color: '#F2B89C', bg: '#FDF0EB' },
-  { mode: 'solids', icon: 'coffee', label: 'Solids', sub: 'Food + reactions', color: '#C4943A', bg: '#F9F3E8' },
+  { mode: 'breast', icon: 'heart', clayIcon: 'breast', label: 'Breast', sub: 'Timer or log past', color: '#A78BBA', bg: '#F0EBF5' },
+  { mode: 'bottle_bm', icon: 'droplet', clayIcon: 'bottle-bm', label: 'Bottle · BM', sub: 'Breast milk', color: '#4A7FA5', bg: '#E8F0F7' },
+  { mode: 'bottle_formula', icon: 'droplet', clayIcon: 'bottle-formula', label: 'Bottle · Formula', sub: 'Formula', color: '#F2B89C', bg: '#FDF0EB' },
+  { mode: 'solids', icon: 'coffee', clayIcon: 'solids', label: 'Solids', sub: 'Food + reactions', color: '#C4943A', bg: '#F9F3E8' },
 ];
 
 export function FeedingSheet({
@@ -663,10 +665,12 @@ export function FeedingSheet({
               ]}
               onPress={() => handleCardPress(card.mode)}
             >
-              <View style={[styles.iconWrap, { backgroundColor: card.bg }]}>
-                <Feather name={card.icon} size={22} color={card.color} />
-              </View>
-              <Text style={[styles.cardLabel, { color: card.color }]} numberOfLines={1}>
+              {card.clayIcon ? (
+                <ClayIcon name={card.clayIcon} size={56} />
+              ) : (
+                <Feather name={card.icon} size={32} color={card.color} />
+              )}
+              <Text style={[styles.cardLabel, { color: '#2D2A26' }]} numberOfLines={1}>
                 {card.label}
               </Text>
               <Text style={styles.cardSub}>
@@ -927,45 +931,48 @@ const styles = StyleSheet.create({
   card: {
     width: '47.5%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    ...shadows.sm,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
     borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     letterSpacing: 0.1,
+    marginTop: 2,
   },
   cardSub: {
-    fontSize: 11,
-    color: '#8A8A8A',
-    fontFamily: SERIF_FONT,
+    fontSize: 12,
+    color: '#A08060',
   },
 
   // ── Sub-views ──
   subView: {
-    backgroundColor: colors.neutral[50],
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     padding: 16,
     gap: 14,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   subTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#3D3D3D',
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // ── Breast side picker ──
@@ -980,9 +987,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 22,
     borderWidth: 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F4F0',
   },
   sideText: {
     fontSize: 16,
@@ -999,7 +1006,7 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#EDE8E2',
   },
   dividerText: {
     fontSize: 12,
@@ -1014,15 +1021,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
-    backgroundColor: '#FFFFFF',
+    borderColor: '#EDE8E2',
+    backgroundColor: '#F7F4F0',
   },
   pastToggleText: {
     fontSize: 13,
     fontWeight: '500',
-    color: colors.primary[600],
+    color: '#7B5EA7',
   },
   pastSection: {
     gap: 12,
@@ -1053,10 +1060,10 @@ const styles = StyleSheet.create({
   stepperButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    backgroundColor: '#F7F4F0',
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    borderColor: '#EDE8E2',
   },
   stepperText: {
     fontSize: 14,
@@ -1072,8 +1079,8 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#8A8A8A',
+    fontWeight: '700',
+    color: '#A08060',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1083,15 +1090,15 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    backgroundColor: '#F7F4F0',
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    borderColor: '#EDE8E2',
   },
   timeButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.primary[700],
+    color: '#2D2A26',
   },
   pickerDone: {
     alignSelf: 'flex-end',
@@ -1101,7 +1108,7 @@ const styles = StyleSheet.create({
   pickerDoneText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary[600],
+    color: '#7B5EA7',
   },
 
   // ── Duration display ──
@@ -1192,10 +1199,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: '#F0EBF5',
+    borderRadius: 22,
+    backgroundColor: '#F7F4F0',
     borderWidth: 1,
-    borderColor: '#A78BBA' + '30',
+    borderColor: '#EDE8E2',
   },
   timerControlText: {
     fontSize: 14,
@@ -1208,15 +1215,20 @@ const styles = StyleSheet.create({
   discardButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#C44B4B',
+    color: '#A08060',
   },
 
   // ── Review breakdown ──
   reviewBreakdown: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 22,
     padding: 16,
     gap: 12,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
   },
   reviewSideRow: {
     flexDirection: 'row',
@@ -1267,8 +1279,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.primary[500],
-    borderRadius: 14,
+    backgroundColor: '#7C9A8E',
+    borderRadius: 22,
     paddingVertical: 14,
     marginTop: 2,
   },

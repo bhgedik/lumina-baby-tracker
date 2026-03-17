@@ -9,6 +9,7 @@ import { View, Text, TextInput, Pressable, Alert, StyleSheet, LayoutAnimation, P
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BottomSheet } from '../../../shared/components/BottomSheet';
+import { ClayIcon } from '../../../shared/components/ClayIcons';
 import { ChipSelector } from '../../../shared/components/ChipSelector';
 import { useSleepStore } from '../../../stores/sleepStore';
 import { generateUUID } from '../../../stores/createSyncedStore';
@@ -388,18 +389,14 @@ export function SleepSheet({ visible, onClose, babyId, familyId, loggedBy, onTim
       {/* Start Timer Cards */}
       <View style={styles.timerRow}>
         <Pressable style={styles.timerCard} onPress={() => handleSleepNow('nap')}>
-          <View style={[styles.iconWrap, { backgroundColor: '#F0EBF5' }]}>
-            <Feather name="moon" size={24} color="#A78BBA" />
-          </View>
-          <Text style={[styles.cardLabel, { color: '#A78BBA' }]}>Nap Now</Text>
+          <ClayIcon name="moon-nap" size={56} />
+          <Text style={[styles.cardLabel, { color: '#7B5EA7' }]}>Nap Now</Text>
           <Text style={styles.cardSub}>Start nap timer</Text>
         </Pressable>
 
         <Pressable style={styles.timerCard} onPress={() => handleSleepNow('night')}>
-          <View style={[styles.iconWrap, { backgroundColor: '#EDE8F5' }]}>
-            <Feather name="moon" size={24} color="#6B5B8A" />
-          </View>
-          <Text style={[styles.cardLabel, { color: '#6B5B8A' }]}>Night Sleep</Text>
+          <ClayIcon name="moon-night" size={56} />
+          <Text style={[styles.cardLabel, { color: '#7B5EA7' }]}>Night Sleep</Text>
           <Text style={styles.cardSub}>Start night timer</Text>
         </Pressable>
       </View>
@@ -575,30 +572,28 @@ const styles = StyleSheet.create({
   timerCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    paddingVertical: 20,
+    borderRadius: 22,
+    paddingVertical: 16,
     paddingHorizontal: 14,
     alignItems: 'center',
-    gap: 6,
-    ...shadows.sm,
-  },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+    gap: 4,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   cardLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+    marginTop: 2,
   },
   cardSub: {
     fontSize: 12,
-    color: '#8A8A8A',
-    fontFamily: SERIF_FONT,
+    color: '#A08060',
   },
   pastToggle: {
     flexDirection: 'row',
@@ -606,26 +601,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
-    backgroundColor: colors.neutral[50],
+    borderColor: '#EDE8E2',
+    backgroundColor: '#F7F4F0',
   },
   pastToggleText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: colors.primary[600],
+    fontWeight: '600',
+    color: '#7B5EA7',
   },
   pastSection: {
-    backgroundColor: colors.neutral[50],
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     padding: 16,
     gap: 14,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   pastTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#3D3D3D',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   chipRow: {
     marginBottom: 2,
@@ -647,15 +649,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   timeInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingVertical: 10,
+    borderColor: '#EDE8E2',
+    paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 16,
-    fontWeight: '500',
-    color: '#3D3D3D',
+    fontWeight: '600',
+    color: '#2D2A26',
     textAlign: 'center',
   },
   timeArrow: {
@@ -666,8 +668,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.primary[500],
-    borderRadius: 14,
+    backgroundColor: '#7C9A8E',
+    borderRadius: 22,
     paddingVertical: 14,
     marginTop: 2,
   },

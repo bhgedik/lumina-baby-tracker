@@ -7,10 +7,11 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { BottomSheet } from '../../../shared/components/BottomSheet';
+import { ClayIcon, ClayIconName } from '../../../shared/components/ClayIcons';
 import { DiaperDetailsSheet } from './DiaperDetailsSheet';
 import { useDiaperStore } from '../../../stores/diaperStore';
 import { isSupabaseConfigured } from '../../../data/supabase/client';
-import { colors, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
+import { colors } from '../../../shared/constants/theme';
 import type { DiaperType } from '../../../shared/types/common';
 
 const SERIF_FONT = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
@@ -24,11 +25,11 @@ interface Props {
   onLogged?: (type: DiaperType, msg: string) => void;
 }
 
-const OPTIONS: { type: DiaperType; icon: keyof typeof Feather.glyphMap; label: string; sub: string; color: string }[] = [
-  { type: 'dry', icon: 'sun', label: 'Dry', sub: 'No output', color: '#C4943A' },
-  { type: 'wet', icon: 'droplet', label: 'Wet', sub: 'Wet only', color: '#A78BBA' },
-  { type: 'dirty', icon: 'cloud', label: 'Dirty', sub: 'Soiled', color: '#FF9800' },
-  { type: 'both', icon: 'layers', label: 'Both', sub: 'Wet + dirty', color: '#F2B89C' },
+const OPTIONS: { type: DiaperType; clayIcon: ClayIconName; label: string; sub: string; color: string }[] = [
+  { type: 'dry', clayIcon: 'sun-dry', label: 'Dry', sub: 'No output', color: '#C4943A' },
+  { type: 'wet', clayIcon: 'droplet-wet', label: 'Wet', sub: 'Wet only', color: '#A78BBA' },
+  { type: 'dirty', clayIcon: 'cloud-dirty', label: 'Dirty', sub: 'Soiled', color: '#FF9800' },
+  { type: 'both', clayIcon: 'layers-both', label: 'Both', sub: 'Wet + dirty', color: '#F2B89C' },
 ];
 
 const TOAST_LABELS: Record<DiaperType, string> = {
@@ -80,10 +81,8 @@ export function DiaperSheet({ visible, onClose, babyId, familyId, loggedBy, onLo
               style={styles.card}
               onPress={() => handleTap(opt.type)}
             >
-              <View style={[styles.iconWrap, { backgroundColor: opt.color + '18' }]}>
-                <Feather name={opt.icon} size={24} color={opt.color} />
-              </View>
-              <Text style={[styles.cardLabel, { color: opt.color }]}>{opt.label}</Text>
+              <ClayIcon name={opt.clayIcon} size={56} />
+              <Text style={[styles.cardLabel, { color: '#2D2A26' }]}>{opt.label}</Text>
               <Text style={styles.cardSub}>{opt.sub}</Text>
             </Pressable>
           ))}
@@ -122,48 +121,50 @@ const styles = StyleSheet.create({
   card: {
     width: '47%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 22,
     paddingVertical: 20,
     paddingHorizontal: 14,
     alignItems: 'center',
     gap: 6,
-    ...shadows.sm,
-  },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.2,
   },
   cardSub: {
     fontSize: 12,
-    color: '#8A8A8A',
-    fontFamily: SERIF_FONT,
+    color: '#A08060',
   },
   photoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.neutral[300],
+    borderColor: '#EDE8E2',
     gap: 12,
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
   },
   photoIconWrap: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.primary[50],
+    backgroundColor: '#F7F4F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -173,12 +174,12 @@ const styles = StyleSheet.create({
   },
   photoLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary[700],
+    fontWeight: '700',
+    color: '#7B5EA7',
   },
   photoSub: {
     fontSize: 12,
-    color: '#8A8A8A',
+    color: '#A08060',
     fontFamily: SERIF_FONT,
   },
 });

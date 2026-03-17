@@ -4,10 +4,11 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { ClayIcon } from '../../../shared/components/ClayIcons';
 import * as Haptics from 'expo-haptics';
 import { BottomSheet } from '../../../shared/components/BottomSheet';
 import { usePumpingStore } from '../../../stores/pumpingStore';
-import { colors, spacing, borderRadius, shadows, typography } from '../../../shared/constants/theme';
+import { colors, spacing, borderRadius, typography } from '../../../shared/constants/theme';
 import type { PumpingSide } from '../../../shared/types/common';
 import type { PumpingLog } from '../types';
 
@@ -185,18 +186,14 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
     return (
       <BottomSheet visible={visible} onClose={handleClose} title="Log Pumping">
         <View style={styles.cardGrid}>
-          <Pressable style={[styles.modeCard, shadows.sm]} onPress={handleStartTimer}>
-            <View style={[styles.modeIconWrap, { backgroundColor: ACCENT_BG }]}>
-              <Feather name="play" size={24} color={ACCENT} />
-            </View>
+          <Pressable style={styles.modeCard} onPress={handleStartTimer}>
+            <ClayIcon name="play-timer" size={56} />
             <Text style={styles.modeLabel}>Start Timer</Text>
             <Text style={styles.modeSub}>Begin pumping now</Text>
           </Pressable>
 
-          <Pressable style={[styles.modeCard, shadows.sm]} onPress={handleLogPast}>
-            <View style={[styles.modeIconWrap, { backgroundColor: ACCENT_BG }]}>
-              <Feather name="clock" size={24} color={ACCENT} />
-            </View>
+          <Pressable style={styles.modeCard} onPress={handleLogPast}>
+            <ClayIcon name="clock-past" size={56} />
             <Text style={styles.modeLabel}>Log Past</Text>
             <Text style={styles.modeSub}>Record a past session</Text>
           </Pressable>
@@ -240,9 +237,9 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
               </Pressable>
             )}
 
-            <Pressable style={[styles.timerBtn, { backgroundColor: '#FCE8E8' }]} onPress={handleStopTimer}>
-              <Feather name="square" size={22} color="#C45C5C" />
-              <Text style={[styles.timerBtnText, { color: '#C45C5C' }]}>Stop</Text>
+            <Pressable style={[styles.timerBtn, { backgroundColor: '#F5EDE8' }]} onPress={handleStopTimer}>
+              <Feather name="square" size={22} color="#A08B6E" />
+              <Text style={[styles.timerBtnText, { color: '#A08B6E' }]}>Stop</Text>
             </Pressable>
           </View>
         </View>
@@ -255,7 +252,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
       {mode === 'past' && (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>When did you pump?</Text>
-          <Pressable style={[styles.timeBtn, shadows.sm]} onPress={() => setShowTimePicker(true)}>
+          <Pressable style={[styles.timeBtn]} onPress={() => setShowTimePicker(true)}>
             <Feather name="clock" size={16} color={ACCENT} />
             <Text style={styles.timeBtnText}>
               {pastTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -275,7 +272,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
 
           <Text style={[styles.sectionLabel, { marginTop: spacing.lg }]}>Duration (minutes)</Text>
           <TextInput
-            style={[styles.volumeInput, shadows.sm]}
+            style={[styles.volumeInput]}
             value={pastDuration}
             onChangeText={setPastDuration}
             keyboardType="number-pad"
@@ -297,7 +294,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
         <View style={styles.volumeCol}>
           <Text style={styles.volumeLabel}>Left</Text>
           <TextInput
-            style={[styles.volumeInput, shadows.sm]}
+            style={[styles.volumeInput]}
             value={leftMl}
             onChangeText={(t) => { setLeftMl(t.replace(/[^0-9]/g, '')); setTotalEdited(false); }}
             keyboardType="number-pad"
@@ -308,7 +305,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
         <View style={styles.volumeCol}>
           <Text style={styles.volumeLabel}>Right</Text>
           <TextInput
-            style={[styles.volumeInput, shadows.sm]}
+            style={[styles.volumeInput]}
             value={rightMl}
             onChangeText={(t) => { setRightMl(t.replace(/[^0-9]/g, '')); setTotalEdited(false); }}
             keyboardType="number-pad"
@@ -321,7 +318,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total</Text>
         <TextInput
-          style={[styles.totalInput, shadows.sm]}
+          style={[styles.totalInput]}
           value={totalMl}
           onChangeText={(t) => { setTotalMl(t.replace(/[^0-9]/g, '')); setTotalEdited(true); }}
           keyboardType="number-pad"
@@ -332,7 +329,7 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
       </View>
 
       <Pressable
-        style={[styles.saveBtn, shadows.sm, !canSave && styles.saveBtnDisabled]}
+        style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
         onPress={handleSave}
         disabled={!canSave}
       >
@@ -352,36 +349,34 @@ const styles = StyleSheet.create({
   modeCard: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     padding: spacing.lg,
     paddingVertical: spacing['2xl'],
     borderWidth: 1,
-    borderColor: colors.neutral[100],
-  },
-  modeIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    borderColor: 'rgba(255,255,255,0.8)',
+    shadowColor: '#B0A090',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 4,
   },
   modeLabel: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontWeight: '700' as const,
+    color: '#2D2A26',
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
   modeSub: {
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    color: '#A08060',
     textAlign: 'center',
   },
   sectionLabel: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontWeight: '700' as const,
+    color: '#2D2A26',
     marginBottom: spacing.md,
   },
   sideRow: {
@@ -392,9 +387,10 @@ const styles = StyleSheet.create({
   sideBtn: {
     flex: 1,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.xl,
+    borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: colors.neutral[200],
+    borderColor: '#EDE8E2',
+    backgroundColor: '#F7F4F0',
     alignItems: 'center',
   },
   sideBtnActive: {
@@ -469,15 +465,15 @@ const styles = StyleSheet.create({
   },
   volumeLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontWeight: '700' as const,
+    color: '#A08060',
     marginBottom: spacing.sm,
   },
   volumeInput: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.neutral[100],
+    borderColor: '#EDE8E2',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.base,
     fontSize: typography.fontSize.lg,
@@ -498,15 +494,15 @@ const styles = StyleSheet.create({
   },
   totalInput: {
     flex: 1,
-    backgroundColor: ACCENT_BG,
-    borderRadius: borderRadius.xl,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: ACCENT + '40',
+    borderColor: '#EDE8E2',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.base,
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
-    color: ACCENT_DARK,
+    color: '#2D2A26',
     textAlign: 'center',
   },
   totalUnit: {
@@ -518,10 +514,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.neutral[100],
+    borderColor: '#EDE8E2',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.base,
   },
@@ -532,8 +528,8 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     flexDirection: 'row',
-    backgroundColor: ACCENT,
-    borderRadius: borderRadius.full,
+    backgroundColor: '#7C9A8E',
+    borderRadius: 22,
     paddingVertical: spacing.base,
     justifyContent: 'center',
     alignItems: 'center',
