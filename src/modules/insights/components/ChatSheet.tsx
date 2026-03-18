@@ -455,7 +455,7 @@ export function ChatSheet({ visible, onClose, insight, babyName, babyAgeDays, fe
             <TextInput
               style={styles.textInput}
               placeholder={insight ? 'Ask a follow-up question...' : 'Ask me anything...'}
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor="#6B5E8C"
               value={inputText}
               onChangeText={(text) => {
                 setInputText(text);
@@ -658,15 +658,13 @@ const styles = StyleSheet.create({
   suggestionChip: {
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
+    backgroundColor: 'rgba(74, 63, 96, 0.06)',
+    borderRadius: 20,
   },
   suggestionText: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
-    color: colors.primary[600],
+    color: '#5D4E78',
   },
   // Input
   inputRow: {
@@ -675,25 +673,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? spacing['2xl'] : spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral[100],
-    backgroundColor: colors.surface,
+    borderTopWidth: 0,
+    backgroundColor: 'transparent',
     gap: spacing.sm,
   },
   textInput: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 42,
     maxHeight: 100,
-    backgroundColor: colors.neutral[50],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    // Inset hack — border-only concave illusion, no shadows
+    backgroundColor: '#F4F3F7',
+    borderRadius: 30,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm + 2,
+    paddingBottom: spacing.sm + 2,
     fontSize: typography.fontSize.base,
     color: colors.textPrimary,
     textAlignVertical: 'top',
+    borderWidth: 1,
+    borderTopColor: '#E0DDE5',
+    borderLeftColor: '#E0DDE5',
+    borderBottomColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
   },
   sendButton: {
     width: 44,
@@ -702,18 +703,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[500],
     justifyContent: 'center',
     alignItems: 'center',
+    // Puffy clay pill — keep shadow on the button (convex)
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.4)',
+    borderLeftColor: 'rgba(255,255,255,0.2)',
   },
   sendButtonDisabled: {
     backgroundColor: colors.neutral[200],
+    shadowOpacity: 0,
+    elevation: 0,
+    borderTopColor: 'transparent',
+    borderLeftColor: 'transparent',
   },
   micButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.primary[50],
-    borderWidth: 1,
-    borderColor: colors.primary[200],
     justifyContent: 'center',
     alignItems: 'center',
+    // Puffy clay pill shadow
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.7)',
+    borderLeftColor: 'rgba(255,255,255,0.4)',
   },
 });

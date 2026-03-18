@@ -50,10 +50,18 @@ interface QuickPrompt {
 }
 
 const QUICK_PROMPTS: QuickPrompt[] = [
-  { text: 'Why is my baby crying?', icon: 'heart', color: '#E8DDF3' },
-  { text: 'Quick play idea for today', icon: 'star', color: '#FEE8DC' },
-  { text: 'Is this amount of sleep normal?', icon: 'moon', color: '#DDE3F3' },
-  { text: 'When should I call the doctor?', icon: 'alert-circle', color: '#FFEBEE' },
+  { text: 'Why is my baby crying?', icon: 'heart', color: '#F0E8F7' },
+  { text: 'Play ideas for today', icon: 'star', color: '#FDF0E8' },
+  { text: 'Is this sleep normal?', icon: 'moon', color: '#E8EDF7' },
+  { text: 'Call the doctor?', icon: 'alert-circle', color: '#FBEAEA' },
+];
+
+// Pressed-state pastel glow colors per chip
+const CHIP_PRESSED_COLORS: string[][] = [
+  ['#E8DDF3', '#F5F0FA'],
+  ['#FEE8DC', '#FFF5F0'],
+  ['#DDE3F3', '#F0F3FA'],
+  ['#FFEBEE', '#FFF5F5'],
 ];
 
 // ── Typing Indicator (Graceful Pulsing Dots) ──
@@ -483,22 +491,31 @@ export default function LuminaHubScreen() {
             {/* ── Quick Prompts (only on fresh chat) ── */}
             {hasOnlyWelcome && !isTyping && (
               <View style={chatStyles.quickPromptsSection}>
-                <Text style={chatStyles.quickPromptsLabel}>Try asking</Text>
-                <View style={chatStyles.quickPromptsGrid}>
-                  {QUICK_PROMPTS.map((prompt) => (
+                <Text style={chatStyles.quickPromptsLabel}>Tap to ask:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={chatStyles.quickPromptsRow}
+                >
+                  {QUICK_PROMPTS.map((prompt, idx) => (
                     <Pressable
                       key={prompt.text}
-                      style={chatStyles.quickPromptCard}
+                      style={({ pressed }) => [
+                        chatStyles.quickChip,
+                        pressed && {
+                          backgroundColor: CHIP_PRESSED_COLORS[idx][0],
+                          transform: [{ scale: 0.96 }],
+                        },
+                      ]}
                       onPress={() => handleQuickPrompt(prompt.text)}
                     >
-                      <View style={[chatStyles.quickPromptIcon, { backgroundColor: prompt.color }]}>
-                        <Feather name={prompt.icon} size={16} color={colors.primary[700]} />
+                      <View style={[chatStyles.quickChipDot, { backgroundColor: prompt.color }]}>
+                        <Feather name={prompt.icon} size={12} color={colors.primary[600]} />
                       </View>
-                      <Text style={chatStyles.quickPromptText}>{prompt.text}</Text>
-                      <Feather name="arrow-up-right" size={14} color={colors.textTertiary} />
+                      <Text style={chatStyles.quickChipText}>{prompt.text}</Text>
                     </Pressable>
                   ))}
-                </View>
+                </ScrollView>
               </View>
             )}
 
@@ -507,21 +524,13 @@ export default function LuminaHubScreen() {
 
           {/* ── Input Area ── */}
           <View style={chatStyles.inputContainer}>
-            <View style={chatStyles.inputRow}>
-              <Pressable
-                style={chatStyles.micBtn}
-                onPress={() => {/* Voice input — wired later */}}
-                hitSlop={8}
-                accessibilityLabel="Voice input"
-              >
-                <Feather name="mic" size={20} color={colors.primary[500]} />
-              </Pressable>
-
+            {/* Inset clay "havuz" — carved pool for typing */}
+            <View style={chatStyles.inputHavuz}>
               <TextInput
                 ref={inputRef}
                 style={chatStyles.textInput}
-                placeholder="Ask Lumina anything..."
-                placeholderTextColor={colors.textTertiary}
+                placeholder="Type here..."
+                placeholderTextColor="#8B7BA0"
                 value={inputText}
                 onChangeText={setInputText}
                 multiline
@@ -529,7 +538,6 @@ export default function LuminaHubScreen() {
                 returnKeyType="default"
                 editable={!isTyping}
               />
-
               <Pressable
                 style={[
                   chatStyles.sendBtn,
@@ -540,8 +548,8 @@ export default function LuminaHubScreen() {
                 accessibilityLabel="Send message"
               >
                 <Feather
-                  name="zap"
-                  size={18}
+                  name="send"
+                  size={16}
                   color={inputText.trim() && !isTyping ? '#FFFFFF' : colors.textTertiary}
                 />
               </Pressable>
@@ -584,16 +592,25 @@ const chatStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(167,139,186,0.15)',
+    borderBottomWidth: 0,
   },
   headerBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(167,139,186,0.1)',
+    backgroundColor: '#F5F0FA',
     alignItems: 'center',
     justifyContent: 'center',
+    // Subtle clay button
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.7)',
+    borderLeftWidth: 0.5,
+    borderLeftColor: 'rgba(255,255,255,0.4)',
   },
   headerCenter: {
     flexDirection: 'row',
@@ -608,8 +625,8 @@ const chatStyles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: typography.fontSize.lg,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.bold,
+    color: '#4A3F60',
     letterSpacing: -0.3,
   },
 
@@ -631,32 +648,50 @@ const chatStyles = StyleSheet.create({
     gap: 8,
   },
   aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.primary[400],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
+    // Mini clay pill
+    shadowColor: '#B199CE',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.3)',
   },
   aiBubble: {
     maxWidth: '80%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 22,
     borderTopLeftRadius: 6,
     padding: spacing.base,
     paddingHorizontal: spacing.lg,
-    ...shadows.sm,
+    // Soft clay card shadow
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 2,
+    borderTopWidth: 1,
+    borderLeftWidth: 0.5,
+    borderTopColor: 'rgba(255,255,255,0.9)',
+    borderLeftColor: 'rgba(255,255,255,0.5)',
   },
   aiText: {
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.regular,
+    color: '#3D2E4C',
     lineHeight: typography.fontSize.base * 1.65,
     letterSpacing: 0.1,
   },
   aiTextBold: {
-    fontWeight: '700',
-    color: colors.primary[800],
+    fontFamily: typography.fontFamily.bold,
+    color: '#4A3860',
   },
 
   // User messages
@@ -668,18 +703,27 @@ const chatStyles = StyleSheet.create({
   userBubble: {
     maxWidth: '78%',
     backgroundColor: colors.primary[500],
-    borderRadius: 20,
+    borderRadius: 22,
     borderTopRightRadius: 6,
     padding: spacing.md,
     paddingHorizontal: spacing.lg,
+    // Puffy clay bubble
+    shadowColor: '#8E72A4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 3,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
   },
   userText: {
     fontSize: typography.fontSize.base,
+    fontFamily: typography.fontFamily.regular,
     color: '#FFFFFF',
     lineHeight: typography.fontSize.base * 1.6,
   },
   userTextBold: {
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bold,
   },
 
   // Typing indicator
@@ -696,87 +740,83 @@ const chatStyles = StyleSheet.create({
     backgroundColor: colors.primary[400],
   },
 
-  // ── Quick Prompts ──
+  // ── Quick Prompt Chips ──
   quickPromptsSection: {
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.xs,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
   },
   quickPromptsLabel: {
     fontSize: typography.fontSize.xs,
-    fontWeight: '600',
-    color: colors.textTertiary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: spacing.md,
-    marginLeft: spacing.xs,
+    fontFamily: typography.fontFamily.semibold,
+    color: '#8B7BA0',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.md,
   },
-  quickPromptsGrid: {
+  quickPromptsRow: {
+    flexDirection: 'row',
     gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
   },
-  quickPromptCard: {
+  quickChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: spacing.md,
-    paddingHorizontal: spacing.base,
-    gap: spacing.md,
-    ...shadows.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,186,0.1)',
+    gap: 6,
+    backgroundColor: 'rgba(74, 63, 96, 0.06)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  quickPromptIcon: {
-    width: 36,
-    height: 36,
+  quickChipDot: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickPromptText: {
-    flex: 1,
+  quickChipText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: '500',
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize.sm * 1.4,
+    fontFamily: typography.fontFamily.medium,
+    color: '#5D4E78',
   },
 
-  // ── Input Area ──
+  // ── Input Area — Inset Clay Havuz ──
   inputContainer: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.sm,
-    paddingBottom: Platform.OS === 'ios' ? spacing.xs : spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(167,139,186,0.12)',
-    backgroundColor: 'rgba(253,252,248,0.95)',
+    paddingBottom: Platform.OS === 'ios' ? spacing.sm : spacing.md,
+    backgroundColor: 'transparent',
   },
-  inputRow: {
+  inputHavuz: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,
-  },
-  micBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.primary[50],
+    // Inset hack — no shadows, border-only concave illusion
+    backgroundColor: '#F4F3F7',
+    borderRadius: 30,
+    paddingLeft: spacing.lg,
+    paddingRight: 6,
+    paddingVertical: 6,
+    // Darker top-left = shadow falling inside
     borderWidth: 1,
-    borderColor: colors.primary[200],
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderTopColor: '#E0DDE5',
+    borderLeftColor: '#E0DDE5',
+    // Lighter bottom-right = highlight catching light
+    borderBottomColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
   },
   textInput: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 36,
     maxHeight: 100,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 21,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing.base,
-    paddingTop: Platform.OS === 'ios' ? 12 : 10,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingTop: Platform.OS === 'ios' ? 10 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 6,
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.medium,
+    color: '#3D2E4C',
     textAlignVertical: 'center',
   },
   sendBtn: {
@@ -786,16 +826,31 @@ const chatStyles = StyleSheet.create({
     backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary[500],
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    // Puffy clay pill — matches home action buttons
+    shadowColor: '#B199CE',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 5,
+    // Clay highlight — top-left light
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.45)',
+    borderLeftColor: 'rgba(255,255,255,0.25)',
+    borderBottomWidth: 0.5,
+    borderRightWidth: 0.5,
+    borderBottomColor: 'rgba(100,70,140,0.1)',
+    borderRightColor: 'rgba(100,70,140,0.05)',
   },
   sendBtnDisabled: {
-    backgroundColor: colors.neutral[200],
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: colors.neutral[300],
+    shadowColor: '#AAA',
+    shadowOpacity: 0.1,
+    elevation: 1,
+    borderTopColor: 'rgba(255,255,255,0.3)',
+    borderLeftColor: 'rgba(255,255,255,0.15)',
+    borderBottomColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 });
 

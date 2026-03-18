@@ -50,14 +50,24 @@ export const colors = {
   error: '#E53935',
   info: '#A78BBA',
 
-  // Backgrounds
-  background: '#F8F5F0',
+  // Backgrounds — Claymorphism cream
+  background: '#FAF8F5',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
 
-  // Text
-  textPrimary: '#1A1815',
-  textSecondary: '#6B655F',
+  // Clay accent palette
+  clay: {
+    lilac: '#C8B8DB',
+    lilacLight: '#EDE7F5',
+    peach: '#D5A38D',
+    peachLight: '#FBF0EA',
+    cream: '#FAF8F5',
+    creamDark: '#F0EDE8',
+  },
+
+  // Text — muted for gentle reading
+  textPrimary: '#3D3D3D',
+  textSecondary: '#5C5C5C',
   textTertiary: '#A8A099',
   textInverse: '#FFFFFF',
 
@@ -67,12 +77,12 @@ export const colors = {
 } as const;
 
 export const typography = {
-  // Font families (using system fonts for now, can swap for custom)
+  // Font families — Nunito (soft, rounded sans-serif)
   fontFamily: {
-    regular: 'System',
-    medium: 'System',
-    semibold: 'System',
-    bold: 'System',
+    regular: 'Nunito_400Regular',
+    medium: 'Nunito_500Medium',
+    semibold: 'Nunito_600SemiBold',
+    bold: 'Nunito_700Bold',
   },
   // Font sizes
   fontSize: {
@@ -150,6 +160,25 @@ export const shadows = {
     shadowOpacity: 0.12,
     shadowRadius: 20,
     elevation: 4,
+  },
+  /** Claymorphism — soft inflated card look */
+  clay: {
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  /** Inner highlight — simulate top-left light on clay */
+  clayInner: {
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.7)',
+    borderLeftColor: 'rgba(255,255,255,0.4)',
+    borderBottomWidth: 1,
+    borderRightWidth: 0.5,
+    borderBottomColor: 'rgba(200,184,219,0.15)',
+    borderRightColor: 'rgba(200,184,219,0.08)',
   },
 } as const;
 

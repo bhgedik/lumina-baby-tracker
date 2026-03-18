@@ -1,9 +1,19 @@
 import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Image } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+
+const TAB_ICONS = {
+  home: require('../../../assets/icons/tab_home.png'),
+  journal: require('../../../assets/icons/tab_journal.png'),
+  lumina: require('../../../assets/icons/lumina.png'),
+  guide: require('../../../assets/icons/tab_guide.png'),
+  milestones: require('../../../assets/icons/tab_milestones.png'),
+  checklist: require('../../../assets/icons/tab_milestones.png'),
+};
 import { colors, typography, spacing } from '../../../src/shared/constants/theme';
 import { useBabyStore } from '../../../src/stores/babyStore';
+import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
 
 function ProfileButton() {
   const router = useRouter();
@@ -43,6 +53,9 @@ export default function TabsLayout() {
   const isPregnant = activeBaby?.is_pregnant ?? false;
   const babyName = activeBaby?.name || null;
 
+  const { greeting, parentName } = useDashboardData();
+  const homeGreeting = `${greeting}${parentName ? `, ${parentName}` : ''}.`;
+
   return (
     <Tabs
       initialRouteName="home"
@@ -50,7 +63,7 @@ export default function TabsLayout() {
         headerShown: true,
         headerTransparent: false,
         headerTitle: '',
-        headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
+        headerStyle: { backgroundColor: '#F0EDE8', elevation: 0, shadowOpacity: 0 },
         headerLeft: () => null,
         headerRight: () => <ProfileButton />,
         tabBarStyle: styles.tabBar,
@@ -65,9 +78,13 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          headerLeft: () => <HeaderTitle title="Home" />,
-          tabBarIcon: ({ color }) => (
-            <Feather name="home" size={26} color={color} />
+          headerTitle: () => <HeaderTitle title={homeGreeting} />,
+          headerTitleAlign: 'left' as const,
+          headerLeft: () => null,
+          tabBarIcon: ({ focused }) => (
+            <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+              <Image source={TAB_ICONS.home} style={styles.tabIcon} />
+            </View>
           ),
         }}
       />
@@ -77,8 +94,10 @@ export default function TabsLayout() {
         options={{
           title: 'Journal',
           headerLeft: () => <HeaderTitle title={babyName ? `${babyName}'s Journal` : 'Journal'} />,
-          tabBarIcon: ({ color }) => (
-            <Feather name="book" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+              <Image source={TAB_ICONS.journal} style={styles.tabIcon} />
+            </View>
           ),
         }}
       />
@@ -91,7 +110,7 @@ export default function TabsLayout() {
           tabBarIcon: () => (
             <View style={styles.fabContainer}>
               <View style={styles.fabCircle}>
-                <Feather name="message-circle" size={26} color="#FFFFFF" />
+                <Image source={TAB_ICONS.lumina} style={styles.fabIcon} />
               </View>
             </View>
           ),
@@ -104,8 +123,10 @@ export default function TabsLayout() {
         options={{
           title: 'Guide',
           headerLeft: () => <HeaderTitle title="Guide" />,
-          tabBarIcon: ({ color }) => (
-            <Feather name="book-open" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+              <Image source={TAB_ICONS.guide} style={styles.tabIcon} />
+            </View>
           ),
         }}
       />
@@ -116,8 +137,10 @@ export default function TabsLayout() {
           title: 'Checklist',
           headerLeft: () => <HeaderTitle title="Checklist" />,
           href: isPregnant ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <Feather name="check-square" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+              <Image source={TAB_ICONS.checklist} style={styles.tabIcon} />
+            </View>
           ),
         }}
       />
@@ -128,8 +151,10 @@ export default function TabsLayout() {
           title: 'Milestones',
           headerLeft: () => <HeaderTitle title="Milestones" />,
           href: isPregnant ? null : undefined,
-          tabBarIcon: ({ color }) => (
-            <Feather name="trending-up" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+              <Image source={TAB_ICONS.milestones} style={styles.tabIcon} />
+            </View>
           ),
         }}
       />
@@ -147,18 +172,30 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 0,
     height: Platform.OS === 'ios' ? 82 : 60,
     paddingTop: 4,
     paddingBottom: Platform.OS === 'ios' ? 22 : 6,
     paddingHorizontal: 8,
-    elevation: 0,
-    shadowOpacity: 0,
+    marginHorizontal: 12,
+    marginBottom: Platform.OS === 'ios' ? 0 : 8,
+    borderRadius: 32,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    borderTopColor: 'rgba(255,255,255,0.9)',
+    borderLeftColor: 'rgba(255,255,255,0.6)',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   tabLabel: {
     fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     marginTop: 1,
   },
   tabItem: {
@@ -172,24 +209,56 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   headerTitleWrap: {
-    marginLeft: spacing.base + 4,
+    flex: 1,
   },
   headerTitleText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.neutral[800],
+    fontSize: 26,
+    fontFamily: typography.fontFamily.bold,
+    color: '#4A3F60',
     letterSpacing: -0.3,
+  },
+  tabIcon: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  tabIconActive: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 1,
+    transform: [{ scale: 1.15 }],
+    shadowColor: '#B199CE',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  tabIconInactive: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.4,
   },
   fabContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   fabCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.secondary[500],
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  fabIcon: {
+    width: 50,
+    height: 50,
+    resizeMode: 'cover',
   },
 });

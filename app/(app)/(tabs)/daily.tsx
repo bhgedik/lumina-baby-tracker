@@ -31,9 +31,9 @@ import { WeeklyPatternGrid, type PatternDay } from '../../../src/modules/insight
 import { GrowthChartCard } from '../../../src/modules/growth/components/GrowthChartCard';
 import { useGrowthChartData } from '../../../src/modules/growth/hooks/useGrowthChartData';
 
-// ── Design tokens (Health Check card) ────────────────────────
+// ── Claymorphism design tokens ───────────────────────────────
 const UI = {
-  bg: '#F7F4F0',
+  bg: '#F0EDE8',
   card: '#FFFFFF',
   text: '#3D3D3D',
   textSecondary: '#5C5C5C',
@@ -47,12 +47,23 @@ const UI = {
   blushTint: '#C47A7A',
 };
 
-const SOFT_SHADOW = {
+const CLAY_SHADOW = {
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
 };
 
 // ── Health status helpers ────────────────────────────────────
@@ -763,7 +774,7 @@ function FeedsTabbedCard() {
               <View style={[calStyles.feedTabDot, { backgroundColor: isActive ? tab.color : colors.neutral[300] }]} />
               <Text style={[
                 calStyles.feedTabLabel,
-                isActive && { color: tab.color, fontWeight: typography.fontWeight.bold },
+                isActive && { color: tab.color, fontFamily: typography.fontFamily.bold },
               ]}>
                 {tab.label}
               </Text>
@@ -1582,18 +1593,19 @@ const healthStyles = StyleSheet.create({
     backgroundColor: UI.bg,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingTop: 20,
   },
 
-  // ── Health Card ──
+  // ── Health Card (Clay) ──
   healthCard: {
     backgroundColor: UI.card,
     borderRadius: 28,
-    padding: 20,
+    padding: 22,
     marginTop: 20,
     marginBottom: 28,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   healthHeader: {
     flexDirection: 'row',
@@ -1611,12 +1623,12 @@ const healthStyles = StyleSheet.create({
   },
   healthTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.text,
   },
   healthAge: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textMuted,
     marginTop: 1,
   },
@@ -1631,7 +1643,7 @@ const healthStyles = StyleSheet.create({
   signalIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1640,25 +1652,25 @@ const healthStyles = StyleSheet.create({
   },
   signalLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.text,
   },
   signalDetail: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textSecondary,
     lineHeight: 18,
     marginTop: 1,
   },
   healthEmpty: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textSecondary,
     lineHeight: 20,
   },
   pregCardBody: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textSecondary,
     lineHeight: 21,
     marginTop: 4,
@@ -1667,7 +1679,7 @@ const healthStyles = StyleSheet.create({
   // ── Section labels ──
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.textMuted,
     letterSpacing: 1.2,
     marginBottom: 10,
@@ -1701,18 +1713,18 @@ const healthStyles = StyleSheet.create({
   },
   suggestionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.text,
   },
   suggestionSnippet: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textSecondary,
     lineHeight: 20,
   },
   readMoreText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Nunito_500Medium',
     color: UI.accent,
     marginTop: 4,
   },
@@ -1726,29 +1738,29 @@ const calStyles = StyleSheet.create({
   // Segmented Control
   segmentRow: {
     flexDirection: 'row',
-    backgroundColor: colors.neutral[100],
-    borderRadius: borderRadius.lg,
-    padding: 3,
+    backgroundColor: '#F0EDE8',
+    borderRadius: 28,
+    padding: 4,
     marginBottom: spacing.lg,
   },
   segment: {
     flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: 28,
     alignItems: 'center',
   },
   segmentActive: {
-    backgroundColor: colors.surface,
-    ...shadows.sm,
+    backgroundColor: '#FFFFFF',
+    ...CLAY_SHADOW,
   },
   segmentText: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Nunito_500Medium',
     color: colors.textTertiary,
   },
   segmentTextActive: {
-    color: colors.textPrimary,
-    fontWeight: typography.fontWeight.semibold,
+    color: UI.text,
+    fontFamily: 'Nunito_700Bold',
   },
 
   // Date
@@ -1761,37 +1773,46 @@ const calStyles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: 'Nunito_600SemiBold',
     color: colors.textTertiary,
     letterSpacing: 0.3,
   },
 
   // Daily Timeline
-  timelineRow: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 72 },
+  timelineRow: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 56 },
   timelineTime: {
-    width: 64,
+    width: 52,
     fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textTertiary,
     paddingTop: spacing.sm,
     textAlign: 'right',
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
-  timelineDotCol: { alignItems: 'center', width: 20, marginRight: spacing.md },
-  timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: spacing.sm },
-  timelineLine: { width: 2, flex: 1, backgroundColor: colors.neutral[200], marginTop: spacing.xs },
-  timelineCard: { flex: 1, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md },
-  timelineCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  timelineDotCol: { alignItems: 'center', width: 16, marginRight: spacing.sm },
+  timelineDot: { width: 8, height: 8, borderRadius: 4, marginTop: spacing.sm },
+  timelineLine: { width: 2, flex: 1, backgroundColor: '#EAE8F0', marginTop: spacing.xs, borderRadius: 1 },
+  timelineCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    // Flat paper card — no shadows, no elevation
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  timelineCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2 },
   timelineCardLabel: {
     fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
+    fontFamily: typography.fontFamily.semibold,
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
   timelineCardDetail: {
-    fontSize: typography.fontSize.base,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
-    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
   },
 
   // ── Weekly View ──
@@ -1800,15 +1821,10 @@ const calStyles = StyleSheet.create({
   // ── Lumina Insight Card (premium, top of weekly) ──
   luminaInsightCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: spacing.lg,
-    shadowColor: '#8E72A4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.primary[100],
+    borderRadius: 32,
+    padding: spacing.lg + 2,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   luminaInsightHeader: {
     flexDirection: 'row',
@@ -1817,13 +1833,13 @@ const calStyles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   luminaInsightIcon: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: 20,
     backgroundColor: colors.primary[50],
     alignItems: 'center', justifyContent: 'center',
   },
   luminaInsightTitle: {
     fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
     color: colors.primary[700],
   },
   luminaInsightBody: {
@@ -1846,7 +1862,7 @@ const calStyles = StyleSheet.create({
 
   // ── Lumina's Analysis Card (AI interpretation between charts) ──
   luminaAnalysisCard: {
-    backgroundColor: '#EEF0F7',
+    backgroundColor: '#F5F0FA',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
@@ -1861,14 +1877,14 @@ const calStyles = StyleSheet.create({
   luminaAnalysisIcon: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 20,
     backgroundColor: '#D8DCE8',
     alignItems: 'center',
     justifyContent: 'center',
   },
   luminaAnalysisTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: '#4A5899',
     letterSpacing: 0.2,
   },
@@ -1888,22 +1904,19 @@ const calStyles = StyleSheet.create({
   luminaAnalysisFeedIcon: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 20,
     backgroundColor: '#F0DCC8',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // ── Premium Card (Apple Health / Oura style) ──
+  // ── Premium Card (Clay) ──
   premiumCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 28,
+    borderRadius: 32,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   cardTitleRow: {
     flexDirection: 'row',
@@ -1913,20 +1926,20 @@ const calStyles = StyleSheet.create({
   },
   cardTitleText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: colors.textSecondary,
     letterSpacing: 0.3,
   },
   heroMetric: {
     fontSize: 34,
-    fontWeight: '800',
+    fontFamily: 'Nunito_700Bold',
     color: colors.textPrimary,
     letterSpacing: -0.5,
     marginTop: 2,
   },
   heroSubtitle: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: colors.textTertiary,
     marginBottom: 20,
   },
@@ -1938,7 +1951,7 @@ const calStyles = StyleSheet.create({
     marginTop: 14,
     justifyContent: 'center',
   },
-  legendText: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
+  legendText: { fontSize: 12, fontFamily: 'Nunito_500Medium', color: colors.textTertiary },
 
   // ── Feed Tabs ──
   feedTabBar: {
@@ -1959,10 +1972,10 @@ const calStyles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   feedTabActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 1,
   },
   feedTabDot: {
@@ -1972,7 +1985,7 @@ const calStyles = StyleSheet.create({
   },
   feedTabLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textTertiary,
   },
 
@@ -1993,14 +2006,14 @@ const calStyles = StyleSheet.create({
   },
   dataCellLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: colors.textTertiary,
     letterSpacing: 1,
     marginBottom: 3,
   },
   dataCellValue: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: colors.textPrimary,
   },
 
@@ -2012,24 +2025,20 @@ const calStyles = StyleSheet.create({
   quickStatCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: spacing.md,
+    borderRadius: 32,
+    padding: spacing.md + 2,
     borderLeftWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    ...CLAY_SHADOW,
   },
   quickStatValue: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'Nunito_700Bold',
     color: colors.textPrimary,
     marginBottom: 2,
   },
   quickStatLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: colors.textTertiary,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2046,24 +2055,21 @@ const calStyles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
   },
   summaryLabel: {
     fontSize: 10,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textTertiary,
     textAlign: 'center',
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    borderRadius: 32,
+    padding: spacing.lg + 2,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -2073,7 +2079,7 @@ const calStyles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
     flex: 1,
   },
@@ -2086,7 +2092,9 @@ const calStyles = StyleSheet.create({
   insightsCard: {
     backgroundColor: colors.primary[50],
     borderRadius: 24,
-    padding: spacing.lg,
+    padding: spacing.lg + 2,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   insightsHeader: {
     flexDirection: 'row',
@@ -2096,7 +2104,7 @@ const calStyles = StyleSheet.create({
   },
   insightsTitle: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
     color: colors.primary[700],
   },
   insightRow: {
@@ -2127,17 +2135,17 @@ const calStyles = StyleSheet.create({
   },
   calHeaderText: {
     fontSize: 10,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     color: colors.textTertiary,
     marginBottom: 2,
   },
   calDot: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
   },
   calDayText: {
     fontSize: 11,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     color: colors.textPrimary,
   },
   calEmpty: {
@@ -2153,7 +2161,7 @@ const calStyles = StyleSheet.create({
   },
   calDayTextSelected: {
     color: '#FFFFFF',
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
   },
 
   // ── Monthly: Day Detail Panel ──
@@ -2171,7 +2179,7 @@ const calStyles = StyleSheet.create({
   },
   dayDetailTitle: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
   },
   dayDetailRow: {
@@ -2182,7 +2190,7 @@ const calStyles = StyleSheet.create({
   },
   dayDetailTime: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textTertiary,
     width: 68,
   },
@@ -2194,7 +2202,7 @@ const calStyles = StyleSheet.create({
   dayDetailText: {
     flex: 1,
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textPrimary,
   },
   dayDetailEmpty: {
@@ -2216,7 +2224,7 @@ const calStyles = StyleSheet.create({
   },
   growthLabel: {
     fontSize: 10,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: typography.fontFamily.medium,
     color: colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -2227,7 +2235,7 @@ const calStyles = StyleSheet.create({
   },
   growthDelta: {
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
   },
   growthDivider: {
     width: 1,
@@ -2260,7 +2268,7 @@ const calStyles = StyleSheet.create({
     bottom: '25%',
     backgroundColor: colors.primary[100],
     opacity: 0.3,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   growthEmptyCurveSegment: {
     position: 'absolute',
@@ -2286,7 +2294,7 @@ const calStyles = StyleSheet.create({
   },
   growthEmptyTitle: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.semibold,
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 4,

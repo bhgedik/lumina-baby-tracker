@@ -8,15 +8,23 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
+  Platform,
+  Modal,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { SegmentControl } from '../../../src/shared/components/SegmentControl';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
+import { LuminaWhisper } from '../../../src/shared/components/LuminaWhisper';
+import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
+import { GrowthChartCard } from '../../../src/modules/growth/components/GrowthChartCard';
+import { useGrowthChartData } from '../../../src/modules/growth/hooks/useGrowthChartData';
 import { VaccineCard } from '../../../src/modules/health/components/VaccineCard';
 import { CheckupCard } from '../../../src/modules/health/components/CheckupCard';
 import { VaccineAdminSheet } from '../../../src/modules/health/components/VaccineAdminSheet';
@@ -32,10 +40,82 @@ import { useBabyStore } from '../../../src/stores/babyStore';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { generateUUID } from '../../../src/stores/createSyncedStore';
 import type { VaccineTrackingItem, CheckupTrackingItem, IllnessEpisode } from '../../../src/modules/health/types';
+import type { GrowthLog } from '../../../src/modules/growth/types';
 
 const SEGMENTS = [
-  { value: 'routine', label: 'Routine Care' },
+  { value: 'routine', label: 'Routine' },
+  { value: 'growth', label: 'Growth' },
   { value: 'illness', label: 'Illness' },
+];
+
+// ── Growth Helpers ──────────────────────────────────────────
+const kgToGrams = (kg: number) => Math.round(kg * 1000);
+const lbsToGrams = (lbs: number) => Math.round(lbs * 453.592);
+const inToCm = (inches: number) => inches * 2.54;
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+function formatGrowthDateLabel(date: Date) {
+  const today = new Date();
+  if (isSameDay(date, today)) return 'Today';
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) return 'Yesterday';
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+type GrowthSubTab = 'log' | 'chart';
+
+interface MetricInfo {
+  key: string;
+  title: string;
+  icon: keyof typeof Feather.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  metricPlaceholder: string;
+  imperialPlaceholder: string;
+  tipTitle: string;
+  tipBody: string;
+}
+
+const METRICS: MetricInfo[] = [
+  {
+    key: 'weight',
+    title: 'Weight',
+    icon: 'trending-up',
+    iconBg: colors.primary[50],
+    iconColor: colors.primary[600],
+    metricPlaceholder: '3.5',
+    imperialPlaceholder: '7.7',
+    tipTitle: "Lumina's Tip: How to weigh at home",
+    tipBody: 'Weigh yourself holding your baby, then weigh yourself alone. Subtract the difference!\n\nFor best accuracy, weigh at the same time of day (before a feed works well) and in just a dry diaper.',
+  },
+  {
+    key: 'length',
+    title: 'Length',
+    icon: 'maximize-2',
+    iconBg: colors.secondary[50],
+    iconColor: colors.secondary[500],
+    metricPlaceholder: '50.5',
+    imperialPlaceholder: '19.9',
+    tipTitle: "Lumina's Tip: How to measure length",
+    tipBody: 'Lay your baby flat on a firm surface. Gently stretch one leg straight and mark where the heel rests.\n\nMark the top of the head too, then measure between the two marks with a tape measure. Having a helper makes this much easier!',
+  },
+  {
+    key: 'head',
+    title: 'Head Circumference',
+    icon: 'circle',
+    iconBg: '#FFF3E0',
+    iconColor: colors.warning,
+    metricPlaceholder: '35.0',
+    imperialPlaceholder: '13.8',
+    tipTitle: "Lumina's Tip: How to measure the head",
+    tipBody: 'Use a soft, flexible measuring tape. Wrap it snugly around the widest part of the head — just above the eyebrows and ears, around the back where it sticks out the most.\n\nTake 2–3 measurements and use the largest one. This is more accurate than you\'d think!',
+  },
 ];
 
 // ── Soft shadow token ───────────────────────────────────────
@@ -51,6 +131,60 @@ const SOFT_SHADOW = {
 export default function HealthHubScreen() {
   const router = useRouter();
   const [segment, setSegment] = useState('routine');
+
+  // ── Growth tab state ──
+  const family = useAuthStore((s) => s.family);
+  const isMetric = family?.preferred_units !== 'imperial';
+  const chartData = useGrowthChartData();
+  const [growthSubTab, setGrowthSubTab] = useState<GrowthSubTab>('log');
+  const [measuredDate, setMeasuredDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
+  const [lengthInput, setLengthInput] = useState('');
+  const [headInput, setHeadInput] = useState('');
+  const [growthNotes, setGrowthNotes] = useState('');
+  const [expandedTips, setExpandedTips] = useState<Record<string, boolean>>({});
+  const [showGrowthToast, setShowGrowthToast] = useState(false);
+
+  const toggleTip = (key: string) => {
+    setExpandedTips((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const weightUnit = isMetric ? 'kg' : 'lbs';
+  const lengthUnit = isMetric ? 'cm' : 'in';
+
+  const growthInputMap: Record<string, { value: string; setter: (v: string) => void }> = {
+    weight: { value: weightInput, setter: setWeightInput },
+    length: { value: lengthInput, setter: setLengthInput },
+    head: { value: headInput, setter: setHeadInput },
+  };
+
+  const canSaveGrowth = weightInput.trim() !== '' || lengthInput.trim() !== '' || headInput.trim() !== '';
+
+  const goToPrevDay = () => {
+    setMeasuredDate((prev) => {
+      const d = new Date(prev);
+      d.setDate(d.getDate() - 1);
+      return d;
+    });
+  };
+
+  const goToNextDay = () => {
+    setMeasuredDate((prev) => {
+      const d = new Date(prev);
+      d.setDate(d.getDate() + 1);
+      return d > new Date() ? prev : d;
+    });
+  };
+
+  const isToday = isSameDay(measuredDate, new Date());
+
+  const onDatePickerChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (selectedDate && selectedDate <= new Date()) {
+      setMeasuredDate(selectedDate);
+    }
+  };
 
   // Routine care toggles
   const [showUpcoming, setShowUpcoming] = useState(false);
@@ -85,6 +219,54 @@ export default function HealthHubScreen() {
   const addGrowthItem = useGrowthStore((s) => s.addItem);
   const baby = useBabyStore((s) => s.getActiveBaby());
   const babyName = baby?.name ?? 'Baby';
+
+  const handleSaveGrowth = useCallback(() => {
+    if (!baby) return;
+    const profileData = useAuthStore.getState().profile;
+    const now = new Date().toISOString();
+    const familyId = profileData?.family_id ?? baby.family_id;
+    const loggedBy = profileData?.id ?? '';
+
+    const weightNum = parseFloat(weightInput);
+    const lengthNum = parseFloat(lengthInput);
+    const headNum = parseFloat(headInput);
+
+    const weightGrams = !isNaN(weightNum)
+      ? (isMetric ? kgToGrams(weightNum) : lbsToGrams(weightNum))
+      : null;
+    const heightCm = !isNaN(lengthNum)
+      ? (isMetric ? lengthNum : inToCm(lengthNum))
+      : null;
+    const headCm = !isNaN(headNum)
+      ? (isMetric ? headNum : inToCm(headNum))
+      : null;
+
+    const log: GrowthLog = {
+      id: generateUUID(),
+      baby_id: baby.id,
+      family_id: familyId,
+      logged_by: loggedBy,
+      measured_at: measuredDate.toISOString(),
+      weight_grams: weightGrams,
+      height_cm: heightCm,
+      head_circumference_cm: headCm,
+      weight_percentile: null,
+      height_percentile: null,
+      head_percentile: null,
+      chart_type: 'who',
+      notes: growthNotes.trim() || null,
+      created_at: now,
+      updated_at: now,
+    };
+
+    addGrowthItem(log);
+    setShowGrowthToast(true);
+    // Reset form
+    setWeightInput('');
+    setLengthInput('');
+    setHeadInput('');
+    setGrowthNotes('');
+  }, [baby, weightInput, lengthInput, headInput, growthNotes, measuredDate, isMetric, addGrowthItem]);
 
   // ── Unified routine care lists ──
 
@@ -295,7 +477,7 @@ export default function HealthHubScreen() {
     () => (
       <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
         <Feather name="chevron-left" size={26} color={colors.primary[600]} />
-        <Text style={styles.backLabel}>Home</Text>
+        <Text style={styles.backLabel}>Health</Text>
       </Pressable>
     ),
     [router],
@@ -308,7 +490,7 @@ export default function HealthHubScreen() {
           headerShown: true,
           title: 'Health',
           headerTintColor: colors.primary[600],
-          headerBackTitle: 'Home',
+          headerBackTitle: 'Health',
           headerLeft,
           headerStyle: { backgroundColor: colors.background },
           headerTitleStyle: {
@@ -323,6 +505,8 @@ export default function HealthHubScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* Segment Control */}
         <SegmentControl
@@ -331,7 +515,203 @@ export default function HealthHubScreen() {
           onSelect={setSegment}
         />
 
-        {segment === 'routine' ? (
+        {/* ══════════════════════════════════════════════════
+           GROWTH TAB — Inline Log + Chart
+           ══════════════════════════════════════════════════ */}
+        {segment === 'growth' && (
+          <View style={styles.segmentContent}>
+            {/* Sub-tabs: Log Entry / Growth Chart */}
+            <View style={styles.growthSubTabs}>
+              <Pressable
+                style={[styles.growthSubTab, growthSubTab === 'log' && styles.growthSubTabActive]}
+                onPress={() => setGrowthSubTab('log')}
+              >
+                <Feather name="edit-3" size={14} color={growthSubTab === 'log' ? colors.primary[600] : colors.textTertiary} />
+                <Text style={[styles.growthSubTabText, growthSubTab === 'log' && styles.growthSubTabTextActive]}>
+                  Log Entry
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.growthSubTab, growthSubTab === 'chart' && styles.growthSubTabActive]}
+                onPress={() => setGrowthSubTab('chart')}
+              >
+                <Feather name="trending-up" size={14} color={growthSubTab === 'chart' ? colors.primary[600] : colors.textTertiary} />
+                <Text style={[styles.growthSubTabText, growthSubTab === 'chart' && styles.growthSubTabTextActive]}>
+                  Growth Chart
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* ── Chart Sub-Tab ── */}
+            {growthSubTab === 'chart' && (
+              <View style={styles.growthChartSection}>
+                {chartData.hasData
+                  ? <GrowthChartCard />
+                  : <GrowthChartEmptyState onLogEntry={() => setGrowthSubTab('log')} />
+                }
+              </View>
+            )}
+
+            {/* ── Log Entry Sub-Tab ── */}
+            {growthSubTab === 'log' && (
+              <>
+                <Text style={styles.growthIntroText}>
+                  Track your baby's growth between checkups.
+                </Text>
+
+                {/* Date Pill */}
+                <View style={styles.datePillRow}>
+                  <Pressable onPress={goToPrevDay} style={styles.dateArrowButton} hitSlop={12}>
+                    <Feather name="chevron-left" size={18} color={colors.primary[500]} />
+                  </Pressable>
+                  <Pressable onPress={() => setShowDatePicker(true)} style={[styles.datePill, styles.datePillShadow]}>
+                    <View style={styles.datePillIcon}>
+                      <Feather name="calendar" size={14} color={colors.primary[600]} />
+                    </View>
+                    <Text style={styles.datePillLabel}>{formatGrowthDateLabel(measuredDate)}</Text>
+                    <Feather name="chevron-down" size={12} color={colors.primary[400]} />
+                  </Pressable>
+                  <Pressable
+                    onPress={goToNextDay}
+                    style={[styles.dateArrowButton, isToday && styles.dateArrowDisabled]}
+                    hitSlop={12}
+                    disabled={isToday}
+                  >
+                    <Feather name="chevron-right" size={18} color={isToday ? colors.neutral[300] : colors.primary[500]} />
+                  </Pressable>
+                </View>
+
+                {/* Date Picker */}
+                {Platform.OS === 'android' && showDatePicker && (
+                  <DateTimePicker
+                    value={measuredDate}
+                    mode="date"
+                    display="calendar"
+                    maximumDate={new Date()}
+                    onChange={onDatePickerChange}
+                  />
+                )}
+                {Platform.OS === 'ios' && (
+                  <Modal
+                    visible={showDatePicker}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowDatePicker(false)}
+                  >
+                    <Pressable style={styles.pickerOverlay} onPress={() => setShowDatePicker(false)}>
+                      <Pressable style={styles.pickerSheet} onPress={() => {}}>
+                        <View style={styles.pickerHeader}>
+                          <Text style={styles.pickerTitle}>Select Date</Text>
+                          <Pressable onPress={() => setShowDatePicker(false)} hitSlop={12}>
+                            <Text style={styles.pickerDone}>Done</Text>
+                          </Pressable>
+                        </View>
+                        <DateTimePicker
+                          value={measuredDate}
+                          mode="date"
+                          display="inline"
+                          maximumDate={new Date()}
+                          onChange={onDatePickerChange}
+                          style={styles.iosPicker}
+                          themeVariant="light"
+                        />
+                      </Pressable>
+                    </Pressable>
+                  </Modal>
+                )}
+
+                {/* Metric Cards */}
+                {METRICS.map((metric) => {
+                  const { value, setter } = growthInputMap[metric.key];
+                  const unit = metric.key === 'weight' ? weightUnit : lengthUnit;
+                  const unitLabel = metric.key === 'weight'
+                    ? (isMetric ? 'Kilograms (kg)' : 'Pounds (lbs)')
+                    : (isMetric ? 'Centimeters (cm)' : 'Inches (in)');
+                  const placeholder = isMetric ? metric.metricPlaceholder : metric.imperialPlaceholder;
+                  const isExpanded = expandedTips[metric.key] ?? false;
+
+                  return (
+                    <View key={metric.key} style={[styles.growthMetricCard, SOFT_SHADOW]}>
+                      <View style={styles.growthMetricHeader}>
+                        <View style={[styles.growthMetricIconWrap, { backgroundColor: metric.iconBg }]}>
+                          <Feather name={metric.icon} size={18} color={metric.iconColor} />
+                        </View>
+                        <View style={styles.growthMetricTitleWrap}>
+                          <Text style={styles.growthMetricTitle}>{metric.title}</Text>
+                          <Text style={styles.growthMetricSub}>{unitLabel}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.growthInputRow}>
+                        <TextInput
+                          style={styles.growthMetricInput}
+                          placeholder={placeholder}
+                          placeholderTextColor={colors.textTertiary}
+                          value={value}
+                          onChangeText={setter}
+                          keyboardType="decimal-pad"
+                          maxLength={6}
+                          inputAccessoryViewID={KEYBOARD_DONE_ID}
+                        />
+                        <Text style={styles.growthUnitText}>{unit}</Text>
+                      </View>
+
+                      <Pressable
+                        style={styles.tipToggle}
+                        onPress={() => toggleTip(metric.key)}
+                      >
+                        <Feather name="heart" size={14} color={colors.primary[500]} />
+                        <Text style={styles.tipToggleText}>{metric.tipTitle}</Text>
+                        <Feather
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={14}
+                          color={colors.primary[400]}
+                        />
+                      </Pressable>
+
+                      {isExpanded && (
+                        <View style={styles.tipBody}>
+                          <Text style={styles.tipText}>{metric.tipBody}</Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+
+                {/* Notes */}
+                <View style={styles.growthNotesSection}>
+                  <View style={styles.growthNoteHeader}>
+                    <Feather name="edit-3" size={16} color={colors.textTertiary} />
+                    <Text style={styles.growthNoteLabel}>Notes</Text>
+                  </View>
+                  <TextInput
+                    style={styles.growthNotesInput}
+                    placeholder="Any observations? (e.g., measured at pediatrician visit)"
+                    placeholderTextColor={colors.textTertiary}
+                    value={growthNotes}
+                    onChangeText={setGrowthNotes}
+                    multiline
+                    textAlignVertical="top"
+                    maxLength={500}
+                    inputAccessoryViewID={KEYBOARD_DONE_ID}
+                  />
+                </View>
+
+                {/* Save Button */}
+                <Pressable
+                  style={[styles.growthSaveButton, shadows.sm, !canSaveGrowth && styles.growthSaveButtonDisabled]}
+                  onPress={handleSaveGrowth}
+                  disabled={!canSaveGrowth}
+                >
+                  <Feather name="check" size={20} color={colors.textInverse} />
+                  <Text style={styles.growthSaveButtonText}>Save Measurements</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        )}
+
+        {segment === 'routine' && (
           <View style={styles.segmentContent}>
             {/* ── DUE NOW ── */}
             <SectionHeader
@@ -429,10 +809,12 @@ export default function HealthHubScreen() {
               </>
             )}
           </View>
-        ) : (
-          /* ════════════════════════════════════════════════
-             ILLNESS TRACK — Accordion Episode Cards
-             ════════════════════════════════════════════════ */
+        )}
+
+        {/* ════════════════════════════════════════════════
+           ILLNESS TRACK — Accordion Episode Cards
+           ════════════════════════════════════════════════ */}
+        {segment === 'illness' && (
           <View style={styles.segmentContent}>
             {activeEpisodes.length === 0 ? (
               <>
@@ -572,6 +954,14 @@ export default function HealthHubScreen() {
         onDismiss={() => setShowToast(false)}
         autoDismissMs={3000}
       />
+
+      {/* Growth toast */}
+      <LuminaWhisper
+        visible={showGrowthToast}
+        message={'\u2728 Growth measurements saved.'}
+        onDismiss={() => setShowGrowthToast(false)}
+      />
+      <KeyboardDoneBar />
     </View>
   );
 }
@@ -750,6 +1140,49 @@ function CollapsibleToggle({
         color={colors.neutral[400]}
       />
     </Pressable>
+  );
+}
+
+// ── Growth Chart Empty State ─────────────────────────────────
+function GrowthChartEmptyState({ onLogEntry }: { onLogEntry: () => void }) {
+  return (
+    <View style={styles.growthEmptyContainer}>
+      <View style={styles.growthEmptyIllustration}>
+        <View style={styles.growthEmptyChartArea}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={[styles.growthEmptyGridLine, { bottom: `${i * 28 + 10}%` }]} />
+          ))}
+          <View style={styles.growthEmptyBandOuter} />
+          <View style={styles.growthEmptyBandInner} />
+          <View style={styles.growthEmptyCurveDots}>
+            {[
+              { left: '15%' as const, bottom: '20%' as const },
+              { left: '35%' as const, bottom: '38%' as const },
+              { left: '55%' as const, bottom: '52%' as const },
+            ].map((pos, i) => (
+              <View key={i} style={[styles.growthEmptyDot, { left: pos.left, bottom: pos.bottom }]} />
+            ))}
+          </View>
+          <View style={styles.growthEmptyQuestionWrap}>
+            <Feather name="plus" size={24} color={colors.primary[400]} />
+          </View>
+        </View>
+      </View>
+      <Text style={styles.growthEmptyTitle}>No growth data yet</Text>
+      <Text style={styles.growthEmptyBody}>
+        Log at least 2 measurements to see your baby's growth curve plotted against WHO percentile charts.
+      </Text>
+      <Pressable style={[styles.growthEmptyButton, shadows.sm]} onPress={onLogEntry}>
+        <Feather name="edit-3" size={16} color={colors.textInverse} />
+        <Text style={styles.growthEmptyButtonText}>Log First Measurement</Text>
+      </Pressable>
+      <View style={styles.growthEmptyNote}>
+        <Feather name="info" size={14} color={colors.primary[500]} />
+        <Text style={styles.growthEmptyNoteText}>
+          Growth charts need multiple data points over time to show meaningful trends. Each checkup or home measurement adds to the picture.
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -1117,5 +1550,389 @@ const styles = StyleSheet.create({
     color: colors.primary[700],
     lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
     marginTop: spacing.sm,
+  },
+
+  // ══════════════════════════════════════════════
+  // GROWTH TAB STYLES
+  // ══════════════════════════════════════════════
+
+  growthSubTabs: {
+    flexDirection: 'row',
+    backgroundColor: colors.neutral[100],
+    borderRadius: borderRadius.xl,
+    padding: 3,
+    marginBottom: spacing.lg,
+    marginTop: spacing.md,
+  },
+  growthSubTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.xl - 2,
+  },
+  growthSubTabActive: {
+    backgroundColor: colors.surface,
+    ...shadows.sm,
+  },
+  growthSubTabText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textTertiary,
+  },
+  growthSubTabTextActive: {
+    color: colors.primary[600],
+    fontWeight: typography.fontWeight.semibold,
+  },
+  growthChartSection: {
+    marginTop: spacing.sm,
+  },
+  growthIntroText: {
+    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' }),
+    fontSize: typography.fontSize.base,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+  },
+
+  // ── Date Pill ──
+  datePillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  dateArrowButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+  },
+  dateArrowDisabled: {
+    opacity: 0.3,
+  },
+  datePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: colors.primary[200],
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+  },
+  datePillShadow: {
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  datePillIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primary[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePillLabel: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+
+  // ── Metric Card ──
+  growthMetricCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+  },
+  growthMetricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  growthMetricIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  growthMetricTitleWrap: {
+    flex: 1,
+  },
+  growthMetricTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  growthMetricSub: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
+  growthInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: colors.neutral[200],
+    paddingHorizontal: spacing.base,
+    marginBottom: spacing.base,
+  },
+  growthMetricInput: {
+    flex: 1,
+    paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  growthUnitText: {
+    fontSize: typography.fontSize.md,
+    color: colors.textTertiary,
+    fontWeight: typography.fontWeight.medium,
+    marginLeft: spacing.sm,
+  },
+
+  // ── Tip Toggle ──
+  tipToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  tipToggleText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[600],
+    fontWeight: typography.fontWeight.medium,
+  },
+  tipBody: {
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginTop: spacing.xs,
+  },
+  tipText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[700],
+    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
+  },
+
+  // ── Notes ──
+  growthNotesSection: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  growthNoteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  growthNoteLabel: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  growthNotesInput: {
+    borderWidth: 1.5,
+    borderColor: colors.neutral[200],
+    borderRadius: borderRadius.xl,
+    padding: spacing.base,
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+    minHeight: 80,
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+  },
+
+  // ── Save Button ──
+  growthSaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 56,
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+  },
+  growthSaveButtonDisabled: {
+    opacity: 0.4,
+  },
+  growthSaveButtonText: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textInverse,
+  },
+
+  // ── Date Picker Modal ──
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    paddingBottom: spacing['2xl'],
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.base,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.neutral[200],
+  },
+  pickerTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  pickerDone: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.primary[500],
+  },
+  iosPicker: {
+    height: 340,
+  },
+
+  // ── Growth Empty State ──
+  growthEmptyContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  growthEmptyIllustration: {
+    width: 200,
+    height: 160,
+    marginBottom: spacing.xl,
+  },
+  growthEmptyChartArea: {
+    flex: 1,
+    backgroundColor: colors.neutral[50],
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  growthEmptyGridLine: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    height: 1,
+    backgroundColor: colors.neutral[200],
+    opacity: 0.5,
+  },
+  growthEmptyBandOuter: {
+    position: 'absolute',
+    left: '8%',
+    right: '8%',
+    top: '15%',
+    bottom: '15%',
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.lg,
+    opacity: 0.6,
+  },
+  growthEmptyBandInner: {
+    position: 'absolute',
+    left: '12%',
+    right: '12%',
+    top: '30%',
+    bottom: '30%',
+    backgroundColor: colors.primary[100],
+    borderRadius: borderRadius.md,
+    opacity: 0.5,
+  },
+  growthEmptyCurveDots: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  growthEmptyDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary[300],
+    opacity: 0.7,
+  },
+  growthEmptyQuestionWrap: {
+    position: 'absolute',
+    right: '18%',
+    bottom: '55%',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary[50],
+    borderWidth: 2,
+    borderColor: colors.primary[200],
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  growthEmptyTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  growthEmptyBody: {
+    fontSize: typography.fontSize.base,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    marginBottom: spacing.xl,
+    maxWidth: 280,
+  },
+  growthEmptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.xl,
+  },
+  growthEmptyButtonText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textInverse,
+  },
+  growthEmptyNote: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.xl,
+    padding: spacing.base,
+    maxWidth: 320,
+  },
+  growthEmptyNoteText: {
+    flex: 1,
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[700],
+    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
   },
 });

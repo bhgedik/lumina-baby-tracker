@@ -13,11 +13,14 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
 import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
 import { KeyboardDoneBar, KEYBOARD_DONE_ID } from '../../../src/shared/components/KeyboardDoneBar';
@@ -51,43 +54,74 @@ import type { DiaperType } from '../../../src/shared/types/common';
 import { useGrowthStore } from '../../../src/stores/growthStore';
 import { calculatePercentile, resolveSex } from '../../../src/modules/growth/utils/percentileCalculation';
 
-// ── Pixel-perfect design tokens ─────────────────────────────
+// ── Claymorphism icon assets ────────────────────────────────
+const ACTION_ICONS: Record<string, any> = {
+  sleep: require('../../../assets/icons/sleep.png'),
+  feeding: require('../../../assets/icons/feed.png'),
+  pumping: require('../../../assets/icons/pump.png'),
+  diaper: require('../../../assets/icons/diaper.png'),
+  activity: require('../../../assets/icons/playtime.png'),
+  growth: require('../../../assets/icons/growth.png'),
+  health: require('../../../assets/icons/health.png'),
+  lumina: require('../../../assets/icons/lumina.png'),
+  mic: require('../../../assets/icons/mic.png'),
+};
+
+// ── Claymorphism design tokens ──────────────────────────────
 const UI = {
-  bg: '#F7F4F0',
+  bg: '#F0EDE8',
   text: '#3D3D3D',
-  textSecondary: '#5C5C5C',  // body text — readable on cream
-  textMuted: '#8A8A8A',      // small labels, captions
+  textSecondary: '#5C5C5C',
+  textMuted: '#8A8A8A',
   accent: '#B199CE',
   card: '#FFFFFF',
-  logBg: '#F0EAE1',
+  logBg: '#F0EDE8',
   secondary: '#F2B89C',
 };
 
-const SOFT_SHADOW = {
+const CLAY_SHADOW = {
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
 };
 
-// ── Action grid — split into primary (daily) and secondary (occasional) ──
-// Row 1: Sleep (full width), Row 2: Feed + Pump, Row 3: Diaper + Play Time
-const PRIMARY_ACTIONS_ROW1 = [
-  { id: 'sleep', label: 'Sleep', icon: 'moon' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/sleep' },
-];
-const PRIMARY_ACTIONS_ROW2 = [
-  { id: 'feeding', label: 'Feed', icon: 'droplet' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/feeding' },
-  { id: 'pumping', label: 'Pump', icon: 'zap' as const, iconBg: '#E8DDF3', iconTint: '#735A88', route: '/(app)/log/pumping' },
-];
-const PRIMARY_ACTIONS_ROW3 = [
-  { id: 'diaper', label: 'Diaper', icon: 'diaper' as const, iconBg: '#F0ECE6', iconTint: '#7A6B5A', route: '/(app)/log/diaper' },
-  { id: 'activity', label: 'Play Time', icon: 'smile' as const, iconBg: '#FEE8DC', iconTint: '#96624A', route: '/(app)/log/activity' },
-];
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
 
-const SECONDARY_ACTIONS = [
-  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', icon: 'trending-up' as const, tint: '#A78BBA', route: '/(app)/log/growth' },
-  { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', icon: 'thermometer' as const, tint: '#A88978', route: '/(app)/health' },
+// ── Per-button glow / tint colors ─────────────────────────────
+const BUTTON_COLORS: Record<string, { glow: string; tint: string; border: string; label: string }> = {
+  sleep:    { glow: '#B199CE', tint: 'rgba(177,153,206,0.10)', border: 'rgba(177,153,206,0.18)', label: '#4A3860' },
+  feeding:  { glow: '#D5A38D', tint: 'rgba(213,163,141,0.10)', border: 'rgba(213,163,141,0.18)', label: '#5C3D2E' },
+  pumping:  { glow: '#B199CE', tint: 'rgba(177,153,206,0.10)', border: 'rgba(177,153,206,0.18)', label: '#4A3860' },
+  diaper:   { glow: '#C8B8DB', tint: 'rgba(200,184,219,0.10)', border: 'rgba(200,184,219,0.18)', label: '#4A3F60' },
+  activity: { glow: '#D5A38D', tint: 'rgba(213,163,141,0.10)', border: 'rgba(213,163,141,0.18)', label: '#5C3D2E' },
+  growth:   { glow: '#A78BBA', tint: 'rgba(167,139,186,0.10)', border: 'rgba(167,139,186,0.18)', label: '#3D2E4C' },
+  health:   { glow: '#A88978', tint: 'rgba(168,137,120,0.10)', border: 'rgba(168,137,120,0.18)', label: '#4A3A30' },
+};
+
+// ── Action grid — 3 rows of 2 ──────────────────────────────
+// Row 1: Feed + Pump, Row 2: Sleep + Diaper, Row 3: Play Time + Health
+const ACTION_ROW1 = [
+  { id: 'feeding', label: 'Feed', route: '/(app)/log/feeding' },
+  { id: 'pumping', label: 'Pump', route: '/(app)/log/pumping' },
+];
+const ACTION_ROW2 = [
+  { id: 'sleep', label: 'Sleep', route: '/(app)/log/sleep' },
+  { id: 'diaper', label: 'Diaper', route: '/(app)/log/diaper' },
+];
+const ACTION_ROW3 = [
+  { id: 'activity', label: 'Play Time', route: '/(app)/log/activity' },
+  { id: 'health', label: 'Health', route: '/(app)/health' },
 ];
 
 // ── Simulator / dev detection ────────────────────────────────
@@ -738,11 +772,8 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {/* ── Greeting ── */}
+        {/* ── Greeting (below header) ── */}
         <View style={styles.greetingBlock}>
-          <Text style={styles.greetingTitle}>
-            {greeting}{parentName ? `, ${parentName}` : ''}.
-          </Text>
           {babyAge && babyName && (
             <Text style={styles.greetingAge} numberOfLines={1}>{babyName} is {babyAge.display}</Text>
           )}
@@ -757,7 +788,7 @@ export default function HomeScreen() {
           {/* Header row */}
           <View style={styles.luminaHubHeader}>
             <View style={styles.luminaHubIcon}>
-              <Feather name="message-circle" size={22} color={colors.primary[600]} />
+              <Image source={ACTION_ICONS.lumina} style={styles.luminaHubIconImage} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.luminaHubTitle}>Lumina</Text>
@@ -767,7 +798,7 @@ export default function HomeScreen() {
 
           {/* Input bar */}
           <Pressable style={styles.luminaInputBar} onPress={() => setShowNurseChat(true)}>
-            <Feather name="search" size={18} color={UI.textMuted} />
+            <Feather name="search" size={18} color={colors.primary[400]} />
             <Text style={styles.luminaInputPlaceholder} numberOfLines={1}>
               {babyName ? `What's on your mind about ${babyName}?` : 'Ask me anything...'}
             </Text>
@@ -780,7 +811,7 @@ export default function HomeScreen() {
               hitSlop={12}
               accessibilityLabel="Voice input"
             >
-              <Feather name="mic" size={18} color={colors.primary[600]} />
+              <Image source={ACTION_ICONS.mic} style={styles.luminaMicImage} />
             </Pressable>
           </Pressable>
 
@@ -811,37 +842,12 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Primary Actions (Row 1: Sleep, Row 2: Feed+Pump, Row 3: Diaper+Play) ── */}
+        {/* ── Action Grid (3 rows × 2) ── */}
         <View style={styles.actionGrid}>
-          {/* Row 1: Sleep (full width) */}
+          {/* Row 1: Feed + Pump */}
           <View style={styles.actionRow}>
-            {PRIMARY_ACTIONS_ROW1.map((action) => {
-              const isLive = action.id === 'sleep' && !!sleepTimer;
-              const liveColor = '#6B5B8A';
-              const liveSub = isLive ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap') : null;
-              return (
-                <Pressable
-                  key={action.id}
-                  style={[styles.actionButton, styles.actionButtonFull, isLive && { borderWidth: 1.5, borderColor: liveColor + '40' }]}
-                  onPress={() => setShowSleepSheet(true)}
-                  accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
-                >
-                  <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }, isLive && { borderWidth: 2, borderColor: liveColor }]}>
-                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
-                  </View>
-                  <View>
-                    <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
-                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
-                    </Text>
-                    {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-          {/* Row 2: Feed + Pump */}
-          <View style={styles.actionRow}>
-            {PRIMARY_ACTIONS_ROW2.map((action) => {
+            {ACTION_ROW1.map((action) => {
+              const bc = BUTTON_COLORS[action.id];
               const isLive = action.id === 'feeding' && !!feedingTimer;
               const liveColor = '#A78BBA';
               const liveSub = isLive
@@ -850,65 +856,108 @@ export default function HomeScreen() {
               return (
                 <Pressable
                   key={action.id}
-                  style={[styles.actionButton, isLive && { borderWidth: 1.5, borderColor: liveColor + '40' }]}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    { shadowColor: bc.glow, borderColor: isLive ? liveColor + '40' : bc.border, borderWidth: isLive ? 1.5 : 1 },
+                    pressed && styles.actionPressed,
+                  ]}
                   onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     if (action.id === 'feeding') setShowFeedingSheet(true);
                     else if (action.id === 'pumping') setShowPumpingSheet(true);
                     else router.push(action.route as any);
                   }}
                   accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
                 >
-                  <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }, isLive && { borderWidth: 2, borderColor: liveColor }]}>
-                    <Feather name={action.icon} size={24} color={isLive ? liveColor : action.iconTint} />
-                  </View>
-                  <View>
-                    <Text style={[styles.actionLabel, { color: isLive ? liveColor : '#33302B' }]}>
-                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
-                    </Text>
-                    {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
-                  </View>
+                  <LinearGradient
+                    colors={[bc.tint, '#FFFFFF']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.actionGradient}
+                  >
+                    <Image source={ACTION_ICONS[action.id]} style={styles.actionIconImage} />
+                    <View>
+                      <Text style={[styles.actionLabel, { color: isLive ? liveColor : bc.label }]}>
+                        {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                      </Text>
+                      {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
+                    </View>
+                  </LinearGradient>
                 </Pressable>
               );
             })}
           </View>
-          {/* Row 3: Diaper + Play Time */}
+          {/* Row 2: Sleep + Diaper */}
           <View style={styles.actionRow}>
-            {PRIMARY_ACTIONS_ROW3.map((action) => (
-              <Pressable
-                key={action.id}
-                style={styles.actionButton}
-                onPress={() => {
-                  if (action.id === 'diaper') setShowDiaperSheet(true);
-                  else router.push(action.route as any);
-                }}
-                accessibilityLabel={`Log ${action.label}`}
-              >
-                <View style={[styles.actionIconWrap, { backgroundColor: action.iconBg }]}>
-                  {action.icon === 'diaper' ? (
-                    <MaterialCommunityIcons name="human-baby-changing-table" size={24} color={action.iconTint} />
-                  ) : (
-                    <Feather name={action.icon} size={24} color={action.iconTint} />
-                  )}
-                </View>
-                <Text style={[styles.actionLabel, { color: '#33302B' }]}>{action.label}</Text>
-              </Pressable>
-            ))}
+            {ACTION_ROW2.map((action) => {
+              const bc = BUTTON_COLORS[action.id];
+              const isLive = action.id === 'sleep' && !!sleepTimer;
+              const liveColor = '#6B5B8A';
+              const liveSub = isLive ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap') : null;
+              return (
+                <Pressable
+                  key={action.id}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    { shadowColor: bc.glow, borderColor: isLive ? liveColor + '40' : bc.border, borderWidth: isLive ? 1.5 : 1 },
+                    pressed && styles.actionPressed,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (action.id === 'sleep') setShowSleepSheet(true);
+                    else if (action.id === 'diaper') setShowDiaperSheet(true);
+                    else router.push(action.route as any);
+                  }}
+                  accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
+                >
+                  <LinearGradient
+                    colors={[bc.tint, '#FFFFFF']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.actionGradient}
+                  >
+                    <Image source={ACTION_ICONS[action.id]} style={styles.actionIconImage} />
+                    <View>
+                      <Text style={[styles.actionLabel, { color: isLive ? liveColor : bc.label }]}>
+                        {isLive ? formatTimerSeconds(timerElapsed) : action.label}
+                      </Text>
+                      {isLive && liveSub && <Text style={styles.actionLiveSub}>{liveSub}</Text>}
+                    </View>
+                  </LinearGradient>
+                </Pressable>
+              );
+            })}
           </View>
-          {/* Row 4: Growth + Health */}
+          {/* Row 3: Play Time + Health */}
           <View style={styles.actionRow}>
-            {SECONDARY_ACTIONS.map((action) => (
-              <Pressable
-                key={action.id}
-                style={styles.actionButton}
-                onPress={() => router.push(action.route as any)}
-                accessibilityLabel={`Log ${action.label}`}
-              >
-                <View style={[styles.actionIconWrap, { backgroundColor: action.tint + '15' }]}>
-                  <Feather name={action.icon} size={20} color={action.tint} />
-                </View>
-                <Text style={[styles.actionLabel, { color: '#33302B' }]}>{action.label}</Text>
-              </Pressable>
-            ))}
+            {ACTION_ROW3.map((action) => {
+              const bc = BUTTON_COLORS[action.id];
+              return (
+                <Pressable
+                  key={action.id}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    { shadowColor: bc.glow, borderColor: bc.border, borderWidth: 1 },
+                    pressed && styles.actionPressed,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(action.route as any);
+                  }}
+                  accessibilityLabel={`Log ${action.label}`}
+                >
+                  <LinearGradient
+                    colors={[bc.tint, '#FFFFFF']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.actionGradient}
+                  >
+                    <Image source={ACTION_ICONS[action.id]} style={styles.actionIconImage} />
+                    <Text style={[styles.actionLabel, { color: bc.label }]}>{action.label}</Text>
+                  </LinearGradient>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -1010,32 +1059,32 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.base,
     paddingTop: 8,
-    paddingBottom: 100,
+    paddingBottom: 110,
   },
 
   // ── Greeting ──
   greetingBlock: {
     gap: 6,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   greetingTitle: {
     fontSize: 28,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
     color: UI.text,
     letterSpacing: -0.3,
     lineHeight: 34,
   },
   greetingAge: {
     fontSize: 15,
-    fontWeight: '500',
-    color: UI.textSecondary,
+    fontFamily: typography.fontFamily.medium,
+    color: '#4A3F60',
     letterSpacing: 0.2,
     marginTop: 2,
   },
   greetingAffirmation: {
     fontSize: 16,
-    fontWeight: '400',
-    color: UI.textSecondary,
+    fontFamily: typography.fontFamily.regular,
+    color: '#5D5478',
     letterSpacing: 0.1,
     lineHeight: 24,
     marginTop: 4,
@@ -1044,17 +1093,12 @@ const styles = StyleSheet.create({
   // ── Lumina AI Hub ──
   luminaHub: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    paddingBottom: 16,
+    borderRadius: 32,
+    padding: 22,
+    paddingBottom: 18,
     marginBottom: 20,
-    shadowColor: '#8E72A4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.primary[100],
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   luminaHubHeader: {
     flexDirection: 'row',
@@ -1063,105 +1107,147 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   luminaHubIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    ...CLAY_SHADOW,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  luminaHubIconImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'cover',
   },
   luminaHubTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bold,
     color: colors.primary[700],
   },
   luminaHubSubtitle: {
     fontSize: 13,
+    fontFamily: typography.fontFamily.medium,
     color: colors.primary[500],
     marginTop: 1,
   },
   luminaInputBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.neutral[50],
-    borderRadius: 16,
+    // Inset hack — no shadows, border-only concave illusion
+    backgroundColor: '#F4F3F7',
+    borderRadius: 30,
     paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 18,
     gap: 10,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    // Darker top-left = shadow falling inside
+    borderTopColor: '#E0DDE5',
+    borderLeftColor: '#E0DDE5',
+    // Lighter bottom-right = highlight catching light
+    borderBottomColor: '#FFFFFF',
+    borderRightColor: '#FFFFFF',
   },
   luminaInputPlaceholder: {
     flex: 1,
     fontSize: 15,
-    color: UI.textMuted,
+    fontFamily: typography.fontFamily.regular,
+    color: '#6B5E8C',
   },
   luminaHubMic: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary[50],
-    borderWidth: 1,
-    borderColor: colors.primary[200],
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    ...CLAY_INNER,
+    shadowColor: '#C8B8DB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  luminaMicImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'cover',
   },
   promptChipsRow: {
     gap: 8,
     paddingRight: 4,
   },
   promptChip: {
-    backgroundColor: colors.primary[50],
+    backgroundColor: 'rgba(74, 63, 96, 0.06)',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
   },
   promptChipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: colors.primary[700],
+    fontFamily: typography.fontFamily.medium,
+    color: '#5D4E78',
   },
 
-  // ── Action Grid ──
+  // ── Action Grid (Clay) ──
   actionGrid: {
-    gap: 10,
-    marginBottom: 10,
+    flex: 1,
+    justifyContent: 'space-evenly',
+    paddingBottom: 4,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 18,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    minHeight: 90,
+    maxHeight: 110,
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius['2xl'],
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-    ...SOFT_SHADOW,
+    borderRadius: 28,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
   },
   actionButtonFull: {
     justifyContent: 'center',
   },
-  actionIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  actionGradient: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    gap: 14,
+    borderRadius: 28,
+  },
+  actionPressed: {
+    transform: [{ scale: 0.97 }],
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+  actionIconImage: {
+    width: 48,
+    height: 48,
+    resizeMode: 'contain',
   },
   actionLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.semibold,
     letterSpacing: 0.2,
   },
   actionLiveSub: {
     fontSize: 11,
+    fontFamily: typography.fontFamily.regular,
     color: '#8A8A8A',
     marginTop: 1,
   },
@@ -1196,12 +1282,13 @@ const styles = StyleSheet.create({
   },
   voiceLabel: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.semibold,
     color: UI.text,
     marginTop: 8,
   },
   voiceHint: {
     fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
     color: UI.textSecondary,
     textAlign: 'center',
     maxWidth: 260,
@@ -1222,7 +1309,7 @@ const styles = StyleSheet.create({
   },
   voiceCancelText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.medium,
     color: UI.text,
   },
   voiceFinishButton: {
@@ -1237,7 +1324,7 @@ const styles = StyleSheet.create({
   },
   voiceFinishText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.semibold,
     color: '#FFFFFF',
   },
 
@@ -1275,12 +1362,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
   },
   sheetConfirmDisabled: { opacity: 0.4 },
   sheetConfirmText: {
     color: '#FFFFFF',
     fontSize: typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.semibold,
   },
 });

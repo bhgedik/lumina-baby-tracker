@@ -31,11 +31,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// ── Design tokens ────────────────────────────────────────────
+// ── Claymorphism design tokens ───────────────────────────────
 const UI = {
-  bg: '#FDFCF5',
+  bg: '#F0EDE8',
   card: '#FFFFFF',
-  text: '#33302B',
+  text: '#3D3D3D',
   textSecondary: '#5C5C5C',
   textMuted: '#8A8A8A',
   textLight: '#B0AAA2',
@@ -55,12 +55,23 @@ const UI = {
   sourceBlueBg: '#EEF3F8',
 };
 
-const SOFT_SHADOW = {
-  shadowColor: '#8A7A6A',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.06,
-  shadowRadius: 16,
-  elevation: 3,
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
 };
 
 // ── Today's Insight (migrated from Daily) ────────────────────
@@ -243,7 +254,7 @@ function MythPreviewCard({
     <Pressable
       style={({ pressed }) => [
         styles.mythCarouselCard,
-        SOFT_SHADOW,
+        CLAY_SHADOW,
         pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] },
       ]}
       onPress={onPress}
@@ -301,7 +312,7 @@ function FeaturedCard({
     <Pressable
       style={({ pressed }) => [
         styles.featuredCard,
-        SOFT_SHADOW,
+        CLAY_SHADOW,
         pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] },
       ]}
       onPress={onPress}
@@ -349,7 +360,7 @@ function LibraryCardView({
         styles.card,
         card.isMaster && styles.cardMaster,
         card.isHighlighted && styles.cardHighlighted,
-        SOFT_SHADOW,
+        CLAY_SHADOW,
         pressed && { opacity: 0.92, transform: [{ scale: 0.985 }] },
       ]}
       onPress={onPress}
@@ -648,7 +659,7 @@ const styles = StyleSheet.create({
   },
   insightLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     letterSpacing: -0.1,
   },
@@ -671,19 +682,19 @@ const styles = StyleSheet.create({
   },
   suggestionTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.text,
     marginBottom: 4,
   },
   suggestionSnippet: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textSecondary,
     lineHeight: 20,
   },
   readMoreText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.stageAccent,
     marginTop: 4,
   },
@@ -699,7 +710,7 @@ const styles = StyleSheet.create({
   },
   askAIText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.stageAccent,
   },
 
@@ -716,7 +727,7 @@ const styles = StyleSheet.create({
   },
   stageLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     letterSpacing: -0.1,
   },
@@ -727,29 +738,29 @@ const styles = StyleSheet.create({
   featuredCard: {
     width: 160,
     backgroundColor: UI.card,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 32,
+    padding: 16,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   featuredIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   featuredTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     lineHeight: 18,
     marginBottom: 4,
   },
   featuredSubtitle: {
     fontSize: 11,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textMuted,
     lineHeight: 15,
     marginBottom: 8,
@@ -761,7 +772,7 @@ const styles = StyleSheet.create({
   },
   featuredAge: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     letterSpacing: 0.2,
   },
 
@@ -781,14 +792,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: UI.pillBg,
+    backgroundColor: '#EDE9E4',
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderLeftColor: 'rgba(0,0,0,0.03)',
+    borderBottomColor: 'rgba(255,255,255,0.8)',
+    borderRightColor: 'rgba(255,255,255,0.5)',
   },
   filterPillActive: {
     backgroundColor: UI.pillBgActive,
   },
   filterPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.pillText,
   },
   filterPillTextActive: {
@@ -809,13 +828,13 @@ const styles = StyleSheet.create({
   sectionIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     letterSpacing: -0.2,
   },
@@ -826,18 +845,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // ── Card ──
+  // ── Card (Clay) ──
   card: {
     backgroundColor: UI.card,
-    borderRadius: 16,
-    marginBottom: 10,
+    borderRadius: 32,
+    marginBottom: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   cardMaster: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(167,139,186,0.2)',
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(167,139,186,0.25)',
   },
   cardHighlighted: {
     borderWidth: 0,
@@ -853,11 +872,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderBottomRightRadius: 10,
+    borderBottomRightRadius: 20,
   },
   masterTabText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
@@ -872,7 +891,7 @@ const styles = StyleSheet.create({
   iconArea: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -906,13 +925,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     marginBottom: 2,
   },
   cardSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: UI.textMuted,
     lineHeight: 17,
     marginBottom: 6,
@@ -924,7 +943,7 @@ const styles = StyleSheet.create({
   },
   cardCount: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.textLight,
     letterSpacing: 0.2,
   },
@@ -947,7 +966,7 @@ const styles = StyleSheet.create({
   },
   mythSectionTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: UI.text,
     letterSpacing: -0.1,
   },
@@ -958,7 +977,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.stageAccent,
   },
   mythCarouselRow: {
@@ -968,15 +987,15 @@ const styles = StyleSheet.create({
   mythCarouselCard: {
     width: 160,
     backgroundColor: UI.card,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 32,
+    padding: 16,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   mythCarouselIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -985,7 +1004,7 @@ const styles = StyleSheet.create({
     backgroundColor: UI.mythAmberBg,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 12,
     alignSelf: 'flex-start',
     marginBottom: 6,
     borderWidth: 1,
@@ -993,13 +1012,13 @@ const styles = StyleSheet.create({
   },
   mythCarouselBadgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: 'Nunito_700Bold',
     color: UI.mythAmber,
     letterSpacing: 0.8,
   },
   mythCarouselTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.text,
     lineHeight: 17,
     marginBottom: 8,
@@ -1011,7 +1030,7 @@ const styles = StyleSheet.create({
   },
   mythCarouselCategory: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Nunito_600SemiBold',
     color: UI.mythAmber,
     letterSpacing: 0.2,
     textTransform: 'capitalize',
@@ -1022,10 +1041,10 @@ const styles = StyleSheet.create({
     marginTop: 32,
     marginHorizontal: 20,
     backgroundColor: UI.sourceBlueBg,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(90,122,158,0.15)',
+    borderRadius: 32,
+    padding: 22,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   sourcesIconRow: {
     alignItems: 'center',
@@ -1043,14 +1062,14 @@ const styles = StyleSheet.create({
   },
   sourcesTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: '#3A5A7A',
     textAlign: 'center',
     marginBottom: 8,
   },
   sourcesBody: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: '#5A7A9E',
     lineHeight: 19,
     textAlign: 'center',
@@ -1069,7 +1088,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(90,122,158,0.15)',
     minWidth: 48,
@@ -1077,18 +1096,18 @@ const styles = StyleSheet.create({
   },
   sourceAbbrText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Nunito_700Bold',
     color: '#3A5A7A',
     letterSpacing: 0.3,
   },
   sourceOrgName: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: '#5A7A9E',
   },
   sourcesDisclaimer: {
     fontSize: 11,
-    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     color: '#8A9DB0',
     lineHeight: 16,
     textAlign: 'center',
