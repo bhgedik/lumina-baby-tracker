@@ -1,37 +1,28 @@
 import { useMemo } from 'react';
-import { View, Pressable, StyleSheet, Platform } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, shadows } from '../../../src/shared/constants/theme';
+import { View, Image, StyleSheet, Platform } from 'react-native';
+import { Tabs } from 'expo-router';
+import { colors, typography } from '../../../src/shared/constants/theme';
 import { useBabyStore } from '../../../src/stores/babyStore';
 
-function SettingsButton() {
-  const router = useRouter();
-  return (
-    <Pressable
-      onPress={() => router.push('/(app)/(tabs)/profile')}
-      hitSlop={10}
-      style={styles.headerButton}
-      accessibilityRole="button"
-      accessibilityLabel="Settings"
-    >
-      <Feather name="user" size={22} color={colors.neutral[500]} />
-    </Pressable>
-  );
-}
+// ── 3D Clay Tab Icons (Recraft v3) ─────────────────────────
+const tabIcons = {
+  home: require('../../../assets/icons/tab-home.png'),
+  journal: require('../../../assets/icons/tab-journal.png'),
+  lumina: require('../../../assets/illustrations/lumina-mascot.png'),
+  guide: require('../../../assets/icons/tab-guide.png'),
+  milestones: require('../../../assets/icons/tab-milestones.png'),
+  checklist: require('../../../assets/icons/tab-checklist.png'),
+};
 
-function CalendarButton() {
-  const router = useRouter();
+const TAB_ICON_SIZE = 30;
+
+function TabIcon({ source, focused }: { source: any; focused: boolean }) {
   return (
-    <Pressable
-      onPress={() => router.push('/(app)/calendar' as any)}
-      hitSlop={10}
-      style={styles.headerButton}
-      accessibilityRole="button"
-      accessibilityLabel="Calendar & History"
-    >
-      <Feather name="calendar" size={22} color={colors.neutral[500]} />
-    </Pressable>
+    <Image
+      source={source}
+      style={[styles.tabIcon, !focused && styles.tabIconInactive]}
+      resizeMode="contain"
+    />
   );
 }
 
@@ -41,7 +32,6 @@ export default function TabsLayout() {
   const isHydrated = useBabyStore((s) => s.isHydrated);
 
   const isPregnant = useMemo(() => {
-    // Don't flip tab visibility until store is hydrated
     if (!isHydrated) return false;
     const baby = activeBabyId
       ? babies.find((b) => b.id === activeBabyId) ?? babies[0]
@@ -53,12 +43,7 @@ export default function TabsLayout() {
     <Tabs
       initialRouteName="home"
       screenOptions={{
-        headerShown: true,
-        headerTransparent: false,
-        headerTitle: '',
-        headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
-        headerLeft: () => <SettingsButton />,
-        headerRight: isPregnant ? undefined : () => <CalendarButton />,
+        headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.primary[600],
         tabBarInactiveTintColor: colors.neutral[400],
@@ -71,35 +56,33 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <Feather name="home" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={tabIcons.home} focused={focused} />
           ),
         }}
       />
-      {/* 2. Daily — always visible */}
+      {/* 2. Journal */}
       <Tabs.Screen
-        name="daily"
+        name="journal"
         options={{
-          title: 'Daily',
-          tabBarIcon: ({ color }) => (
-            <Feather name="sun" size={26} color={color} />
+          title: 'Journal',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={tabIcons.journal} focused={focused} />
           ),
         }}
       />
-      {/* 3. Lumina Hub — FAB-style center tab */}
+      {/* 3. Lumina Hub — elevated center tab */}
       <Tabs.Screen
         name="lumina-hub"
         options={{
           title: '',
-          tabBarIcon: () => (
+          tabBarIcon: ({ focused }) => (
             <View style={styles.fabContainer}>
-              <View style={styles.fabCircle}>
-                <Feather
-                  name="message-circle"
-                  size={26}
-                  color="#FFFFFF"
-                />
-              </View>
+              <Image
+                source={tabIcons.lumina}
+                style={styles.fabIcon}
+                resizeMode="contain"
+              />
             </View>
           ),
           tabBarLabel: () => null,
@@ -110,8 +93,8 @@ export default function TabsLayout() {
         name="guide"
         options={{
           title: 'Guide',
-          tabBarIcon: ({ color }) => (
-            <Feather name="book-open" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={tabIcons.guide} focused={focused} />
           ),
         }}
       />
@@ -121,8 +104,8 @@ export default function TabsLayout() {
         options={{
           title: 'Checklist',
           href: isPregnant ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <Feather name="check-square" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={tabIcons.checklist} focused={focused} />
           ),
         }}
       />
@@ -132,18 +115,20 @@ export default function TabsLayout() {
         options={{
           title: 'Milestones',
           href: isPregnant ? null : undefined,
-          tabBarIcon: ({ color }) => (
-            <Feather name="trending-up" size={26} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={tabIcons.milestones} focused={focused} />
           ),
         }}
       />
-      {/* Profile — hidden from tab bar, accessed via gear icon */}
+      {/* Daily — hidden from tab bar */}
+      <Tabs.Screen
+        name="daily"
+        options={{ href: null, headerShown: false }}
+      />
+      {/* Profile — hidden from tab bar */}
       <Tabs.Screen
         name="profile"
-        options={{
-          href: null,
-          headerShown: false,
-        }}
+        options={{ href: null, headerShown: false }}
       />
     </Tabs>
   );
@@ -171,20 +156,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerButton: {
-    marginHorizontal: spacing.base,
-    padding: spacing.xs,
+  tabIcon: {
+    width: TAB_ICON_SIZE,
+    height: TAB_ICON_SIZE,
+    marginTop: -4,
+  },
+  tabIconInactive: {
+    opacity: 0.45,
   },
   fabContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
   },
-  fabCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.secondary[500],
-    alignItems: 'center',
-    justifyContent: 'center',
+  fabIcon: {
+    width: 88,
+    height: 88,
   },
 });

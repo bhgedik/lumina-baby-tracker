@@ -1,10 +1,14 @@
+// ============================================================
+// Lumina — Pumping Sheet (State-Machine Rewrite)
+// Flow: idle → running ↔ paused → review → save
+// ============================================================
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, Pressable, TextInput, StyleSheet, LayoutAnimation, Platform,
+  View, Text, Pressable, TextInput, StyleSheet, Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ClayIcon } from '../../../shared/components/ClayIcons';
 import * as Haptics from 'expo-haptics';
 import { BottomSheet } from '../../../shared/components/BottomSheet';
 import { usePumpingStore } from '../../../stores/pumpingStore';
@@ -12,22 +16,49 @@ import { colors, spacing, borderRadius, typography } from '../../../shared/const
 import type { PumpingSide } from '../../../shared/types/common';
 import type { PumpingLog } from '../types';
 
-interface Props {
-  visible: boolean;
-  onClose: () => void;
-  babyId: string;
-  familyId: string;
-  loggedBy: string;
-  onLogged?: (msg: string) => void;
-}
-
+// ── Design tokens ───────────────────────────────────────────
 const ACCENT = '#A78BBA';
 const ACCENT_BG = '#F0EBF5';
 const ACCENT_DARK = '#8E72A4';
 
-type Mode = null | 'timer' | 'past';
-type TimerPhase = 'running' | 'paused' | 'volume';
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
 
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+// Inset (concave) clay for text inputs
+const INSET_CLAY = {
+  backgroundColor: '#EDE8E2',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 1,
+  borderTopWidth: 1.5,
+  borderLeftWidth: 1,
+  borderTopColor: 'rgba(0,0,0,0.06)',
+  borderLeftColor: 'rgba(0,0,0,0.03)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(255,255,255,0.8)',
+  borderRightColor: 'rgba(255,255,255,0.5)',
+};
+
+// ── Helpers ─────────────────────────────────────────────────
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -41,121 +72,144 @@ function formatTimer(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+// ── Types ───────────────────────────────────────────────────
+type FlowState = 'idle' | 'running' | 'paused' | 'review';
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  babyId: string;
+  familyId: string;
+  loggedBy: string;
+  onLogged?: (msg: string) => void;
+}
+
+// ── Component ───────────────────────────────────────────────
 export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onLogged }: Props) {
   const store = usePumpingStore();
 
-  const [mode, setMode] = useState<Mode>(null);
-  const [timerPhase, setTimerPhase] = useState<TimerPhase>('running');
-  const [elapsed, setElapsed] = useState(0);
-  const [side, setSide] = useState<PumpingSide>('both');
+  // ── State machine ──
+  const [flowState, setFlowState] = useState<FlowState>('idle');
+  const [selectedSide, setSelectedSide] = useState<PumpingSide>('both');
 
+  // ── Timer state ──
+  const [elapsed, setElapsed] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationSecondsRef = useRef(0);
+
+  // ── Review state ──
   const [leftMl, setLeftMl] = useState('');
   const [rightMl, setRightMl] = useState('');
-  const [totalMl, setTotalMl] = useState('');
-  const [totalEdited, setTotalEdited] = useState(false);
+  const [editedDuration, setEditedDuration] = useState('');
+  const [isPastSession, setIsPastSession] = useState(false);
 
+  // ── Past session state ──
   const [pastTime, setPastTime] = useState(new Date());
-  const [pastDuration, setPastDuration] = useState('');
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const durationSeconds = useRef(0);
+  // ── Derived ──
+  const leftVal = parseInt(leftMl, 10) || 0;
+  const rightVal = parseInt(rightMl, 10) || 0;
+  const autoTotal = selectedSide === 'both' ? leftVal + rightVal
+    : selectedSide === 'left' ? leftVal : rightVal;
 
+  // ── Timer tick ──
   useEffect(() => {
-    if (!totalEdited) {
-      const l = parseInt(leftMl, 10) || 0;
-      const r = parseInt(rightMl, 10) || 0;
-      setTotalMl(l + r > 0 ? String(l + r) : '');
-    }
-  }, [leftMl, rightMl, totalEdited]);
-
-  useEffect(() => {
-    if (mode === 'timer' && timerPhase === 'running' && store.activeTimer) {
+    if (flowState === 'running') {
       intervalRef.current = setInterval(() => {
         const timer = usePumpingStore.getState().activeTimer;
         if (timer && !timer.pausedAt) {
-          setElapsed(Math.floor((Date.now() - timer.startedAt) / 1000));
+          const base = timer.accumulatedSeconds;
+          const running = Math.floor((Date.now() - timer.startedAt) / 1000);
+          setElapsed(base + running);
         }
       }, 1000);
       return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }
+    if (flowState === 'paused') {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [mode, timerPhase, store.activeTimer]);
+  }, [flowState]);
 
+  // ── Reset ──
   const resetState = useCallback(() => {
-    setMode(null);
-    setTimerPhase('running');
+    setFlowState('idle');
+    setSelectedSide('both');
     setElapsed(0);
-    setSide('both');
     setLeftMl('');
     setRightMl('');
-    setTotalMl('');
-    setTotalEdited(false);
+    setEditedDuration('');
+    setIsPastSession(false);
     setPastTime(new Date());
-    setPastDuration('');
     setShowTimePicker(false);
+    durationSecondsRef.current = 0;
   }, []);
 
   const handleClose = useCallback(() => {
+    // If timer is running/paused, don't clear store timer — just close sheet
     resetState();
     onClose();
   }, [onClose, resetState]);
 
+  // ── Actions: IDLE → RUNNING ──
   const handleStartTimer = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    LayoutAnimation.easeInEaseOut();
-    setMode('timer');
-    setTimerPhase('running');
-    store.startTimer(side);
+    store.startTimer(selectedSide);
+    setFlowState('running');
   };
 
+  // ── Actions: IDLE → REVIEW (log past) ──
+  const handleLogPast = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsPastSession(true);
+    setFlowState('review');
+  };
+
+  // ── Actions: RUNNING → PAUSED ──
   const handlePause = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     store.pauseTimer();
-    setTimerPhase('paused');
+    setFlowState('paused');
   };
 
+  // ── Actions: PAUSED → RUNNING ──
   const handleResume = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     store.resumeTimer();
-    setTimerPhase('running');
+    setFlowState('running');
   };
 
-  const handleStopTimer = () => {
+  // ── Actions: RUNNING/PAUSED → REVIEW ──
+  const handleStopAndReview = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    LayoutAnimation.easeInEaseOut();
     const result = store.stopTimer();
     if (result) {
-      durationSeconds.current = result.durationSeconds;
+      durationSecondsRef.current = result.durationSeconds;
+      setEditedDuration(String(Math.ceil(result.durationSeconds / 60)));
     }
-    setTimerPhase('volume');
+    setFlowState('review');
   };
 
-  const handleLogPast = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    LayoutAnimation.easeInEaseOut();
-    setMode('past');
-  };
-
+  // ── Actions: REVIEW → SAVE ──
   const handleSave = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const total = parseInt(totalMl, 10) || 0;
-    const left = parseInt(leftMl, 10) || 0;
-    const right = parseInt(rightMl, 10) || 0;
     const now = new Date().toISOString();
 
     let startedAt: string;
-    let endedAt: string | null;
-    let durSecs: number | null;
+    let endedAt: string;
+    let durSecs: number;
 
-    if (mode === 'timer') {
-      durSecs = durationSeconds.current;
+    if (isPastSession) {
+      const durationMin = parseInt(editedDuration, 10) || 0;
+      durSecs = durationMin * 60;
+      startedAt = pastTime.toISOString();
+      endedAt = new Date(pastTime.getTime() + durSecs * 1000).toISOString();
+    } else {
+      const editedMin = parseInt(editedDuration, 10) || 0;
+      durSecs = editedMin > 0 ? editedMin * 60 : durationSecondsRef.current;
       endedAt = now;
       startedAt = new Date(Date.now() - durSecs * 1000).toISOString();
-    } else {
-      startedAt = pastTime.toISOString();
-      durSecs = parseInt(pastDuration, 10) ? parseInt(pastDuration, 10) * 60 : null;
-      endedAt = durSecs ? new Date(pastTime.getTime() + durSecs * 1000).toISOString() : null;
     }
 
     const log: PumpingLog = {
@@ -166,95 +220,152 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
       started_at: startedAt,
       ended_at: endedAt,
       duration_seconds: durSecs,
-      side,
-      left_volume_ml: left || null,
-      right_volume_ml: right || null,
-      total_volume_ml: total,
+      side: selectedSide,
+      left_volume_ml: selectedSide === 'right' ? null : (leftVal || null),
+      right_volume_ml: selectedSide === 'left' ? null : (rightVal || null),
+      total_volume_ml: autoTotal,
       notes: null,
       created_at: now,
       updated_at: now,
     };
 
     store.addItem(log);
-    onLogged?.(`Pumped ${total} ml logged`);
+    onLogged?.(`Pumped ${autoTotal} ml logged`);
     handleClose();
   };
 
-  const canSave = (parseInt(totalMl, 10) || 0) > 0;
+  const canSave = autoTotal > 0;
 
-  if (mode === null) {
+  // ── Side selector (shared across idle + review) ──
+  const renderSideSelector = () => (
+    <View style={styles.sideRow}>
+      {(['both', 'left', 'right'] as PumpingSide[]).map((s) => {
+        const isActive = selectedSide === s;
+        return (
+          <Pressable
+            key={s}
+            style={[styles.sideChip, isActive && styles.sideChipActive]}
+            onPress={() => { Haptics.selectionAsync(); setSelectedSide(s); }}
+          >
+            <Text style={[styles.sideChipText, isActive && styles.sideChipTextActive]}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
+  // ═══════════════════════════════════════════════════════════
+  // VIEW 1: IDLE
+  // ═══════════════════════════════════════════════════════════
+  if (flowState === 'idle') {
     return (
       <BottomSheet visible={visible} onClose={handleClose} title="Log Pumping">
-        <View style={styles.cardGrid}>
-          <Pressable style={styles.modeCard} onPress={handleStartTimer}>
-            <ClayIcon name="play-timer" size={56} />
-            <Text style={styles.modeLabel}>Start Timer</Text>
-            <Text style={styles.modeSub}>Begin pumping now</Text>
+        {/* Side selector */}
+        <Text style={styles.fieldLabel}>Which side?</Text>
+        {renderSideSelector()}
+
+        {/* Action buttons */}
+        <View style={styles.actionRow}>
+          <Pressable
+            style={({ pressed }) => [styles.clayBtn, styles.clayBtnAccent, pressed && styles.clayBtnPressed]}
+            onPress={handleStartTimer}
+          >
+            <Feather name="play" size={20} color="#FFFFFF" />
+            <Text style={styles.clayBtnAccentText}>Start Timer</Text>
           </Pressable>
 
-          <Pressable style={styles.modeCard} onPress={handleLogPast}>
-            <ClayIcon name="clock-past" size={56} />
-            <Text style={styles.modeLabel}>Log Past</Text>
-            <Text style={styles.modeSub}>Record a past session</Text>
+          <Pressable
+            style={({ pressed }) => [styles.clayBtn, pressed && styles.clayBtnPressed]}
+            onPress={handleLogPast}
+          >
+            <Feather name="clock" size={20} color={ACCENT_DARK} />
+            <Text style={styles.clayBtnText}>Log Past Session</Text>
           </Pressable>
-        </View>
-
-        <Text style={styles.sectionLabel}>Which side?</Text>
-        <View style={styles.sideRow}>
-          {(['left', 'right', 'both'] as PumpingSide[]).map((s) => (
-            <Pressable
-              key={s}
-              style={[styles.sideBtn, side === s && styles.sideBtnActive]}
-              onPress={() => { Haptics.selectionAsync(); setSide(s); }}
-            >
-              <Text style={[styles.sideBtnText, side === s && styles.sideBtnTextActive]}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </Text>
-            </Pressable>
-          ))}
         </View>
       </BottomSheet>
     );
   }
 
-  if (mode === 'timer' && timerPhase !== 'volume') {
+  // ═══════════════════════════════════════════════════════════
+  // VIEW 2: RUNNING / PAUSED
+  // ═══════════════════════════════════════════════════════════
+  if (flowState === 'running' || flowState === 'paused') {
+    const sideLabel = selectedSide === 'both'
+      ? 'Both sides'
+      : `${selectedSide.charAt(0).toUpperCase() + selectedSide.slice(1)} side`;
+
     return (
       <BottomSheet visible={visible} onClose={handleClose} title="Pumping">
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerDisplay}>{formatTimer(elapsed)}</Text>
-          <Text style={styles.timerSide}>{side === 'both' ? 'Both sides' : `${side.charAt(0).toUpperCase() + side.slice(1)} side`}</Text>
-
-          <View style={styles.timerControls}>
-            {timerPhase === 'running' ? (
-              <Pressable style={[styles.timerBtn, { backgroundColor: '#F5EDE8' }]} onPress={handlePause}>
-                <Feather name="pause" size={22} color="#A08B6E" />
-                <Text style={[styles.timerBtnText, { color: '#A08B6E' }]}>Pause</Text>
-              </Pressable>
-            ) : (
-              <Pressable style={[styles.timerBtn, { backgroundColor: ACCENT_BG }]} onPress={handleResume}>
-                <Feather name="play" size={22} color={ACCENT} />
-                <Text style={[styles.timerBtnText, { color: ACCENT }]}>Resume</Text>
-              </Pressable>
-            )}
-
-            <Pressable style={[styles.timerBtn, { backgroundColor: '#F5EDE8' }]} onPress={handleStopTimer}>
-              <Feather name="square" size={22} color="#A08B6E" />
-              <Text style={[styles.timerBtnText, { color: '#A08B6E' }]}>Stop</Text>
-            </Pressable>
+        <View style={styles.timerCenter}>
+          {/* Side badge */}
+          <View style={styles.sideBadge}>
+            <Feather name="droplet" size={14} color={ACCENT_DARK} />
+            <Text style={styles.sideBadgeText}>{sideLabel}</Text>
           </View>
+
+          {/* Timer display */}
+          <Text style={styles.timerDisplay}>{formatTimer(elapsed)}</Text>
+
+          {/* Status */}
+          {flowState === 'paused' && (
+            <Text style={styles.pausedLabel}>PAUSED</Text>
+          )}
+        </View>
+
+        {/* Controls */}
+        <View style={styles.actionRow}>
+          {flowState === 'running' ? (
+            <Pressable
+              style={({ pressed }) => [styles.clayBtn, pressed && styles.clayBtnPressed]}
+              onPress={handlePause}
+            >
+              <Feather name="pause" size={20} color="#A08B6E" />
+              <Text style={styles.clayBtnText}>Pause</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.clayBtn, pressed && styles.clayBtnPressed]}
+              onPress={handleResume}
+            >
+              <Feather name="play" size={20} color={ACCENT} />
+              <Text style={[styles.clayBtnText, { color: ACCENT_DARK }]}>Resume</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            style={({ pressed }) => [styles.clayBtn, styles.clayBtnAccent, pressed && styles.clayBtnPressed]}
+            onPress={handleStopAndReview}
+          >
+            <Feather name="square" size={18} color="#FFFFFF" />
+            <Text style={styles.clayBtnAccentText}>Stop & Review</Text>
+          </Pressable>
         </View>
       </BottomSheet>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // VIEW 3: REVIEW & SAVE
+  // ═══════════════════════════════════════════════════════════
   return (
-    <BottomSheet visible={visible} onClose={handleClose} title={mode === 'past' ? 'Log Past Session' : 'Session Complete'}>
-      {mode === 'past' && (
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title={isPastSession ? 'Log Past Session' : 'Session Complete'}
+    >
+      {/* Side selector (still editable) */}
+      <Text style={styles.fieldLabel}>Side</Text>
+      {renderSideSelector()}
+
+      {/* Past session: time picker */}
+      {isPastSession && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>When did you pump?</Text>
-          <Pressable style={[styles.timeBtn]} onPress={() => setShowTimePicker(true)}>
+          <Text style={styles.fieldLabel}>When did you pump?</Text>
+          <Pressable style={styles.timePickerBtn} onPress={() => setShowTimePicker(true)}>
             <Feather name="clock" size={16} color={ACCENT} />
-            <Text style={styles.timeBtnText}>
+            <Text style={styles.timePickerText}>
               {pastTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </Pressable>
@@ -269,276 +380,330 @@ export function PumpingSheet({ visible, onClose, babyId, familyId, loggedBy, onL
               }}
             />
           )}
-
-          <Text style={[styles.sectionLabel, { marginTop: spacing.lg }]}>Duration (minutes)</Text>
-          <TextInput
-            style={[styles.volumeInput]}
-            value={pastDuration}
-            onChangeText={setPastDuration}
-            keyboardType="number-pad"
-            placeholder="e.g. 20"
-            placeholderTextColor={colors.textTertiary}
-          />
         </View>
       )}
 
-      {mode === 'timer' && (
-        <View style={styles.durationSummary}>
-          <Feather name="clock" size={16} color={ACCENT} />
-          <Text style={styles.durationText}>{formatTimer(durationSeconds.current)}</Text>
-        </View>
-      )}
-
-      <Text style={styles.sectionLabel}>Volume (ml)</Text>
-      <View style={styles.volumeRow}>
-        <View style={styles.volumeCol}>
-          <Text style={styles.volumeLabel}>Left</Text>
-          <TextInput
-            style={[styles.volumeInput]}
-            value={leftMl}
-            onChangeText={(t) => { setLeftMl(t.replace(/[^0-9]/g, '')); setTotalEdited(false); }}
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor={colors.textTertiary}
-          />
-        </View>
-        <View style={styles.volumeCol}>
-          <Text style={styles.volumeLabel}>Right</Text>
-          <TextInput
-            style={[styles.volumeInput]}
-            value={rightMl}
-            onChangeText={(t) => { setRightMl(t.replace(/[^0-9]/g, '')); setTotalEdited(false); }}
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor={colors.textTertiary}
-          />
-        </View>
+      {/* Duration */}
+      <Text style={styles.fieldLabel}>Duration (minutes)</Text>
+      <View style={styles.durationRow}>
+        {!isPastSession && (
+          <View style={styles.durationBadge}>
+            <Feather name="clock" size={14} color={ACCENT_DARK} />
+            <Text style={styles.durationBadgeText}>
+              {formatTimer(durationSecondsRef.current)}
+            </Text>
+          </View>
+        )}
+        <TextInput
+          style={styles.insetInput}
+          value={editedDuration}
+          onChangeText={(t) => setEditedDuration(t.replace(/[^0-9]/g, ''))}
+          keyboardType="number-pad"
+          placeholder={isPastSession ? 'e.g. 20' : 'Edit minutes'}
+          placeholderTextColor="#B0A898"
+        />
       </View>
 
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
+      {/* Volume inputs */}
+      <Text style={[styles.fieldLabel, { marginTop: spacing.lg }]}>Volume (ml)</Text>
+      {selectedSide === 'both' ? (
+        <View style={styles.volumeRow}>
+          <View style={styles.volumeCol}>
+            <Text style={styles.volumeLabel}>Left</Text>
+            <TextInput
+              style={styles.insetInput}
+              value={leftMl}
+              onChangeText={(t) => setLeftMl(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor="#B0A898"
+            />
+          </View>
+          <View style={styles.volumeCol}>
+            <Text style={styles.volumeLabel}>Right</Text>
+            <TextInput
+              style={styles.insetInput}
+              value={rightMl}
+              onChangeText={(t) => setRightMl(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor="#B0A898"
+            />
+          </View>
+        </View>
+      ) : (
         <TextInput
-          style={[styles.totalInput]}
-          value={totalMl}
-          onChangeText={(t) => { setTotalMl(t.replace(/[^0-9]/g, '')); setTotalEdited(true); }}
+          style={styles.insetInput}
+          value={selectedSide === 'left' ? leftMl : rightMl}
+          onChangeText={(t) => {
+            const clean = t.replace(/[^0-9]/g, '');
+            if (selectedSide === 'left') setLeftMl(clean);
+            else setRightMl(clean);
+          }}
           keyboardType="number-pad"
           placeholder="0"
-          placeholderTextColor={colors.textTertiary}
+          placeholderTextColor="#B0A898"
         />
-        <Text style={styles.totalUnit}>ml</Text>
-      </View>
+      )}
 
+      {/* Auto-total */}
+      {selectedSide === 'both' && autoTotal > 0 && (
+        <View style={styles.totalDisplay}>
+          <Text style={styles.totalDisplayLabel}>Total</Text>
+          <Text style={styles.totalDisplayValue}>{autoTotal} ml</Text>
+        </View>
+      )}
+
+      {/* Save button */}
       <Pressable
-        style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
+        style={({ pressed }) => [
+          styles.saveBtn,
+          !canSave && styles.saveBtnDisabled,
+          pressed && canSave && { transform: [{ scale: 0.97 }] },
+        ]}
         onPress={handleSave}
         disabled={!canSave}
       >
-        <Text style={styles.saveBtnText}>Save</Text>
-        <Feather name="check" size={18} color={colors.textInverse} />
+        <Text style={styles.saveBtnText}>Save Session</Text>
+        <Feather name="check" size={18} color="#FFFFFF" />
       </Pressable>
     </BottomSheet>
   );
 }
 
+// ── Styles ──────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  cardGrid: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  modeCard: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: spacing.lg,
-    paddingVertical: spacing['2xl'],
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    shadowColor: '#B0A090',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  modeLabel: {
+  // ── Shared ──
+  fieldLabel: {
     fontSize: typography.fontSize.base,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: '#2D2A26',
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  modeSub: {
-    fontSize: typography.fontSize.sm,
-    color: '#A08060',
-    textAlign: 'center',
-  },
-  sectionLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: '700' as const,
-    color: '#2D2A26',
+  section: {
     marginBottom: spacing.md,
   },
+
+  // ── Side selector ──
   sideRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.xl,
   },
-  sideBtn: {
+  sideChip: {
     flex: 1,
-    paddingVertical: spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 22,
+    backgroundColor: '#F7F4F0',
     borderWidth: 1.5,
     borderColor: '#EDE8E2',
-    backgroundColor: '#F7F4F0',
-    alignItems: 'center',
   },
-  sideBtnActive: {
-    borderColor: ACCENT,
+  sideChipActive: {
     backgroundColor: ACCENT_BG,
+    borderColor: ACCENT,
   },
-  sideBtnText: {
+  sideChipText: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
+    color: '#8A8A8A',
   },
-  sideBtnTextActive: {
+  sideChipTextActive: {
     color: ACCENT_DARK,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing['2xl'],
-  },
-  timerDisplay: {
-    fontSize: 56,
     fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
   },
-  timerSide: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    marginBottom: spacing['2xl'],
-  },
-  timerControls: {
+
+  // ── Action row (two equal buttons) ──
+  actionRow: {
     flexDirection: 'row',
     gap: spacing.md,
-  },
-  timerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.base,
-    borderRadius: borderRadius.full,
-  },
-  timerBtnText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  section: {
     marginBottom: spacing.lg,
   },
-  durationSummary: {
+  clayBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.xl,
-    paddingVertical: spacing.md,
-    backgroundColor: ACCENT_BG,
-    borderRadius: borderRadius.xl,
+    minHeight: 52,
+    borderRadius: 26,
+    backgroundColor: '#FFFFFF',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
-  durationText: {
-    fontSize: typography.fontSize.lg,
+  clayBtnAccent: {
+    backgroundColor: ACCENT,
+    borderTopColor: 'rgba(255,255,255,0.35)',
+    borderLeftColor: 'rgba(255,255,255,0.2)',
+    borderBottomColor: 'rgba(0,0,0,0.12)',
+    borderRightColor: 'rgba(0,0,0,0.06)',
+  },
+  clayBtnPressed: {
+    transform: [{ scale: 0.97 }],
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+  clayBtnText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+    color: '#2D2A26',
+  },
+  clayBtnAccentText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+    color: '#FFFFFF',
+  },
+
+  // ── Timer (running/paused) ──
+  timerCenter: {
+    alignItems: 'center',
+    paddingVertical: spacing['2xl'],
+  },
+  sideBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: ACCENT_BG,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: spacing.lg,
+  },
+  sideBadgeText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    color: ACCENT_DARK,
+  },
+  timerDisplay: {
+    fontSize: 64,
+    fontWeight: '200',
+    color: '#2D2A26',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 2,
+  },
+  pausedLabel: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: '#D4A574',
+    letterSpacing: 2,
+    marginTop: spacing.md,
+  },
+
+  // ── Review: duration ──
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: ACCENT_BG,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+  durationBadgeText: {
+    fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.bold,
     color: ACCENT_DARK,
   },
+
+  // ── Inset clay input ──
+  insetInput: {
+    flex: 1,
+    ...INSET_CLAY,
+    borderRadius: 16,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    color: '#2D2A26',
+    textAlign: 'center',
+  },
+
+  // ── Volume ──
   volumeRow: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   volumeCol: {
     flex: 1,
   },
   volumeLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: '#A08060',
     marginBottom: spacing.sm,
   },
-  volumeInput: {
-    backgroundColor: '#F7F4F0',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EDE8E2',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.base,
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  totalRow: {
+
+  // ── Total display ──
+  totalDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing['2xl'],
-  },
-  totalLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  totalInput: {
-    flex: 1,
-    backgroundColor: '#F7F4F0',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#EDE8E2',
+    justifyContent: 'space-between',
+    backgroundColor: ACCENT_BG,
+    borderRadius: 16,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.base,
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: '#2D2A26',
-    textAlign: 'center',
+    paddingVertical: 12,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
-  totalUnit: {
+  totalDisplayLabel: {
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
+    color: ACCENT_DARK,
   },
-  timeBtn: {
+  totalDisplayValue: {
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: ACCENT_DARK,
+  },
+
+  // ── Time picker (past session) ──
+  timePickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: '#F7F4F0',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#EDE8E2',
+    ...INSET_CLAY,
+    borderRadius: 16,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.base,
+    paddingVertical: 14,
   },
-  timeBtnText: {
+  timePickerText: {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    color: '#2D2A26',
   },
+
+  // ── Save ──
   saveBtn: {
     flexDirection: 'row',
-    backgroundColor: '#7C9A8E',
-    borderRadius: 22,
-    paddingVertical: spacing.base,
+    backgroundColor: ACCENT,
+    borderRadius: 26,
+    minHeight: 52,
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.lg,
+    ...CLAY_SHADOW,
+    borderTopWidth: 2,
+    borderLeftWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.35)',
+    borderLeftColor: 'rgba(255,255,255,0.2)',
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.12)',
+    borderRightColor: 'rgba(0,0,0,0.06)',
   },
   saveBtnDisabled: { opacity: 0.4 },
   saveBtnText: {
-    color: colors.textInverse,
+    color: '#FFFFFF',
     fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.bold,
   },
 });

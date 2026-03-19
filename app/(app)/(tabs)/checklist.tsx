@@ -148,7 +148,7 @@ export default function ChecklistScreen() {
     const data = categoryData[activeCategory] ?? { unchecked: [], checked: [], total: 0, completed: 0 };
 
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Back navigation */}
           <Pressable style={styles.backRow} onPress={goBack} accessibilityLabel="Back to all categories">
@@ -263,7 +263,7 @@ export default function ChecklistScreen() {
 
   // ─── LEVEL 1: Category Dashboard ──────────────────────────
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Your Prep Journey</Text>
         <Text style={styles.subtitle}>Expert guidance for every step</Text>

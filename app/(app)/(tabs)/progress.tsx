@@ -441,7 +441,7 @@ export default function ProgressScreen() {
   const totalCelebrated = useMemo(() => Object.keys(celebrated).length, [celebrated]);
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header — editorial style */}
         <View style={styles.header}>

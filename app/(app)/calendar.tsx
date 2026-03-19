@@ -8,7 +8,6 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, LayoutAnimation } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 import { SleepTrendLine, type TrendDay } from '../../src/modules/insights/components/SleepTrendLine';
@@ -1095,24 +1094,13 @@ function MonthlyView() {
 // ── Main Screen ──
 
 export default function CalendarScreen() {
-  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Feather name="arrow-left" size={22} color={colors.textPrimary} />
-        </Pressable>
         <Text style={styles.headerTitle}>Calendar & History</Text>
-        <View style={{ width: 40 }} />
       </View>
 
       {/* Segmented Control */}
@@ -1189,20 +1177,11 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
   },
-  backButton: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.surface,
-    justifyContent: 'center', alignItems: 'center',
-    ...shadows.sm,
-  },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
     color: colors.textPrimary,
   },

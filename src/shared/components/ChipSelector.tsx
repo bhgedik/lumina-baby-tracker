@@ -4,7 +4,7 @@
 // ============================================================
 
 import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../constants/theme';
 
 interface ChipOption {
@@ -23,16 +23,13 @@ export function ChipSelector({ options, selected, onSelect, multiSelect = false 
   const selectedSet = new Set(Array.isArray(selected) ? selected : [selected]);
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+    <View style={styles.container}>
       {options.map((option) => {
         const isSelected = selectedSet.has(option.value);
         return (
           <Pressable
             key={option.value}
+            style={{ flex: 1 }}
             onPress={() => onSelect(option.value)}
             accessibilityRole="button"
             accessibilityState={{ selected: isSelected }}
@@ -45,7 +42,7 @@ export function ChipSelector({ options, selected, onSelect, multiSelect = false 
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -56,6 +53,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   chip: {
+    flex: 1,
     minHeight: 44,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',

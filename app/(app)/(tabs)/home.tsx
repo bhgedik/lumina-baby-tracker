@@ -78,19 +78,45 @@ const SOFT_SHADOW = {
   elevation: 4,
 };
 
-// ── Action grid — Row 1: Sleep (full), Row 2: Feed+Pump, Row 3: Diaper+Play ──
-const PRIMARY_ACTIONS = [
+// ── Claymorphism tokens ─────────────────────────────────────
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+// ── 2x2 Grid: Row 1: Sleep+Feed, Row 2: Diaper+Pump ────────
+const GRID_ROW1 = [
   { id: 'sleep', label: 'Sleep', domainColor: '#B199CE', domainColorLight: '#E8DDF3', route: '/(app)/log/sleep', neutralMins: 120, urgentMins: 210 },
   { id: 'feeding', label: 'Feed', domainColor: '#F49770', domainColorLight: '#FEE8DC', route: '/(app)/log/feeding', neutralMins: 120, urgentMins: 240 },
-  { id: 'pumping', label: 'Pump', domainColor: '#A78BBA', domainColorLight: '#EDE7F6', route: '/(app)/log/pumping', neutralMins: 180, urgentMins: 360 },
+];
+const GRID_ROW2 = [
   { id: 'diaper', label: 'Diaper', domainColor: '#FF9800', domainColorLight: '#FFF3E0', route: '/(app)/log/diaper', neutralMins: 120, urgentMins: 240 },
-  { id: 'activity', label: 'Play Time', domainColor: '#A78BBA', domainColorLight: '#F3E5F5', route: '/(app)/log/activity', neutralMins: 240, urgentMins: 480 },
+  { id: 'pumping', label: 'Pump', domainColor: '#A78BBA', domainColorLight: '#EDE7F6', route: '/(app)/log/pumping', neutralMins: 180, urgentMins: 360 },
 ];
 
-const SECONDARY_ACTIONS = [
-  { id: 'growth', label: 'Growth', subtitle: 'Weight, height & head', domainColor: '#4CAF50', domainColorLight: '#E8F5E9', route: '/(app)/log/growth', neutralMins: 10080, urgentMins: 43200 },
-  { id: 'health', label: 'Health', subtitle: 'Symptoms, meds & visits', domainColor: '#E53935', domainColorLight: '#FFEBEE', route: '/(app)/health', neutralMins: 10080, urgentMins: 43200 },
+// ── List items below the grid ───────────────────────────────
+const LIST_ITEMS = [
+  { id: 'activity', label: 'Play Time', description: 'Log tummy time and developmental activities.', domainColor: '#A78BBA', domainColorLight: '#F3E5F5', route: '/(app)/log/activity', neutralMins: 240, urgentMins: 480 },
+  { id: 'growth', label: 'Growth', description: 'Track height, weight, and head circumference.', domainColor: '#4CAF50', domainColorLight: '#E8F5E9', route: '/(app)/log/growth', neutralMins: 10080, urgentMins: 43200 },
+  { id: 'health', label: 'Health', description: 'Record vaccinations, illnesses, and symptoms.', domainColor: '#E53935', domainColorLight: '#FFEBEE', route: '/(app)/log/health', neutralMins: 10080, urgentMins: 43200 },
 ];
+
+// Combined for pet state / last log calculation
+const ALL_ACTIONS = [...GRID_ROW1, ...GRID_ROW2, ...LIST_ITEMS];
 
 // ── Simulator / dev detection ────────────────────────────────
 // __DEV__ is true in development builds (simulator/emulator).
@@ -428,7 +454,9 @@ export default function HomeScreen() {
   // ── Timer subscriptions for live grid buttons ──
   const feedingTimer = useFeedingStore((s) => s.activeTimer);
   const sleepTimer = useSleepStore((s) => s.activeTimer);
+  const pumpingTimer = usePumpingStore((s) => s.activeTimer);
   const [timerElapsed, setTimerElapsed] = useState(0);
+  const [pumpTimerElapsed, setPumpTimerElapsed] = useState(0);
 
   useEffect(() => {
     const active = feedingTimer ?? sleepTimer;
@@ -448,24 +476,56 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [feedingTimer, sleepTimer]);
 
+  useEffect(() => {
+    if (!pumpingTimer) { setPumpTimerElapsed(0); return; }
+
+    const tick = () => {
+      if (pumpingTimer.pausedAt) {
+        setPumpTimerElapsed(pumpingTimer.accumulatedSeconds);
+      } else {
+        const base = pumpingTimer.accumulatedSeconds;
+        const running = Math.floor((Date.now() - pumpingTimer.startedAt) / 1000);
+        setPumpTimerElapsed(base + running);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [pumpingTimer]);
+
   // Get last log times for each domain
-  const lastFeedingAt = useFeedingStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.started_at : null);
-  const lastSleepAt = useSleepStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.started_at : null);
+  // Duration-based events use ended_at (when baby woke / feed ended / pump finished)
+  // Point-in-time events use created_at
+  const lastFeedingAt = useFeedingStore((s) => {
+    if (s.items.length === 0) return null;
+    const last = s.items[s.items.length - 1];
+    return last?.ended_at ?? last?.started_at ?? null;
+  });
+  const lastSleepAt = useSleepStore((s) => {
+    if (s.items.length === 0) return null;
+    const last = s.items[s.items.length - 1];
+    return last?.ended_at ?? last?.started_at ?? null;
+  });
   const lastDiaperAt = useDiaperStore((s) => s.items.length > 0 ? s.items[s.items.length - 1]?.created_at : null);
+  const lastPumpingAt = usePumpingStore((s) => {
+    if (s.items.length === 0) return null;
+    const last = s.items[s.items.length - 1];
+    return last?.ended_at ?? last?.started_at ?? null;
+  });
 
   const lastLogMap: Record<string, string | null> = {
     feeding: getTimeSince(lastFeedingAt),
     sleep: getTimeSince(lastSleepAt),
     diaper: getTimeSince(lastDiaperAt),
-    pumping: null,
+    pumping: getTimeSince(lastPumpingAt),
     activity: null,
     growth: null,
     health: null,
   };
 
   const petStateMap: Record<string, PetState> = {};
-  [...PRIMARY_ACTIONS, ...SECONDARY_ACTIONS].forEach(a => {
-    const lastAt = a.id === 'feeding' ? lastFeedingAt : a.id === 'sleep' ? lastSleepAt : a.id === 'diaper' ? lastDiaperAt : null;
+  ALL_ACTIONS.forEach(a => {
+    const lastAt = a.id === 'feeding' ? lastFeedingAt : a.id === 'sleep' ? lastSleepAt : a.id === 'diaper' ? lastDiaperAt : a.id === 'pumping' ? lastPumpingAt : null;
     petStateMap[a.id] = getPetState(lastAt, a.neutralMins, a.urgentMins);
   });
 
@@ -694,7 +754,7 @@ export default function HomeScreen() {
       progress: gestationalInfo?.progress ?? 0,
     };
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -771,7 +831,7 @@ export default function HomeScreen() {
   const affirmation = getAffirmation(babyName, babyAge?.days ?? null);
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -779,18 +839,28 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {/* ── Greeting ── */}
-        <View style={styles.greetingBlock}>
-          <Text style={styles.greetingTitle}>
-            {greeting}{parentName ? `, ${parentName}` : ''}.
-          </Text>
+        {/* ── Greeting row with profile icon ── */}
+        <View style={styles.greetingRow}>
+          <View style={styles.greetingBlock}>
+            <Text style={styles.greetingTitle}>
+              {greeting}{parentName ? `, ${parentName}` : ''}.
+            </Text>
           {babyAge && babyName && (
-            <Text style={styles.greetingAge}>{babyName} is {babyAge.display}</Text>
-          )}
-          {babyAge && !babyName && (
-            <Text style={styles.greetingAge}>{babyAge.display}</Text>
-          )}
-          {/* affirmation text removed */}
+              <Text style={styles.greetingAge}>{babyName} is {babyAge.display}</Text>
+            )}
+            {babyAge && !babyName && (
+              <Text style={styles.greetingAge}>{babyAge.display}</Text>
+            )}
+          </View>
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/profile')}
+            hitSlop={10}
+            style={styles.profileBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Profile"
+          >
+            <Feather name="user" size={22} color="#B0A898" />
+          </Pressable>
         </View>
 
         {/* ── Lumina AI Hub ── */}
@@ -850,113 +920,103 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Primary Actions (Row 1: Sleep, Row 2: Feed+Pump, Row 3: Diaper+Play) ── */}
-        <Text style={styles.sectionTitle}>Quick Log</Text>
+        {/* ── Section: Quick Log ── */}
+        <Text style={styles.sectionHeader}>QUICK LOG</Text>
         <View style={styles.actionGrid}>
-          {PRIMARY_ACTIONS.map((action, idx) => {
-            const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
-            const isSleepLive = action.id === 'sleep' && !!sleepTimer;
-            const isLive = isFeedingLive || isSleepLive;
-            const liveColor = isFeedingLive ? '#A78BBA' : '#6B5B8A';
-            const isFullWidth = idx === 0; // Sleep is first, full width
+          {[GRID_ROW1, GRID_ROW2].map((row, rowIdx) => (
+            <View key={rowIdx} style={styles.actionRow}>
+              {row.map((action) => {
+                const isFeedingLive = action.id === 'feeding' && !!feedingTimer;
+                const isSleepLive = action.id === 'sleep' && !!sleepTimer;
+                const isPumpingLive = action.id === 'pumping' && !!pumpingTimer;
+                const isLive = isFeedingLive || isSleepLive || isPumpingLive;
+                const liveColor = isFeedingLive ? '#A78BBA' : isPumpingLive ? '#A78BBA' : '#6B5B8A';
 
-            const liveSub = isFeedingLive
-              ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
-              : isSleepLive
-              ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap')
-              : null;
+                const liveSub = isFeedingLive
+                  ? (feedingTimer?.side ? `${feedingTimer.side.charAt(0).toUpperCase() + feedingTimer.side.slice(1)} breast` : 'Breast')
+                  : isSleepLive
+                  ? (sleepTimer?.type === 'night' ? 'Night' : 'Nap')
+                  : isPumpingLive
+                  ? (pumpingTimer?.side === 'both' ? 'Both sides' : pumpingTimer?.side === 'left' ? 'Left side' : 'Right side')
+                  : null;
 
-            const lastLogged = lastLogMap[action.id];
-            const petState = petStateMap[action.id] || 'neutral';
-            const PetIcon = PetIconMap[petState];
-            const IllustrationComponent = CardIllustrationMap[action.id];
+                const activeElapsed = isFeedingLive || isSleepLive
+                  ? timerElapsed
+                  : isPumpingLive
+                  ? pumpTimerElapsed
+                  : 0;
 
-            return (
-              <Pressable
-                key={action.id}
-                style={[
-                  styles.actionCard,
-                  isFullWidth && styles.actionCardFull,
-                  isLive && { borderWidth: 1.5, borderColor: liveColor + '60' },
-                ]}
-                onPress={() => {
-                  if (action.id === 'feeding') setShowFeedingSheet(true);
-                  else if (action.id === 'sleep') setShowSleepSheet(true);
-                  else if (action.id === 'diaper') setShowDiaperSheet(true);
-                  else if (action.id === 'pumping') setShowPumpingSheet(true);
-                  else router.push(action.route as any);
-                }}
-                accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
-              >
-                {/* Colored background tint */}
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent', borderRadius: 22 }]} />
+                const lastLogged = lastLogMap[action.id];
+                const IllustrationComponent = CardIllustrationMap[action.id];
 
-                {/* Plus badge - top right */}
-                {!isLive && (
-                  <View style={[styles.plusBadge, { backgroundColor: action.domainColor + '20' }]}>
-                    <Feather name="plus" size={12} color={action.domainColor} />
-                  </View>
-                )}
-
-                {/* Content — always horizontal: icon + text side by side */}
-                <View style={styles.actionCardContentRow}>
-                  {/* Illustration */}
-                  <View style={styles.actionCardIllustration}>
-                    {IllustrationComponent ? (
-                      <IllustrationComponent size={isFullWidth ? 52 : 44} />
-                    ) : (
-                      <Feather name="zap" size={28} color={action.domainColor} />
-                    )}
-                  </View>
-
-                  {/* Label + last logged */}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.actionCardLabel}>
-                      {isLive ? formatTimerSeconds(timerElapsed) : action.label}
-                    </Text>
-                    {lastLogged && !isLive && (
-                      <Text style={styles.actionCardSub}>{lastLogged}</Text>
-                    )}
-                    {isLive && liveSub && (
-                      <Text style={styles.actionCardSub}>{liveSub}</Text>
-                    )}
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
+                return (
+                  <Pressable
+                    key={action.id}
+                    style={({ pressed }) => [
+                      styles.clayCard,
+                      isLive && { borderColor: liveColor + '40', borderWidth: 1.5 },
+                      pressed && styles.clayCardPressed,
+                    ]}
+                    onPress={() => {
+                      if (action.id === 'feeding') setShowFeedingSheet(true);
+                      else if (action.id === 'sleep') setShowSleepSheet(true);
+                      else if (action.id === 'diaper') setShowDiaperSheet(true);
+                      else if (action.id === 'pumping') setShowPumpingSheet(true);
+                      else router.push(action.route as any);
+                    }}
+                    accessibilityLabel={isLive ? `${action.label} timer running` : `Log ${action.label}`}
+                  >
+                    <View style={styles.clayCardInner}>
+                      {IllustrationComponent ? (
+                        <IllustrationComponent size={48} />
+                      ) : (
+                        <Feather name="zap" size={28} color={action.domainColor} />
+                      )}
+                      <Text style={styles.clayCardLabel}>
+                        {isLive ? formatTimerSeconds(activeElapsed) : action.label}
+                      </Text>
+                      {lastLogged && !isLive && (
+                        <Text style={styles.clayCardSub}>{lastLogged}</Text>
+                      )}
+                      {isLive && liveSub && (
+                        <Text style={styles.clayCardSub}>{liveSub}</Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </View>
 
-        {/* ── Secondary Actions (Health & Growth) ── */}
-        <View style={styles.secondarySection}>
-          <Text style={styles.secondarySectionTitle}>Health & Growth</Text>
-          {SECONDARY_ACTIONS.map((action) => {
-            const petState = petStateMap[action.id] || 'neutral';
-            const PetIcon = PetIconMap[petState];
-            const IllustrationComponent = CardIllustrationMap[action.id];
+        {/* ── Section: Health & Growth ── */}
+        <Text style={styles.sectionHeader}>HEALTH & GROWTH</Text>
+        <View style={styles.listSection}>
+          {LIST_ITEMS.map((item) => {
+            const IllustrationComponent = CardIllustrationMap[item.id];
 
             return (
               <Pressable
-                key={action.id}
-                style={styles.secondaryRow}
-                onPress={() => router.push(action.route as any)}
-                accessibilityLabel={`Log ${action.label}`}
+                key={item.id}
+                style={({ pressed }) => [
+                  styles.clayListItem,
+                  pressed && styles.clayListItemPressed,
+                ]}
+                onPress={() => router.push(item.route as any)}
+                accessibilityLabel={item.label}
               >
-                {/* Colored background tint */}
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent', borderRadius: 22 }]} />
-
-                <View style={[styles.secondaryIcon, { backgroundColor: action.domainColor + '15' }]}>
+                <View style={[styles.clayListIcon, { backgroundColor: item.domainColor + '15' }]}>
                   {IllustrationComponent ? (
-                    <IllustrationComponent size={44} />
+                    <IllustrationComponent size={40} />
                   ) : (
-                    <Feather name="trending-up" size={24} color={action.domainColor} />
+                    <Feather name="trending-up" size={24} color={item.domainColor} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.secondaryLabel}>{action.label}</Text>
-                  <Text style={styles.secondarySubtitle}>{action.subtitle}</Text>
+                  <Text style={styles.clayListLabel}>{item.label}</Text>
+                  <Text style={styles.clayListDesc}>{item.description}</Text>
                 </View>
-                <Feather name="chevron-right" size={16} color={UI.textMuted} />
+                <Feather name="chevron-right" size={18} color={UI.textMuted} />
               </Pressable>
             );
           })}
@@ -1018,8 +1078,8 @@ export default function HomeScreen() {
         babyId={activeBaby?.id ?? ''}
         familyId={activeBaby?.family_id ?? ''}
         loggedBy={loggedBy}
-        onLogged={() => {
-          setToastMsg('\u2728 Diaper tracked.');
+        onLogged={(_type, msg) => {
+          setToastMsg(msg || '\u2728 Diaper tracked.');
           setShowToast(true);
         }}
       />
@@ -1059,14 +1119,25 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.base,
-    paddingTop: 8,
-    paddingBottom: 20,
+    paddingTop: 2,
+    paddingBottom: 30,
   },
 
   // ── Greeting ──
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   greetingBlock: {
-    gap: 6,
-    marginBottom: 20,
+    flex: 1,
+    gap: 4,
+  },
+  profileBtn: {
+    padding: 8,
+    marginTop: 4,
+    marginLeft: 8,
   },
   greetingTitle: {
     fontSize: 28,
@@ -1097,7 +1168,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 16,
     paddingBottom: 14,
-    marginBottom: 24,
+    marginBottom: 2,
     shadowColor: '#B0A090',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -1121,8 +1192,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   luminaMascot: {
-    width: 50,
-    height: 50,
+    width: 90,
+    height: 90,
   },
   luminaHubTitle: {
     fontSize: 20,
@@ -1179,122 +1250,99 @@ const styles = StyleSheet.create({
     color: '#6B5B4E',
   },
 
-  // ── Action Grid (unified domain cards) ──
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 16,
-    marginBottom: 28,
-  },
-  actionCard: {
-    width: '47.5%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    minHeight: 60,
-    overflow: 'hidden',
-    position: 'relative' as const,
-    ...SOFT_SHADOW,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  actionCardFull: {
-    width: '100%',
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    minHeight: 60,
-  },
-  actionCardContentRow: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 12,
-  },
-  actionCardIllustration: {
-  },
-  actionCardLabel: {
-    fontSize: 16,
+  // ── Section Headers ──
+  sectionHeader: {
+    fontSize: 15,
     fontWeight: '700' as const,
-    color: '#2D2A26',
-    letterSpacing: 0.1,
-  },
-  actionCardSub: {
-    fontSize: 12,
-    color: '#A08060',
-    marginTop: 2,
-  },
-  petIndicator: {
-    position: 'absolute' as const,
-    top: 8,
-    right: 8,
-  },
-  plusBadge: {
-    position: 'absolute' as const,
-    top: 8,
-    right: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: '#8A8A8A',
-    letterSpacing: 0.8,
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
-    marginBottom: 10,
+    marginTop: 16,
+    marginBottom: 8,
     paddingHorizontal: 2,
   },
 
-  // ── Secondary Actions (Health & Growth) ──
-  secondarySection: {
+  // ── 2x2 Clay Grid ──
+  actionGrid: {
+    gap: 12,
     marginBottom: 8,
   },
-  secondarySectionTitle: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: UI.textMuted,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase' as const,
-    marginBottom: 10,
-    paddingHorizontal: 2,
+  actionRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
   },
-  secondaryRow: {
+  clayCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    minHeight: 100,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
+  },
+  clayCardPressed: {
+    transform: [{ scale: 0.97 }],
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+  clayCardInner: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  clayCardLabel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#2D2A26',
+    letterSpacing: 0.2,
+    textAlign: 'center' as const,
+  },
+  clayCardSub: {
+    fontSize: 12,
+    color: '#A08060',
+    textAlign: 'center' as const,
+  },
+
+  // ── List Items (Clay) ──
+  listSection: {
+    gap: 12,
+    marginBottom: 8,
+  },
+  clayListItem: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 12,
-    marginBottom: 12,
-    minHeight: 60,
-    overflow: 'hidden' as const,
-    position: 'relative' as const,
-    ...SOFT_SHADOW,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  secondaryIcon: {
-    width: 48,
-    height: 48,
     borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
+  },
+  clayListItemPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+  clayListIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },
-  secondaryLabel: {
+  clayListLabel: {
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#2D2A26',
     marginBottom: 2,
   },
-  secondarySubtitle: {
-    fontSize: 12,
-    color: '#A08060',
+  clayListDesc: {
+    fontSize: 13,
+    color: '#8A8A8A',
+    lineHeight: 18,
   },
 
   // ── Voice Recording Overlay ──

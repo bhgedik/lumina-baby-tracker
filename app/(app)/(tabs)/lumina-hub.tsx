@@ -18,7 +18,10 @@ import {
   KeyboardAvoidingView,
   Alert,
   Dimensions,
+  Image,
 } from 'react-native';
+
+const luminaMascot = require('../../../assets/illustrations/lumina-mascot.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -87,6 +90,7 @@ function TypingIndicator() {
 
   return (
     <View style={chatStyles.aiRow}>
+      <Image source={luminaMascot} style={chatStyles.aiAvatarImg} resizeMode="contain" />
       <View style={chatStyles.aiBubble}>
         <View style={chatStyles.typingDots}>
           <Animated.View style={[chatStyles.dot, dotStyle(dot1)]} />
@@ -157,9 +161,7 @@ function MessageBubble({ msg, isNew }: { msg: ChatMessage; isNew: boolean }) {
       ]}
     >
       {!isUser && (
-        <View style={chatStyles.aiAvatar}>
-          <Feather name="heart" size={12} color="#FFFFFF" />
-        </View>
+        <Image source={luminaMascot} style={chatStyles.aiAvatarImg} resizeMode="contain" />
       )}
       <View style={isUser ? chatStyles.userBubble : chatStyles.aiBubble}>
         <RichMessageText text={msg.text} isUser={isUser} />
@@ -425,7 +427,7 @@ export default function LuminaHubScreen() {
   const hasOnlyWelcome = messages.length === 1 && messages[0]?.role === 'nurse';
 
   return (
-    <SafeAreaView style={chatStyles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={chatStyles.safeArea} edges={['top', 'bottom']}>
       <LinearGradient
         colors={['#FDFCF8', '#F5F0FA', '#F8F5F0']}
         locations={[0, 0.5, 1]}
@@ -448,8 +450,11 @@ export default function LuminaHubScreen() {
             </Pressable>
 
             <View style={chatStyles.headerCenter}>
-              <View style={chatStyles.headerDot} />
-              <Text style={chatStyles.headerTitle}>Lumina</Text>
+              <Image source={luminaMascot} style={chatStyles.headerMascot} resizeMode="contain" />
+              <View>
+                <Text style={chatStyles.headerTitle}>Lumina</Text>
+                <Text style={chatStyles.headerOnline}>Online</Text>
+              </View>
             </View>
 
             <Pressable
@@ -598,19 +603,22 @@ const chatStyles = StyleSheet.create({
   headerCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  headerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
+  headerMascot: {
+    width: 36,
+    height: 36,
   },
   headerTitle: {
     fontSize: typography.fontSize.lg,
     fontWeight: '600',
     color: colors.textPrimary,
     letterSpacing: -0.3,
+  },
+  headerOnline: {
+    fontSize: typography.fontSize.xs,
+    color: '#4CAF50',
+    fontWeight: '500',
   },
 
   // ── Messages ──
@@ -637,6 +645,11 @@ const chatStyles = StyleSheet.create({
     backgroundColor: colors.primary[400],
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
+  },
+  aiAvatarImg: {
+    width: 28,
+    height: 28,
     marginBottom: 2,
   },
   aiBubble: {
