@@ -1,16 +1,18 @@
 // ============================================================
 // Lumina — Paywall Screen
-// High-conversion paywall with pricing toggle, trust timeline,
-// and optimized CTA. Shown after the analyzing screen.
+// High-conversion paywall with RevenueCat integration,
+// pricing toggle, trust timeline, and optimized CTA.
 // ============================================================
 
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/shared/constants/theme';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
+import { useSubscriptionStore, type SubscriptionPlan } from '../../src/stores/subscriptionStore';
+import { flushOnboardingToStores } from '../../src/services/onboardingFlush';
 
 const PREMIUM_FEATURES = [
   'Unlimited Lumina AI Consultations',
@@ -19,19 +21,50 @@ const PREMIUM_FEATURES = [
   'Smart sleep & feeding analytics',
 ] as const;
 
-type PricingPlan = 'annual' | 'monthly';
-
 export default function PaywallScreen() {
   const router = useRouter();
   const babyName = useOnboardingStore((s) => s.babyName) || 'your baby';
-  const [selectedPlan, setSelectedPlan] = useState<PricingPlan>('annual');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('annual');
+  const purchase = useSubscriptionStore((s) => s.purchase);
+  const restorePurchases = useSubscriptionStore((s) => s.restorePurchases);
+  const isLoading = useSubscriptionStore((s) => s.isLoading);
+  const error = useSubscriptionStore((s) => s.error);
+  const packages = useSubscriptionStore((s) => s.packages);
 
-  const handleContinue = () => {
-    router.push('/(onboarding)/create-account');
+  // Try to get real prices from RevenueCat packages
+  const annualPkg = packages.find((p) => p.packageType === 'ANNUAL');
+  const monthlyPkg = packages.find((p) => p.packageType === 'MONTHLY');
+  const annualPrice = annualPkg?.product.priceString || '$59.99/yr';
+  const monthlyPrice = monthlyPkg?.product.priceString || '$9.99/mo';
+  const annualMonthly = annualPkg
+    ? `$${(annualPkg.product.price / 12).toFixed(2)}/mo`
+    : '$4.99/mo';
+
+  const finishOnboarding = async () => {
+    await flushOnboardingToStores();
+    router.replace('/(app)/(tabs)/home');
+  };
+
+  const handlePurchase = async () => {
+    const success = await purchase(selectedPlan);
+    if (success) {
+      await finishOnboarding();
+    }
+  };
+
+  const handleRestore = async () => {
+    const restored = await restorePurchases();
+    if (restored) {
+      Alert.alert('Restored!', 'Your premium access has been restored.', [
+        { text: 'Continue', onPress: () => finishOnboarding() },
+      ]);
+    } else {
+      Alert.alert('No purchases found', 'We could not find any previous purchases to restore.');
+    }
   };
 
   const handleSkip = () => {
-    router.push('/(onboarding)/create-account');
+    finishOnboarding();
   };
 
   return (
@@ -43,6 +76,7 @@ export default function PaywallScreen() {
         accessibilityRole="button"
         accessibilityLabel="Skip for now"
         hitSlop={12}
+        disabled={isLoading}
       >
         <Feather name="x" size={22} color={colors.textTertiary} />
       </Pressable>
@@ -108,7 +142,6 @@ export default function PaywallScreen() {
             <View style={styles.timelineNode}>
               <Feather name="credit-card" size={14} color={colors.textTertiary} />
             </View>
-            {/* No connector after last step */}
             <View style={styles.timelineContent}>
               <Text style={styles.timelineLabel}>Day 7</Text>
               <Text style={styles.timelineText}>You'll be charged unless you cancel</Text>
@@ -126,6 +159,7 @@ export default function PaywallScreen() {
               selectedPlan === 'annual' && shadows.md,
             ]}
             onPress={() => setSelectedPlan('annual')}
+            disabled={isLoading}
           >
             <View style={styles.pricingHeader}>
               <View style={styles.pricingRadio}>
@@ -141,12 +175,12 @@ export default function PaywallScreen() {
                     <Text style={styles.saveBadgeText}>SAVE 50%</Text>
                   </View>
                 </View>
-                <Text style={styles.pricingBreakdown}>$4.99/mo</Text>
+                <Text style={styles.pricingBreakdown}>{annualMonthly}</Text>
               </View>
               <Text style={[
                 styles.pricingAmount,
                 selectedPlan === 'annual' && styles.pricingAmountSelected,
-              ]}>$59.99/yr</Text>
+              ]}>{annualPrice}</Text>
             </View>
           </Pressable>
 
@@ -158,6 +192,7 @@ export default function PaywallScreen() {
               selectedPlan === 'monthly' && shadows.md,
             ]}
             onPress={() => setSelectedPlan('monthly')}
+            disabled={isLoading}
           >
             <View style={styles.pricingHeader}>
               <View style={styles.pricingRadio}>
@@ -172,7 +207,7 @@ export default function PaywallScreen() {
               <Text style={[
                 styles.pricingAmount,
                 selectedPlan === 'monthly' && styles.pricingAmountSelected,
-              ]}>$9.99/mo</Text>
+              ]}>{monthlyPrice}</Text>
             </View>
           </Pressable>
         </View>
@@ -180,22 +215,39 @@ export default function PaywallScreen() {
 
       {/* CTA pinned to bottom */}
       <View style={styles.ctaContainer}>
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
+
         <Pressable
-          style={[styles.primaryCta, shadows.lg]}
-          onPress={handleContinue}
+          style={[styles.primaryCta, shadows.lg, isLoading && styles.ctaDisabled]}
+          onPress={handlePurchase}
           accessibilityRole="button"
           accessibilityLabel="Start 7-day free trial"
+          disabled={isLoading}
         >
-          <Text style={styles.primaryCtaText}>Start 7-Day Free Trial</Text>
+          {isLoading ? (
+            <ActivityIndicator color={colors.textInverse} />
+          ) : (
+            <Text style={styles.primaryCtaText}>Start 7-Day Free Trial</Text>
+          )}
         </Pressable>
 
         <Text style={styles.microCopy}>
           Cancel anytime securely via App Store / Google Play
         </Text>
 
-        <Pressable onPress={handleSkip} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.skipText}>Skip for now</Text>
-        </Pressable>
+        <View style={styles.bottomLinks}>
+          <Pressable onPress={handleRestore} accessibilityRole="button" hitSlop={8} disabled={isLoading}>
+            <Text style={styles.restoreText}>Restore Purchases</Text>
+          </Pressable>
+
+          <Text style={styles.linkDivider}>·</Text>
+
+          <Pressable onPress={handleSkip} accessibilityRole="button" hitSlop={8} disabled={isLoading}>
+            <Text style={styles.skipText}>Skip for now</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -208,7 +260,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: spacing.xl + 44, // below safe area
+    top: spacing.xl + 44,
     right: spacing.xl,
     zIndex: 10,
     width: 36,
@@ -431,11 +483,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  ctaDisabled: {
+    opacity: 0.7,
+  },
   primaryCtaText: {
     color: colors.textInverse,
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
     letterSpacing: 0.3,
+  },
+  errorText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   microCopy: {
     fontSize: typography.fontSize.xs,
@@ -443,6 +504,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  bottomLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  restoreText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary[500],
+  },
+  linkDivider: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
   },
   skipText: {
     fontSize: typography.fontSize.sm,

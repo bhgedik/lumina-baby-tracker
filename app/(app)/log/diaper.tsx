@@ -472,8 +472,27 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
   );
 }
 
+// ── Claymorphism tokens ──
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: '#F7F4F0' },
   content: { padding: spacing.xl, paddingBottom: 100, alignItems: 'center' },
 
   lastChangePill: {
@@ -483,14 +502,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.full,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 9999,
     marginBottom: spacing['2xl'],
     marginTop: spacing.base,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   lastChange: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
   },
 
   // Quick-log buttons
@@ -512,10 +533,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.xs,
+    ...CLAY_SHADOW,
   },
   bigLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 13,
+    fontWeight: '700',
   },
   cameraCircle: {
     width: 48,
@@ -524,24 +546,24 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.primary[300],
     borderStyle: 'dashed',
-    backgroundColor: colors.primary[50],
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    ...CLAY_SHADOW,
   },
   bothButton: {
     width: '100%',
     height: 80,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
-    borderWidth: 2,
-    borderColor: colors.secondary[300],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.md,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   bothButtonLogged: {
-    borderColor: colors.success,
     backgroundColor: colors.success + '08',
   },
   bothIconRow: {
@@ -549,23 +571,27 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   bothLabel: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.secondary[500],
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // Today summary
   todaySummary: {
     marginTop: spacing.xl,
     width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: spacing.lg,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   summaryTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: spacing.md,
   },
   summaryRow: {
@@ -575,12 +601,12 @@ const styles = StyleSheet.create({
   stat: { alignItems: 'center' },
   statValue: {
     fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   statLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
 
@@ -588,14 +614,18 @@ const styles = StyleSheet.create({
   recentCard: {
     marginTop: spacing.lg,
     width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: spacing.lg,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   recentTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: spacing.md,
   },
   recentRow: {
@@ -603,11 +633,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     gap: spacing.md,
-    borderRadius: borderRadius.lg,
+    borderRadius: 16,
     paddingHorizontal: spacing.sm,
   },
   recentRowExpanded: {
-    backgroundColor: colors.neutral[50],
+    backgroundColor: '#F7F4F0',
   },
   recentIcon: {
     width: 36,
@@ -618,18 +648,18 @@ const styles = StyleSheet.create({
   },
   recentInfo: { flex: 1 },
   recentLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   recentDetails: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 1,
   },
   recentTime: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginRight: spacing.xs,
   },
 
@@ -638,12 +668,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.neutral[200],
+    borderTopColor: 'rgba(0,0,0,0.04)',
   },
   editorLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
     marginBottom: spacing.xs,
   },
   rashRow: {
@@ -655,19 +685,19 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: colors.neutral[200],
-    borderRadius: borderRadius.lg,
+    borderColor: '#EDE8E2',
+    borderRadius: 16,
     padding: spacing.md,
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    backgroundColor: colors.background,
+    color: '#2D2A26',
+    backgroundColor: '#F7F4F0',
     minHeight: 48,
     textAlignVertical: 'top',
   },
   doneButton: {
     flexDirection: 'row',
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: '#F2B89C',
+    borderRadius: 9999,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
@@ -675,10 +705,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
     alignSelf: 'flex-end',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   doneButtonText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textInverse,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 });

@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.soft,
   },
-  pickerIOS: { height: 150 },
+  pickerIOS: { height: 200 },
   pickerAndroid: { height: 56, paddingHorizontal: spacing.md },
   pickerItem: {
     fontSize: typography.fontSize.lg,

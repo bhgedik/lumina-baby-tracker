@@ -1,26 +1,124 @@
 // ============================================================
-// Lumina — Prep Dashboard (Pregnancy Home View)
-// Flo-inspired editorial layout: ring + baby size + rich tips
-// Checklist has moved to its own dedicated tab
+// Lumina — Pregnancy Dashboard (Complete Redesign)
+// Editorial claymorphism: hero card, linear progress,
+// 3D clay assets, refined typography
 // ============================================================
 
-import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Platform,
+  Animated,
+  Easing,
+  Dimensions,
+} from 'react-native';
+import { Image as RNImage } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../shared/constants/theme';
-import { DAILY_PREP_CARDS, BABY_SIZE_BY_WEEK } from '../data/prepContent';
-import { ProgressRing } from './ProgressRing';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { colors } from '../../../shared/constants/theme';
+import { DAILY_PREP_CARDS } from '../data/prepContent';
 import { PregnancyInsightsGrid } from './PregnancyInsightsGrid';
 
-const SERIF_FONT = Platform.select({
+const pregnancyHero = require('../../../../assets/illustrations/pregnancy-hero.png');
+const pregStorkIcon = require('../../../../assets/illustrations/pregnancy-stork.png');
+
+const { width: SCREEN_W } = Dimensions.get('window');
+
+// ── Design tokens ───────────────────────────────────────────
+const CLAY = {
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  inner: {
+    borderTopWidth: 2,
+    borderLeftWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.9)',
+    borderLeftColor: 'rgba(255,255,255,0.6)',
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.04)',
+    borderRightColor: 'rgba(0,0,0,0.02)',
+  },
+};
+
+const MUTED_PURPLE = '#8E8A9F';
+
+const SERIF = Platform.select({
   ios: 'Georgia',
   android: 'serif',
   default: 'serif',
 });
 
+// ── Compact progress ring (120px) ───────────────────────────
+const RING_SIZE = 120;
+const STROKE_W = 8;
+const RING_R = (RING_SIZE - STROKE_W) / 2;
+const RING_CIRC = 2 * Math.PI * RING_R;
+
+function CompactRing({ week, progress, babyName, dayOfWeek }: { week: number; progress: number; babyName: string; dayOfWeek: number }) {
+  const offset = RING_CIRC * (1 - Math.min(1, Math.max(0, progress)));
+  const daysUntilNext = 7 - dayOfWeek;
+  const weeksLeft = Math.max(0, 40 - week);
+
+  const subtext =
+    week >= 40
+      ? 'Any day now!'
+      : `${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} to go`;
+
+  return (
+    <View style={styles.compactRingWrap}>
+      <View style={styles.compactRingContainer}>
+        <Svg width={RING_SIZE} height={RING_SIZE}>
+          <Defs>
+            <LinearGradient id="compactGrad" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#F5E6D0" />
+              <Stop offset="1" stopColor={colors.secondary[400]} />
+            </LinearGradient>
+          </Defs>
+          <Circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_R}
+            stroke={colors.secondary[100]}
+            strokeWidth={STROKE_W}
+            fill="none"
+            opacity={0.4}
+          />
+          <Circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_R}
+            stroke="url(#compactGrad)"
+            strokeWidth={STROKE_W}
+            fill="none"
+            strokeDasharray={`${RING_CIRC}`}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            rotation={-90}
+            origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+          />
+        </Svg>
+        <View style={styles.compactRingCenter}>
+          <Text style={styles.compactRingLabel}>Week</Text>
+          <Text style={styles.compactRingNum}>{week}</Text>
+        </View>
+      </View>
+      <Text style={styles.compactRingSubtext}>{subtext}</Text>
+    </View>
+  );
+}
+
+// ── Props ───────────────────────────────────────────────────
 interface PrepDashboardProps {
   babyName: string;
-  dueDate: string; // ISO YYYY-MM-DD
+  dueDate: string;
   gestationalInfo: {
     week: number;
     dayOfWeek: number;
@@ -31,93 +129,100 @@ interface PrepDashboardProps {
   onAskLumina?: () => void;
 }
 
-export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrivedPress, onJournal, onAskLumina }: PrepDashboardProps) {
+export function PrepDashboard({
+  babyName,
+  dueDate,
+  gestationalInfo,
+  onBabyArrivedPress,
+  onJournal,
+  onAskLumina,
+}: PrepDashboardProps) {
   const { week, dayOfWeek, progress } = gestationalInfo;
-  const weeksLeft = Math.max(0, 40 - week);
 
-  // Find the starting index for tips — closest to current week
+  // Gentle hero pulse
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.02, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 3000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulseAnim]);
+
+  // Tips
   const startTipIndex = useMemo(() => {
-    const exactIdx = DAILY_PREP_CARDS.findIndex((c) => c.week === week);
-    if (exactIdx >= 0) return exactIdx;
-    let bestIdx = 0;
-    let bestDiff = Math.abs(DAILY_PREP_CARDS[0].week - week);
+    const idx = DAILY_PREP_CARDS.findIndex((c) => c.week === week);
+    if (idx >= 0) return idx;
+    let best = 0;
+    let bestD = Math.abs(DAILY_PREP_CARDS[0].week - week);
     for (let i = 1; i < DAILY_PREP_CARDS.length; i++) {
-      const diff = Math.abs(DAILY_PREP_CARDS[i].week - week);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestIdx = i;
-      }
+      const d = Math.abs(DAILY_PREP_CARDS[i].week - week);
+      if (d < bestD) { bestD = d; best = i; }
     }
-    return bestIdx;
+    return best;
   }, [week]);
 
   const [tipOffset, setTipOffset] = useState(0);
-  const currentTipIndex = DAILY_PREP_CARDS.length > 0
+  const tipIdx = DAILY_PREP_CARDS.length > 0
     ? (startTipIndex + tipOffset) % DAILY_PREP_CARDS.length
     : 0;
-  const currentTip = DAILY_PREP_CARDS[currentTipIndex] ?? null;
-
-  // Tip body: show truncated preview, expandable
+  const tip = DAILY_PREP_CARDS[tipIdx] ?? null;
   const [expanded, setExpanded] = useState(false);
-  const bodyPreviewLength = 180;
-  const tipBody = currentTip?.body ?? '';
-  const isLong = tipBody.length > bodyPreviewLength;
+  const tipBody = tip?.body ?? '';
+  const isLong = tipBody.length > 160;
   const displayBody = expanded || !isLong
     ? tipBody
-    : tipBody.slice(0, bodyPreviewLength).trimEnd() + '...';
-
-  const nextTip = () => {
-    setTipOffset((prev) => prev + 1);
-    setExpanded(false);
-  };
-
-  // Baby size for current week
-  const babySize = BABY_SIZE_BY_WEEK[week] ?? null;
+    : tipBody.slice(0, 160).trimEnd() + '...';
 
   return (
-    <View style={styles.content}>
-      {/* Greeting */}
-      <View style={styles.greetingSection}>
-        <Text style={styles.greetingText}>
-          {babyName === 'your little one'
-            ? 'Waiting for your little one...'
-            : `Waiting for ${babyName}...`}
-        </Text>
-        <Text style={styles.countdownText}>
-          {weeksLeft > 0 ? `${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} to go!` : 'Any day now!'}
-        </Text>
+    <View style={styles.root}>
+
+      {/* ════════════════════════════════════════════════════════
+          HERO CARD — 3D clay illustration + compact ring side by side
+          ════════════════════════════════════════════════════════ */}
+      <View style={styles.heroCard}>
+        <View style={styles.heroRow}>
+          <Animated.View style={[styles.heroImageWrap, { transform: [{ scale: pulseAnim }] }]}>
+            <RNImage source={pregnancyHero} style={styles.heroImage} resizeMode="contain" />
+          </Animated.View>
+
+          <CompactRing
+            week={week}
+            dayOfWeek={dayOfWeek}
+            progress={progress}
+            babyName={babyName}
+          />
+        </View>
       </View>
 
-      {/* Progress Ring */}
-      <ProgressRing
-        week={week}
-        dayOfWeek={dayOfWeek}
-        progress={progress}
-        babyName={babyName}
-      />
-
-      {/* "I Had My Baby!" button */}
+      {/* ════════════════════════════════════════════════════════
+          "I HAD MY BABY!" — clay list item style
+          ════════════════════════════════════════════════════════ */}
       {onBabyArrivedPress && (
-        <Pressable style={[styles.babyArrivedButton, shadows.soft]} onPress={onBabyArrivedPress}>
-          <Feather name="heart" size={20} color={colors.textInverse} />
-          <Text style={styles.babyArrivedText}>I Had My Baby!</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.babyArrivedItem,
+            pressed && styles.babyArrivedItemPressed,
+          ]}
+          onPress={onBabyArrivedPress}
+        >
+          <View style={styles.babyArrivedIcon}>
+            <RNImage source={pregStorkIcon} style={styles.babyArrivedIconImg} resizeMode="contain" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.babyArrivedLabel}>I Had My Baby!</Text>
+            <Text style={styles.babyArrivedDesc}>Switch to baby tracking mode</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color="#8A8A8A" />
         </Pressable>
       )}
 
-      {/* Baby Size Card */}
-      {babySize && (
-        <View style={[styles.sizeCard, shadows.soft]}>
-          <Text style={styles.sizeEmoji}>{babySize.emoji}</Text>
-          <View style={styles.sizeTextGroup}>
-            <Text style={styles.sizeHeadline}>
-              Baby is the size of a {babySize.name}
-            </Text>
-            <Text style={styles.sizeLength}>{babySize.length}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Pregnancy Insights Grid */}
+      {/* ════════════════════════════════════════════════════════
+          ASK LUMINA + CONTENT CARDS
+          ════════════════════════════════════════════════════════ */}
       {onJournal && onAskLumina && (
         <PregnancyInsightsGrid
           week={week}
@@ -127,132 +232,187 @@ export function PrepDashboard({ babyName, dueDate, gestationalInfo, onBabyArrive
         />
       )}
 
-      {/* Section spacer */}
-      <View style={styles.sectionSpacer} />
+      {/* ════════════════════════════════════════════════════════
+          TIP OF THE DAY
+          ════════════════════════════════════════════════════════ */}
+      {tip && (
+        <>
+          <Text style={styles.sectionHeader}>DAILY INSIGHT</Text>
+          <View style={styles.tipCard}>
+            <View style={styles.tipAccent} />
+            <View style={styles.tipContent}>
+              <Text style={styles.tipTitle}>{tip.title}</Text>
+              <Text style={styles.tipBody}>{displayBody}</Text>
 
-      {/* Tip Card — editorial style, expanded height */}
-      {currentTip && (
-      <View style={[styles.tipCard, shadows.soft]}>
-        <View style={styles.tipAccent} />
-        <View style={styles.tipContent}>
-          <Text style={styles.tipTitle}>{currentTip.title}</Text>
-          <Text style={styles.tipBody}>{displayBody}</Text>
+              {isLong && (
+                <Pressable
+                  style={styles.tipToggle}
+                  onPress={() => setExpanded(!expanded)}
+                >
+                  <Text style={styles.tipToggleText}>
+                    {expanded ? 'Show less' : 'Read more'}
+                  </Text>
+                  <Feather
+                    name={expanded ? 'chevron-up' : 'chevron-down'}
+                    size={14}
+                    color={colors.primary[600]}
+                  />
+                </Pressable>
+              )}
 
-          {/* Learn more / collapse */}
-          {isLong && (
-            <Pressable
-              style={styles.learnMoreButton}
-              onPress={() => setExpanded(!expanded)}
-              accessibilityLabel={expanded ? 'Show less' : 'Learn more'}
-            >
-              <Text style={styles.learnMoreText}>
-                {expanded ? 'Show less' : 'Learn more'}
-              </Text>
-              <Feather
-                name={expanded ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={colors.primary[600]}
-              />
-            </Pressable>
-          )}
-
-          {/* Next tip — no counter, infinite stream feel */}
-          <Pressable
-            style={styles.nextTipButton}
-            onPress={nextTip}
-            accessibilityLabel="Show me another tip"
-          >
-            <Text style={styles.nextTipText}>Show me another tip</Text>
-            <Feather name="arrow-right" size={16} color={colors.primary[600]} />
-          </Pressable>
-        </View>
-      </View>
+              <Pressable
+                style={styles.nextTipBtn}
+                onPress={() => { setTipOffset((p) => p + 1); setExpanded(false); }}
+              >
+                <Text style={styles.nextTipText}>Next insight</Text>
+                <Feather name="arrow-right" size={14} color={colors.primary[600]} />
+              </Pressable>
+            </View>
+          </View>
+        </>
       )}
+
     </View>
   );
 }
 
+// ── Styles ──────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  content: {
-    paddingVertical: spacing.base,
-    paddingBottom: 120,
+  root: {
+    paddingBottom: 20,
   },
 
-  // Greeting
-  greetingSection: {
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.lg,
+  // ══════════════════════════════════════════════════════════
+  // HERO CARD
+  // ══════════════════════════════════════════════════════════
+  heroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    ...CLAY.shadow,
+    ...CLAY.inner,
   },
-  greetingText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  countdownText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-
-  // "I Had My Baby!" button
-  babyArrivedButton: {
+  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.secondary[500],
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    alignSelf: 'center',
-    marginTop: spacing.lg,
+    gap: 8,
   },
-  babyArrivedText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textInverse,
-    letterSpacing: 0.3,
+  heroImageWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroImage: {
+    width: SCREEN_W * 0.38,
+    height: SCREEN_W * 0.38,
   },
 
-  // Baby size card
-  sizeCard: {
+  // Compact ring
+  compactRingWrap: {
+    alignItems: 'center',
+  },
+  compactRingContainer: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactRingCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  compactRingLabel: {
+    fontSize: 12,
+    fontFamily: SERIF,
+    fontWeight: '500',
+    color: colors.secondary[400],
+    letterSpacing: 0.5,
+  },
+  compactRingNum: {
+    fontSize: 36,
+    fontFamily: SERIF,
+    fontWeight: '700',
+    color: colors.secondary[600],
+    letterSpacing: -1,
+    marginTop: -2,
+  },
+  compactRingSubtext: {
+    fontSize: 12,
+    fontFamily: SERIF,
+    fontWeight: '500',
+    color: colors.secondary[400],
+    fontStyle: 'italic',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+
+  // ══════════════════════════════════════════════════════════
+  // I HAD MY BABY — clay list item
+  // ══════════════════════════════════════════════════════════
+  babyArrivedItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
-    padding: spacing.lg,
-    marginTop: spacing.base,
-    gap: spacing.base,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+    marginTop: 16,
+    ...CLAY.shadow,
+    ...CLAY.inner,
   },
-  sizeEmoji: {
-    fontSize: 48,
+  babyArrivedItemPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
   },
-  sizeTextGroup: {
-    flex: 1,
+  babyArrivedIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FEE8DC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sizeHeadline: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+  babyArrivedIconImg: {
+    width: 40,
+    height: 40,
   },
-  sizeLength: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+  babyArrivedLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
+    marginBottom: 2,
+  },
+  babyArrivedDesc: {
+    fontSize: 13,
+    color: '#8A8A8A',
+    lineHeight: 18,
   },
 
-  // Spacer
-  sectionSpacer: {
-    height: spacing.xl,
+  // ── Section headers ──
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: MUTED_PURPLE,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    marginTop: 20,
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
 
-  // Tip Card — editorial, tall
+  // ══════════════════════════════════════════════════════════
+  // TIP CARD
+  // ══════════════════════════════════════════════════════════
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     overflow: 'hidden',
-    minHeight: 260,
+    ...CLAY.shadow,
+    ...CLAY.inner,
   },
   tipAccent: {
     width: 4,
@@ -260,48 +420,43 @@ const styles = StyleSheet.create({
   },
   tipContent: {
     flex: 1,
-    padding: spacing.lg,
+    padding: 18,
   },
   tipTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2D2A26',
+    marginBottom: 8,
   },
   tipBody: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
-    marginBottom: spacing.base,
+    fontSize: 14,
+    color: '#5C5C5C',
+    lineHeight: 14 * 1.75,
+    marginBottom: 10,
   },
-
-  // Learn more
-  learnMoreButton: {
+  tipToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.base,
+    gap: 4,
+    marginBottom: 10,
   },
-  learnMoreText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+  tipToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.primary[600],
   },
-
-  // Next tip
-  nextTipButton: {
+  nextTipBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
+    gap: 6,
+    paddingVertical: 10,
     backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.lg,
-    marginTop: spacing.md,
+    borderRadius: 14,
   },
   nextTipText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.primary[600],
   },
 });

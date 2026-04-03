@@ -124,8 +124,8 @@ function MilestoneCard({
     >
       {/* Header: icon + title */}
       <View style={styles.cardHeader}>
-        <View style={[styles.domainBadge, { backgroundColor: '#F7F4F0', borderWidth: 1, borderColor: '#EDE8E2' }]}>
-          <Feather name={domainInfo.icon as any} size={16} color={domainInfo.color} />
+        <View style={[styles.domainBadge, { backgroundColor: `${domainInfo.color}18` }]}>
+          <Feather name={domainInfo.icon as any} size={20} color={domainInfo.color} />
         </View>
         <Text style={styles.cardTitle} numberOfLines={2}>
           {milestone.title}
@@ -145,7 +145,13 @@ function MilestoneCard({
 
       {/* CTA */}
       {isCelebrated ? (
-        <Pressable onPress={handleCelebrate} style={styles.achievedRow}>
+        <Pressable
+          onPress={handleCelebrate}
+          style={({ pressed }) => [
+            styles.achievedRow,
+            pressed && { transform: [{ scale: 0.98 }], shadowOpacity: 0.04 },
+          ]}
+        >
           <Feather name="check-circle" size={16} color="#7C9A8E" />
           <Text style={styles.achievedText}>
             Noticed{celebratedEntry?.achievedDate
@@ -155,7 +161,13 @@ function MilestoneCard({
           <Text style={styles.undoText}>Undo</Text>
         </Pressable>
       ) : (
-        <Pressable onPress={handleCelebrate} style={styles.celebrateButton}>
+        <Pressable
+          onPress={handleCelebrate}
+          style={({ pressed }) => [
+            styles.celebrateButton,
+            pressed && { transform: [{ scale: 0.98 }], shadowOpacity: 0.04 },
+          ]}
+        >
           <Feather name="check" size={14} color="#FFFFFF" />
           <Text style={styles.celebrateButtonText}>Mark as Achieved</Text>
         </Pressable>
@@ -193,14 +205,12 @@ function SealedChapter({ period }: { period: DevelopmentalPeriod }) {
   return (
     <View style={styles.sealedChapter}>
       <View style={styles.sealedLeft}>
-        <View style={styles.sealedNode} />
-        <View style={styles.sealedLine} />
+        <Feather name="lock" size={18} color="#8E8A9F" />
       </View>
       <View style={styles.sealedContent}>
         <Text style={styles.sealedTitle}>{period.title}</Text>
         <Text style={styles.sealedSubtitle}>{period.subtitle}</Text>
       </View>
-      <Feather name="lock" size={14} color="#A08060" />
     </View>
   );
 }
@@ -237,7 +247,13 @@ function ReadyChapter({
 
       {/* Reveal CTA card */}
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-        <Pressable onPress={onOpen} style={styles.readyCta}>
+        <Pressable
+          onPress={onOpen}
+          style={({ pressed }) => [
+            styles.readyCta,
+            pressed && { transform: [{ scale: 0.98 }], shadowOpacity: 0.04 },
+          ]}
+        >
           <View style={styles.readyCtaIcon}>
             <Feather name="gift" size={22} color="#7C9A8E" />
           </View>
@@ -515,6 +531,32 @@ export default function ProgressScreen() {
   );
 }
 
+// ── Claymorphism Design Tokens ──
+
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+const CLAY_PRESSED = {
+  transform: [{ scale: 0.98 }] as any,
+  shadowOpacity: 0.04,
+};
+
 // ── Styles ──
 
 const styles = StyleSheet.create({
@@ -535,14 +577,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   ageLabel: {
-    fontSize: typography.fontSize.base,
-    color: '#A08060',
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 13,
+    color: '#8E8A9F',
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   celebrationSummaryText: {
-    fontSize: typography.fontSize.base,
+    fontSize: 13,
     color: '#7B5EA7',
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: '700',
   },
 
   // ── Editorial Chapter Header ──
@@ -565,24 +609,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   chapterSubtitle: {
-    fontSize: typography.fontSize.base,
-    color: '#A08060',
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    fontSize: 13,
+    color: '#8A8A8A',
+    lineHeight: 18,
   },
   chapterBadge: {
-    backgroundColor: '#F7F4F0',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 10, paddingVertical: 3,
-    borderRadius: 22,
+    borderRadius: 24,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   chapterBadgeText: {
     fontSize: typography.fontSize.xs,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#7B5EA7',
   },
   chapterReassurance: {
-    fontSize: typography.fontSize.base,
-    color: '#A08060',
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    fontSize: 13,
+    color: '#8A8A8A',
+    lineHeight: 18,
     marginBottom: spacing.md,
   },
 
@@ -634,14 +680,20 @@ const styles = StyleSheet.create({
   sealedChapter: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: spacing.md,
     opacity: 0.55,
-    paddingVertical: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   sealedLeft: {
-    width: 28,
-    alignItems: 'center',
-    marginRight: spacing.md,
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#F0EDE8',
+    alignItems: 'center', justifyContent: 'center',
   },
   sealedNode: {
     width: 10,
@@ -661,13 +713,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sealedTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: '600',
-    color: '#A08060',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   sealedSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: '#A08060',
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
 
@@ -679,84 +731,80 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 24,
     padding: spacing.lg,
     marginTop: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#B0A090',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
+    gap: 14,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   readyCtaIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#F7F4F0',
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#E8F0ED',
     alignItems: 'center', justifyContent: 'center',
   },
   readyCtaText: {
-    fontSize: typography.fontSize.base,
+    fontSize: 16,
     fontWeight: '700',
     color: '#2D2A26',
   },
   readyCtaHint: {
-    fontSize: typography.fontSize.sm,
-    color: '#A08060',
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
 
-  // Milestone card — premium floating journal card
+  // Milestone card — claymorphism floating card
   milestoneCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 20,
-    shadowColor: '#B0A090',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 14,
   },
   domainBadge: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 52, height: 52, borderRadius: 26,
     alignItems: 'center', justifyContent: 'center',
   },
   cardTitle: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#2D2A26',
   },
   observationPrompt: {
-    fontSize: 15,
-    color: '#5C5C5C',
-    lineHeight: 22,
+    fontSize: 13,
+    color: '#8A8A8A',
+    lineHeight: 20,
     marginTop: spacing.md,
   },
 
   // Lumina's Tip — inline, light
   nurseTipRow: {
     marginTop: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   nurseTipLabel: {
     fontWeight: '700',
     color: '#7B5EA7',
   },
   nurseTipText: {
-    fontSize: 14,
-    color: '#A08060',
+    fontSize: 13,
+    color: '#8A8A8A',
     lineHeight: 20,
   },
 
-  // CTA — refined pill, left-aligned
+  // CTA — claymorphism pill button
   celebrateButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -766,13 +814,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
     backgroundColor: '#7C9A8E',
-    borderRadius: 22,
-    borderWidth: 0,
-    borderColor: 'transparent',
+    borderRadius: 24,
+    ...CLAY_SHADOW,
+    borderTopWidth: 2,
+    borderLeftWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.35)',
+    borderLeftColor: 'rgba(255,255,255,0.2)',
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+    borderRightColor: 'rgba(0,0,0,0.04)',
   },
   celebrateButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   achievedRow: {
@@ -783,17 +838,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     paddingVertical: 10,
     paddingHorizontal: 18,
-    backgroundColor: '#E8F0ED',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   achievedText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#7C9A8E',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   undoText: {
     fontSize: 13,
-    color: colors.textTertiary,
+    color: '#8A8A8A',
     fontWeight: '500',
     marginLeft: 4,
   },
@@ -815,17 +872,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing['2xl'],
     paddingHorizontal: spacing.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    marginHorizontal: 4,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   footerText: {
-    fontSize: typography.fontSize.base,
+    fontSize: 13,
     fontWeight: '400',
-    color: '#A08060',
+    color: '#8A8A8A',
     textAlign: 'center',
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    lineHeight: 20,
   },
   footerSource: {
-    fontSize: typography.fontSize.sm,
-    color: '#C0B8A8',
+    fontSize: 13,
+    color: '#8A8A8A',
     textAlign: 'center',
     marginTop: spacing.xs,
   },

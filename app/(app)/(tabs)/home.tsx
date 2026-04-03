@@ -20,6 +20,7 @@ import { Image as RNImage } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const luminaMascot = require('../../../assets/illustrations/lumina-mascot.png');
+const profileIcon = require('../../../assets/illustrations/profile-icon.png');
 import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
 import { formatTimerSeconds } from '../../../src/shared/utils/dateTime';
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
@@ -762,6 +763,24 @@ export default function HomeScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
+          {/* ── Greeting row with profile icon (matching postpartum) ── */}
+          <View style={styles.greetingRow}>
+            <View style={styles.greetingBlock}>
+              <Text style={styles.greetingTitle}>
+                {greeting}{parentName ? `, ${parentName}` : ''}.
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => router.push('/(app)/(tabs)/profile')}
+              hitSlop={10}
+              style={styles.profileBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
+            >
+              <RNImage source={profileIcon} style={styles.profileIcon} resizeMode="contain" />
+            </Pressable>
+          </View>
+
           <PrepDashboard
             babyName={babyName || 'your little one'}
             dueDate={dueDate}
@@ -771,7 +790,7 @@ export default function HomeScreen() {
             onAskLumina={() => setShowNurseChat(true)}
           />
 
-          <View style={{ height: 100 }} />
+          <View style={{ height: 30 }} />
         </ScrollView>
 
         {/* Voice recording overlay */}
@@ -859,7 +878,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Profile"
           >
-            <Feather name="user" size={22} color="#B0A898" />
+            <RNImage source={profileIcon} style={styles.profileIcon} resizeMode="contain" />
           </Pressable>
         </View>
 
@@ -1135,9 +1154,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   profileBtn: {
-    padding: 8,
-    marginTop: 4,
+    padding: 4,
+    marginTop: 2,
     marginLeft: 8,
+  },
+  profileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   greetingTitle: {
     fontSize: 28,

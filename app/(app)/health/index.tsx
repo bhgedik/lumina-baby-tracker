@@ -1,7 +1,7 @@
 // ============================================================
-// Lumina — Health Hub
+// Nodd — Health Hub
 // Two-Track System: Routine Care + Active Illness Episodes
-// Premium squircle aesthetic, nurture-first, zero anxiety
+// Claymorphism design — soft clay cards, inner light borders
 // ============================================================
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
+import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
 import { SegmentControl } from '../../../src/shared/components/SegmentControl';
 import { InsightToast } from '../../../src/shared/components/InsightToast';
 import { VaccineCard } from '../../../src/modules/health/components/VaccineCard';
@@ -38,14 +38,30 @@ const SEGMENTS = [
   { value: 'illness', label: 'Illness' },
 ];
 
-// ── Soft shadow token ───────────────────────────────────────
+// ── Claymorphism tokens ─────────────────────────────────────
 
-const SOFT_SHADOW = {
+const CLAY_SHADOW = {
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+const CLAY_PRESSED = {
+  transform: [{ scale: 0.98 }] as any,
+  shadowOpacity: 0.04,
 };
 
 export default function HealthHubScreen() {
@@ -310,7 +326,7 @@ export default function HealthHubScreen() {
           headerTintColor: colors.primary[600],
           headerBackTitle: 'Home',
           headerLeft,
-          headerStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: '#F7F4F0' },
           headerTitleStyle: {
             fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.semibold,
@@ -515,7 +531,7 @@ export default function HealthHubScreen() {
                   resolvedEpisodes.map((ep) => (
                     <Pressable
                       key={ep.id}
-                      style={styles.resolvedCard}
+                      style={({ pressed }) => [styles.resolvedCard, pressed && CLAY_PRESSED]}
                       onPress={() => router.push(`/(app)/health/episode/${ep.id}` as any)}
                     >
                       <View style={styles.resolvedIconWrap}>
@@ -613,7 +629,7 @@ function ActiveEpisodeCard({
   });
 
   return (
-    <View style={[styles.episodeCard, SOFT_SHADOW]}>
+    <View style={[styles.episodeCard, CLAY_SHADOW]}>
       {/* Header */}
       <View style={styles.episodeHeader}>
         <View style={styles.episodeDot} />
@@ -739,9 +755,9 @@ function CollapsibleToggle({
   onToggle: () => void;
 }) {
   return (
-    <Pressable style={styles.toggleCard} onPress={onToggle}>
+    <Pressable style={({ pressed }) => [styles.toggleCard, pressed && CLAY_PRESSED]} onPress={onToggle}>
       <View style={[styles.toggleIconWrap, { backgroundColor: iconTint + '18' }]}>
-        <Feather name={icon as any} size={14} color={iconTint} />
+        <Feather name={icon as any} size={16} color={iconTint} />
       </View>
       <Text style={styles.toggleLabel}>{label}</Text>
       <Feather
@@ -758,7 +774,7 @@ function CollapsibleToggle({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F7F4F0',
   },
   scrollView: {
     flex: 1,
@@ -787,12 +803,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xl,
     marginBottom: spacing.base,
-    gap: spacing.md,
+    gap: 14,
   },
   sectionIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -800,15 +816,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   sectionSubtitle: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-    marginTop: 1,
+    fontSize: 13,
+    color: '#8A8A8A',
+    marginTop: 2,
   },
 
   // ── Caught Up Card ──
@@ -819,27 +836,28 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['2xl'],
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   caughtUpIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
   caughtUpTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   caughtUpSubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -849,42 +867,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.base,
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
-    gap: spacing.sm,
-    ...SOFT_SHADOW,
+    gap: 14,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   toggleIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   toggleLabel: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
     letterSpacing: -0.1,
   },
 
   // ── Active Episode Card ──
   episodeCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 24,
     padding: spacing.base,
     marginBottom: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.secondary[400],
+    ...CLAY_INNER,
   },
   episodeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 14,
   },
   episodeDot: {
     width: 10,
@@ -896,14 +914,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   episodeTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
     letterSpacing: -0.1,
   },
   episodeMeta: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 1,
   },
   episodeChipRow: {
@@ -931,35 +949,37 @@ const styles = StyleSheet.create({
   primaryAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   primaryActionLabel: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // Secondary action row
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   actionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionLabel: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // Footer
@@ -998,16 +1018,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: spacing.base,
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: spacing.sm,
-    gap: spacing.md,
-    ...SOFT_SHADOW,
+    gap: 14,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   resolvedIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
@@ -1016,13 +1038,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resolvedTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   resolvedDate: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 1,
   },
 
@@ -1037,7 +1059,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.base,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
   },
   startEpisodeText: {
     fontSize: typography.fontSize.md,
@@ -1053,27 +1075,28 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['2xl'],
     paddingHorizontal: spacing.xl,
     marginTop: spacing.xl,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   healthyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
   healthyTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   healthySubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1087,7 +1110,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: spacing.xl,
     marginTop: 20,
-    ...shadows.sm,
+    ...CLAY_SHADOW,
   },
   inlineStartText: {
     fontSize: typography.fontSize.base,
@@ -1098,18 +1121,20 @@ const styles = StyleSheet.create({
   // ── Nurse's Tip ──
   nurseTipCard: {
     backgroundColor: colors.primary[50],
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 20,
     marginTop: spacing.base,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   nurseTipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 14,
   },
   nurseTipTitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.primary[700],
   },
   nurseTipBody: {

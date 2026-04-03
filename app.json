@@ -9,9 +9,8 @@
     "newArchEnabled": true,
     "scheme": "lumina",
     "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#C5CEAC"
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F4F0"
     },
     "ios": {
       "supportsTablet": true,

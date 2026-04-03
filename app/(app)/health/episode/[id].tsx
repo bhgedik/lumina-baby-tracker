@@ -1,6 +1,7 @@
 // ============================================================
-// Lumina — Episode Detail Screen
+// Nodd — Episode Detail Screen
 // Full timeline view for an illness episode with resolve action
+// Claymorphism design — soft clay cards, inner light borders
 // ============================================================
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -14,10 +15,36 @@ import {
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../../src/shared/constants/theme';
+import { colors, typography, spacing, borderRadius } from '../../../../src/shared/constants/theme';
 import { EpisodeTimeline } from '../../../../src/modules/health/components/EpisodeTimeline';
 import { InsightToast } from '../../../../src/shared/components/InsightToast';
 import { useHealthStore } from '../../../../src/stores/healthStore';
+
+// ── Claymorphism tokens ─────────────────────────────────────
+
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+const CLAY_PRESSED = {
+  transform: [{ scale: 0.98 }] as any,
+  shadowOpacity: 0.04,
+};
 
 export default function EpisodeDetailScreen() {
   const router = useRouter();
@@ -95,7 +122,7 @@ export default function EpisodeDetailScreen() {
           title: episode.title,
           headerTintColor: colors.primary[600],
           headerLeft,
-          headerStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: '#F7F4F0' },
           headerTitleStyle: {
             fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.semibold,
@@ -110,7 +137,7 @@ export default function EpisodeDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Episode Header */}
-        <View style={[styles.headerCard, shadows.sm]}>
+        <View style={[styles.headerCard, CLAY_SHADOW]}>
           <View style={styles.headerTopRow}>
             <View style={styles.headerTitleCol}>
               <Text style={styles.headerTitle}>{episode.title}</Text>
@@ -153,7 +180,7 @@ export default function EpisodeDetailScreen() {
 
         {/* Resolve button */}
         {isActive && (
-          <Pressable style={styles.resolveButton} onPress={handleResolve}>
+          <Pressable style={({ pressed }) => [styles.resolveButton, pressed && CLAY_PRESSED]} onPress={handleResolve}>
             <Feather name="check-circle" size={18} color={colors.primary[600]} />
             <Text style={styles.resolveText}>Mark as Resolved</Text>
           </Pressable>
@@ -177,7 +204,7 @@ export default function EpisodeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F7F4F0',
   },
   scrollView: {
     flex: 1,
@@ -199,10 +226,11 @@ const styles = StyleSheet.create({
 
   // Header card
   headerCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: spacing.xl,
     marginBottom: spacing.lg,
+    ...CLAY_INNER,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -215,13 +243,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   headerDate: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
   statusBadge: {
@@ -236,8 +264,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[50],
   },
   statusBadgeText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 13,
+    fontWeight: '700',
   },
   activeText: {
     color: colors.secondary[600],
@@ -268,13 +296,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   diagnosisText: {
-    fontSize: typography.fontSize.base,
+    fontSize: 16,
     color: colors.primary[500],
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: '700',
   },
   notes: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
     fontStyle: 'italic',
   },
 
@@ -283,9 +311,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: spacing.md,
   },
 
@@ -295,14 +325,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    borderWidth: 1.5,
-    borderColor: colors.primary[300],
-    borderRadius: borderRadius.full,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     paddingVertical: spacing.base,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   resolveText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.primary[600],
   },
 
@@ -314,7 +345,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   emptyText: {
-    fontSize: typography.fontSize.base,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
   },
 });

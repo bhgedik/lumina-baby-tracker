@@ -34,21 +34,21 @@ const AUTO_ADVANCE_MS = 4000;
 const SLIDES = [
   {
     icon: 'moon' as const,
-    title: 'AI Guidance at 3 AM',
+    title: 'Your 3 AM Companion',
     description:
-      "Get expert-level guidance when the pediatrician's office is closed. Lumina, your AI companion, never sleeps.",
+      "Lumina analyzes your baby's unique data to answer late-night questions and spot patterns your tired brain might miss. Never feel alone in the dark.",
   },
   {
     icon: 'zap' as const,
-    title: 'Frictionless Logging',
+    title: 'Designed for Sleep-Deprived Brains',
     description:
-      'Track feedings, sleep, and diapers with one thumb. Designed for exhausted parents at 3 AM.',
+      'Log feeds, sleep, and diapers with a single tap. We remember the exact details so you don\u2019t have to carry the mental load.',
   },
   {
     icon: 'heart' as const,
-    title: 'Parental Burnout Tracking',
+    title: 'Because You Matter, Too',
     description:
-      "We don't just track your baby. We track YOU. Because a healthy parent means a thriving baby.",
+      "We track your rest and recovery alongside your baby's milestones. Because the foundation of a thriving baby is a supported parent.",
   },
 ];
 

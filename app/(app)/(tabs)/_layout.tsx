@@ -14,7 +14,8 @@ const tabIcons = {
   checklist: require('../../../assets/icons/tab-checklist.png'),
 };
 
-const TAB_ICON_SIZE = 30;
+const TAB_ICON_SIZE = 28;
+const MASCOT_ICON_SIZE = 38;
 
 function TabIcon({ source, focused }: { source: any; focused: boolean }) {
   return (
@@ -71,19 +72,17 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 3. Lumina Hub — elevated center tab */}
+      {/* 3. Lumina Hub — center tab, same row alignment, slightly bigger */}
       <Tabs.Screen
         name="lumina-hub"
         options={{
           title: '',
           tabBarIcon: ({ focused }) => (
-            <View style={styles.fabContainer}>
-              <Image
-                source={tabIcons.lumina}
-                style={styles.fabIcon}
-                resizeMode="contain"
-              />
-            </View>
+            <Image
+              source={tabIcons.lumina}
+              style={[styles.mascotIcon, !focused && styles.tabIconInactive]}
+              resizeMode="contain"
+            />
           ),
           tabBarLabel: () => null,
         }}
@@ -159,18 +158,12 @@ const styles = StyleSheet.create({
   tabIcon: {
     width: TAB_ICON_SIZE,
     height: TAB_ICON_SIZE,
-    marginTop: -4,
+  },
+  mascotIcon: {
+    width: MASCOT_ICON_SIZE,
+    height: MASCOT_ICON_SIZE,
   },
   tabIconInactive: {
     opacity: 0.45,
-  },
-  fabContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  fabIcon: {
-    width: 88,
-    height: 88,
   },
 });

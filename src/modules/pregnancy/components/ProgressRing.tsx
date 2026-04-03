@@ -129,7 +129,7 @@ export function ProgressRing({ week, dayOfWeek, progress, babyName }: ProgressRi
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: spacing['2xl'],
+    paddingVertical: spacing.lg,
   },
   ringWrapper: {
     width: RING_SIZE + 40,

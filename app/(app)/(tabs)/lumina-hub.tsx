@@ -3,6 +3,7 @@
 // "Şefkatli Rehber" — Compassionate Guide
 // Full-screen conversational UI with action cards,
 // quick prompts, typing animation, and haptic feedback
+// Claymorphism Design System
 // ============================================================
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -37,6 +38,55 @@ import { useLuminaThreadStore } from '../../../src/stores/luminaThreadStore';
 import type { ChatMessage } from '../../../src/modules/insights/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// ── Claymorphism Design Tokens ──
+
+const CLAY_BG = '#F7F4F0';
+
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+const CLAY_CARD = {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 24,
+  ...CLAY_SHADOW,
+  ...CLAY_INNER,
+};
+
+const CLAY_LABEL = {
+  fontSize: 16,
+  fontWeight: '700' as const,
+  color: '#2D2A26',
+};
+
+const CLAY_DESC = {
+  fontSize: 13,
+  color: '#8A8A8A',
+};
+
+const CLAY_SECTION_HEADER = {
+  fontSize: 13,
+  fontWeight: '700' as const,
+  color: '#8E8A9F',
+  letterSpacing: 1.2,
+  textTransform: 'uppercase' as const,
+};
 
 // ── Helpers ──
 
@@ -198,20 +248,23 @@ function HistoryPanel({
         <View style={historyStyles.panelHeader}>
           <Text style={historyStyles.panelTitle}>Conversation History</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Feather name="x" size={20} color={colors.textSecondary} />
+            <Feather name="x" size={20} color="#8A8A8A" />
           </Pressable>
         </View>
         <ScrollView style={historyStyles.list} showsVerticalScrollIndicator={false}>
           {recentThreads.length === 0 ? (
             <View style={historyStyles.empty}>
-              <Feather name="message-circle" size={28} color={colors.textTertiary} />
+              <Feather name="message-circle" size={28} color="#8A8A8A" />
               <Text style={historyStyles.emptyText}>No conversations yet</Text>
             </View>
           ) : (
             recentThreads.map((thread) => (
               <Pressable
                 key={thread.id}
-                style={historyStyles.threadRow}
+                style={({ pressed }) => [
+                  historyStyles.threadRow,
+                  pressed && { transform: [{ scale: 0.98 }] },
+                ]}
                 onPress={() => { onSelectThread(thread.id); onClose(); }}
               >
                 <View style={historyStyles.threadContent}>
@@ -223,7 +276,7 @@ function HistoryPanel({
                   onPress={() => onDeleteThread(thread.id, thread.title)}
                   hitSlop={8}
                 >
-                  <Feather name="trash-2" size={14} color={colors.textTertiary} />
+                  <Feather name="trash-2" size={14} color="#8A8A8A" />
                 </Pressable>
               </Pressable>
             ))
@@ -428,132 +481,139 @@ export default function LuminaHubScreen() {
 
   return (
     <SafeAreaView style={chatStyles.safeArea} edges={['top', 'bottom']}>
-      <LinearGradient
-        colors={['#FDFCF8', '#F5F0FA', '#F8F5F0']}
-        locations={[0, 0.5, 1]}
-        style={chatStyles.gradient}
+      <KeyboardAvoidingView
+        style={chatStyles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <KeyboardAvoidingView
-          style={chatStyles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
-          {/* ── Header ── */}
-          <View style={chatStyles.header}>
-            <Pressable
-              style={chatStyles.headerBtn}
-              onPress={handleNewChat}
-              hitSlop={8}
-              accessibilityLabel="New conversation"
-            >
-              <Feather name="edit" size={20} color={colors.primary[600]} />
-            </Pressable>
-
-            <View style={chatStyles.headerCenter}>
-              <Image source={luminaMascot} style={chatStyles.headerMascot} resizeMode="contain" />
-              <View>
-                <Text style={chatStyles.headerTitle}>Lumina</Text>
-                <Text style={chatStyles.headerOnline}>Online</Text>
-              </View>
-            </View>
-
-            <Pressable
-              style={chatStyles.headerBtn}
-              onPress={() => setShowHistory(true)}
-              hitSlop={8}
-              accessibilityLabel="Conversation history"
-            >
-              <Feather name="clock" size={20} color={colors.primary[600]} />
-            </Pressable>
-          </View>
-
-          {/* ── Messages ── */}
-          <ScrollView
-            ref={scrollRef}
-            style={chatStyles.messageList}
-            contentContainerStyle={chatStyles.messageContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        {/* ── Header ── */}
+        <View style={chatStyles.header}>
+          <Pressable
+            style={({ pressed }) => [
+              chatStyles.headerBtn,
+              pressed && chatStyles.pressed,
+            ]}
+            onPress={handleNewChat}
+            hitSlop={8}
+            accessibilityLabel="New conversation"
           >
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                msg={msg}
-                isNew={newMessageIds.has(msg.id)}
-              />
-            ))}
-            {isTyping && <TypingIndicator />}
+            <Feather name="edit" size={20} color="#2D2A26" />
+          </Pressable>
 
-            {/* ── Quick Prompts (only on fresh chat) ── */}
-            {hasOnlyWelcome && !isTyping && (
-              <View style={chatStyles.quickPromptsSection}>
-                <Text style={chatStyles.quickPromptsLabel}>Try asking</Text>
-                <View style={chatStyles.quickPromptsGrid}>
-                  {QUICK_PROMPTS.map((prompt) => (
-                    <Pressable
-                      key={prompt.text}
-                      style={chatStyles.quickPromptCard}
-                      onPress={() => handleQuickPrompt(prompt.text)}
-                    >
-                      <View style={[chatStyles.quickPromptIcon, { backgroundColor: prompt.color }]}>
-                        <Feather name={prompt.icon} size={16} color={colors.primary[700]} />
-                      </View>
-                      <Text style={chatStyles.quickPromptText}>{prompt.text}</Text>
-                      <Feather name="arrow-up-right" size={14} color={colors.textTertiary} />
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            <View style={{ height: 8 }} />
-          </ScrollView>
-
-          {/* ── Input Area ── */}
-          <View style={chatStyles.inputContainer}>
-            <View style={chatStyles.inputRow}>
-              <Pressable
-                style={chatStyles.micBtn}
-                onPress={() => {/* Voice input — wired later */}}
-                hitSlop={8}
-                accessibilityLabel="Voice input"
-              >
-                <Feather name="mic" size={20} color={colors.primary[500]} />
-              </Pressable>
-
-              <TextInput
-                ref={inputRef}
-                style={chatStyles.textInput}
-                placeholder="Ask Lumina anything..."
-                placeholderTextColor={colors.textTertiary}
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={500}
-                returnKeyType="default"
-                editable={!isTyping}
-              />
-
-              <Pressable
-                style={[
-                  chatStyles.sendBtn,
-                  (!inputText.trim() || isTyping) && chatStyles.sendBtnDisabled,
-                ]}
-                onPress={handleSend}
-                disabled={!inputText.trim() || isTyping}
-                accessibilityLabel="Send message"
-              >
-                <Feather
-                  name="zap"
-                  size={18}
-                  color={inputText.trim() && !isTyping ? '#FFFFFF' : colors.textTertiary}
-                />
-              </Pressable>
+          <View style={chatStyles.headerCenter}>
+            <Image source={luminaMascot} style={chatStyles.headerMascot} resizeMode="contain" />
+            <View>
+              <Text style={chatStyles.headerTitle}>Lumina</Text>
+              <Text style={chatStyles.headerOnline}>Online</Text>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+
+          <Pressable
+            style={({ pressed }) => [
+              chatStyles.headerBtn,
+              pressed && chatStyles.pressed,
+            ]}
+            onPress={() => setShowHistory(true)}
+            hitSlop={8}
+            accessibilityLabel="Conversation history"
+          >
+            <Feather name="clock" size={20} color="#2D2A26" />
+          </Pressable>
+        </View>
+
+        {/* ── Messages ── */}
+        <ScrollView
+          ref={scrollRef}
+          style={chatStyles.messageList}
+          contentContainerStyle={chatStyles.messageContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        >
+          {messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              msg={msg}
+              isNew={newMessageIds.has(msg.id)}
+            />
+          ))}
+          {isTyping && <TypingIndicator />}
+
+          {/* ── Quick Prompts (only on fresh chat) ── */}
+          {hasOnlyWelcome && !isTyping && (
+            <View style={chatStyles.quickPromptsSection}>
+              <Text style={chatStyles.quickPromptsLabel}>TRY ASKING</Text>
+              <View style={chatStyles.quickPromptsGrid}>
+                {QUICK_PROMPTS.map((prompt) => (
+                  <Pressable
+                    key={prompt.text}
+                    style={({ pressed }) => [
+                      chatStyles.quickPromptCard,
+                      pressed && chatStyles.pressed,
+                    ]}
+                    onPress={() => handleQuickPrompt(prompt.text)}
+                  >
+                    <View style={[chatStyles.quickPromptIcon, { backgroundColor: prompt.color }]}>
+                      <Feather name={prompt.icon} size={16} color="#2D2A26" />
+                    </View>
+                    <Text style={chatStyles.quickPromptText}>{prompt.text}</Text>
+                    <Feather name="arrow-up-right" size={14} color="#8A8A8A" />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: 8 }} />
+        </ScrollView>
+
+        {/* ── Input Area ── */}
+        <View style={chatStyles.inputContainer}>
+          <View style={chatStyles.inputRow}>
+            <Pressable
+              style={({ pressed }) => [
+                chatStyles.micBtn,
+                pressed && chatStyles.pressed,
+              ]}
+              onPress={() => {/* Voice input — wired later */}}
+              hitSlop={8}
+              accessibilityLabel="Voice input"
+            >
+              <Feather name="mic" size={20} color="#2D2A26" />
+            </Pressable>
+
+            <TextInput
+              ref={inputRef}
+              style={chatStyles.textInput}
+              placeholder="Ask Lumina anything..."
+              placeholderTextColor="#8A8A8A"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+              returnKeyType="default"
+              editable={!isTyping}
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                chatStyles.sendBtn,
+                (!inputText.trim() || isTyping) && chatStyles.sendBtnDisabled,
+                pressed && inputText.trim() && !isTyping && chatStyles.pressed,
+              ]}
+              onPress={handleSend}
+              disabled={!inputText.trim() || isTyping}
+              accessibilityLabel="Send message"
+            >
+              <Feather
+                name="zap"
+                size={18}
+                color={inputText.trim() && !isTyping ? '#FFFFFF' : '#8A8A8A'}
+              />
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
 
       {/* ── History Panel ── */}
       <HistoryPanel
@@ -567,19 +627,23 @@ export default function LuminaHubScreen() {
 }
 
 // ============================================================
-// Styles
+// Styles — Claymorphism Design System
 // ============================================================
 
 const chatStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FDFCF8',
-  },
-  gradient: {
-    flex: 1,
+    backgroundColor: CLAY_BG,
   },
   container: {
     flex: 1,
+    backgroundColor: CLAY_BG,
+  },
+
+  // ── Pressed state ──
+  pressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.04,
   },
 
   // ── Header ──
@@ -589,16 +653,17 @@ const chatStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(167,139,186,0.15)',
+    backgroundColor: CLAY_BG,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(167,139,186,0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   headerCenter: {
     flexDirection: 'row',
@@ -610,13 +675,11 @@ const chatStyles = StyleSheet.create({
     height: 36,
   },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    ...CLAY_LABEL,
     letterSpacing: -0.3,
   },
   headerOnline: {
-    fontSize: typography.fontSize.xs,
+    fontSize: 11,
     color: '#4CAF50',
     fontWeight: '500',
   },
@@ -642,10 +705,11 @@ const chatStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.primary[400],
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
+    ...CLAY_SHADOW,
   },
   aiAvatarImg: {
     width: 28,
@@ -655,21 +719,22 @@ const chatStyles = StyleSheet.create({
   aiBubble: {
     maxWidth: '80%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderTopLeftRadius: 6,
+    borderRadius: 24,
+    borderTopLeftRadius: 8,
     padding: spacing.base,
     paddingHorizontal: spacing.lg,
-    ...shadows.sm,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   aiText: {
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    color: '#2D2A26',
     lineHeight: typography.fontSize.base * 1.65,
     letterSpacing: 0.1,
   },
   aiTextBold: {
     fontWeight: '700',
-    color: colors.primary[800],
+    color: '#2D2A26',
   },
 
   // User messages
@@ -681,10 +746,11 @@ const chatStyles = StyleSheet.create({
   userBubble: {
     maxWidth: '78%',
     backgroundColor: colors.primary[500],
-    borderRadius: 20,
-    borderTopRightRadius: 6,
+    borderRadius: 24,
+    borderTopRightRadius: 8,
     padding: spacing.md,
     paddingHorizontal: spacing.lg,
+    ...CLAY_SHADOW,
   },
   userText: {
     fontSize: typography.fontSize.base,
@@ -715,11 +781,7 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   quickPromptsLabel: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: '600',
-    color: colors.textTertiary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    ...CLAY_SECTION_HEADER,
     marginBottom: spacing.md,
     marginLeft: spacing.xs,
   },
@@ -729,14 +791,13 @@ const chatStyles = StyleSheet.create({
   quickPromptCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 20,
     padding: spacing.md,
     paddingHorizontal: spacing.base,
     gap: spacing.md,
-    ...shadows.sm,
     borderWidth: 1,
-    borderColor: 'rgba(167,139,186,0.1)',
+    borderColor: '#EDE8E2',
   },
   quickPromptIcon: {
     width: 36,
@@ -747,10 +808,10 @@ const chatStyles = StyleSheet.create({
   },
   quickPromptText: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
+    ...CLAY_LABEL,
+    fontSize: 14,
     fontWeight: '500',
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize.sm * 1.4,
+    lineHeight: 14 * 1.4,
   },
 
   // ── Input Area ──
@@ -758,9 +819,7 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingTop: spacing.sm,
     paddingBottom: Platform.OS === 'ios' ? spacing.xs : spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(167,139,186,0.12)',
-    backgroundColor: 'rgba(253,252,248,0.95)',
+    backgroundColor: CLAY_BG,
   },
   inputRow: {
     flexDirection: 'row',
@@ -768,45 +827,41 @@ const chatStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   micBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.primary[50],
-    borderWidth: 1,
-    borderColor: colors.primary[200],
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   textInput: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 44,
     maxHeight: 100,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 21,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    borderColor: '#EDE8E2',
     paddingHorizontal: spacing.base,
     paddingTop: Platform.OS === 'ios' ? 12 : 10,
     paddingBottom: Platform.OS === 'ios' ? 10 : 8,
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
+    color: '#2D2A26',
     textAlignVertical: 'center',
   },
   sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary[500],
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    ...CLAY_SHADOW,
   },
   sendBtnDisabled: {
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#EDE8E2',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -823,10 +878,12 @@ const historyStyles = StyleSheet.create({
   },
   panel: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '70%',
     paddingBottom: Platform.OS === 'ios' ? 34 : spacing.xl,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   panelHeader: {
     flexDirection: 'row',
@@ -835,13 +892,11 @@ const historyStyles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: spacing.base,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.neutral[200],
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDE8E2',
   },
   panelTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    ...CLAY_LABEL,
   },
   list: {
     paddingHorizontal: spacing.xl,
@@ -852,15 +907,14 @@ const historyStyles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    ...CLAY_DESC,
   },
   threadRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.neutral[100],
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDE8E2',
     gap: 12,
   },
   threadContent: {
@@ -868,13 +922,11 @@ const historyStyles = StyleSheet.create({
     gap: 3,
   },
   threadTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    ...CLAY_LABEL,
+    fontSize: 15,
   },
   threadPreview: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    ...CLAY_DESC,
   },
   deleteBtn: {
     padding: 6,

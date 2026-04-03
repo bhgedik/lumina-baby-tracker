@@ -3,16 +3,15 @@ import { useRouter } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '../src/stores/authStore';
 import { useOnboardingStore } from '../src/stores/onboardingStore';
-import { isSupabaseConfigured } from '../src/data/supabase/client';
+import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { colors } from '../src/shared/constants/theme';
 
 /**
- * Entry point — routes based on auth + onboarding state.
+ * Entry point — routes based on onboarding state.
  * Uses useEffect for navigation to prevent infinite render loops.
  */
 export default function Index() {
   const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const profile = useAuthStore((s) => s.profile);
   const onboardingCompleted = useOnboardingStore((s) => s.isCompleted);
   const onboardingHydrated = useOnboardingStore((s) => s.isHydrated);
@@ -33,17 +32,14 @@ export default function Index() {
     // Defer navigation by one frame to ensure the navigation container is ready
     const navigateAfterMount = () => {
       try {
-        // Onboarding not completed → ALWAYS go to onboarding (regardless of auth)
+        // Onboarding not completed → go to onboarding
         if (!hasCompletedOnboarding) {
           router.replace('/(onboarding)/welcome');
           return;
         }
 
-        // Onboarding completed but not authenticated → resume auth
-        if (isSupabaseConfigured && !isAuthenticated) {
-          router.replace('/(onboarding)/create-account');
-          return;
-        }
+        // Initialize RevenueCat (non-blocking)
+        useSubscriptionStore.getState().initialize().catch(() => {});
 
         // Fully ready → app
         router.replace('/(app)/(tabs)/home');

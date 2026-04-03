@@ -11,8 +11,8 @@ import { generateUUID } from '../stores/createSyncedStore';
 import type { Profile, Family, Baby } from '../modules/baby/types';
 
 interface FlushParams {
-  userId: string;
-  userEmail: string;
+  userId?: string;
+  userEmail?: string;
 }
 
 /**
@@ -22,12 +22,14 @@ interface FlushParams {
  * This logic was extracted from preferences.tsx to be reusable
  * from the post-paywall auth screen.
  */
-export async function flushOnboardingToStores({ userId, userEmail }: FlushParams): Promise<void> {
+export async function flushOnboardingToStores({ userId, userEmail }: FlushParams = {}): Promise<void> {
   const onboarding = useOnboardingStore.getState();
   const { setFamily, setProfile, completeOnboarding } = useAuthStore.getState();
   const { addBaby, setActiveBaby } = useBabyStore.getState();
 
   const now = new Date().toISOString();
+  const localUserId = userId || generateUUID();
+  const localEmail = userEmail || 'local@lumina.app';
   const familyId = generateUUID();
   const babyId = generateUUID();
 
@@ -45,9 +47,9 @@ export async function flushOnboardingToStores({ userId, userEmail }: FlushParams
 
   // Create Profile — uses auth userId as profile id
   const profile: Profile = {
-    id: userId,
+    id: localUserId,
     family_id: familyId,
-    email: userEmail,
+    email: localEmail,
     display_name: onboarding.parentName,
     role: 'primary',
     experience_level: onboarding.experienceLevel ?? 'first_time',

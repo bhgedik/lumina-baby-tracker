@@ -1305,15 +1305,26 @@ function HeroPlayCard({
 
 const heroStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#F8F2FA',
-    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 24,
     paddingTop: 20,
     marginBottom: spacing.xl,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,186,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+    borderTopWidth: 2,
+    borderLeftWidth: 1.5,
+    borderTopColor: 'rgba(255,255,255,0.9)',
+    borderLeftColor: 'rgba(255,255,255,0.6)',
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.04)',
+    borderRightColor: 'rgba(0,0,0,0.02)',
   },
   accentCircle: {
     position: 'absolute',
@@ -1813,10 +1824,29 @@ export default function ActivityLogScreen() {
   );
 }
 
+// ── Claymorphism tokens ──
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F7F4F0',
   },
   content: {
     padding: spacing.xl,
@@ -1838,10 +1868,12 @@ const styles = StyleSheet.create({
 
   // ── Activity Cards ──
   activityCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: spacing.lg,
     marginBottom: spacing.base,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1860,21 +1892,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   cardSubtitle: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
 
   // Duration
   durationLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   presetRow: {
@@ -1885,37 +1919,37 @@ const styles = StyleSheet.create({
   presetChip: {
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.neutral[50],
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
+    borderRadius: 9999,
+    backgroundColor: '#F7F4F0',
+    borderWidth: 1,
+    borderColor: '#EDE8E2',
   },
   presetChipActive: {
     backgroundColor: colors.primary[50],
     borderColor: colors.primary[400],
   },
   presetText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8A8A8A',
   },
   presetTextActive: {
     color: colors.primary[600],
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: '700',
   },
   customInputWrap: {
     flex: 1,
   },
   customInput: {
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: '#EDE8E2',
+    borderRadius: 9999,
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
+    fontSize: 13,
+    color: '#2D2A26',
     textAlign: 'center',
-    backgroundColor: colors.neutral[50],
+    backgroundColor: '#F7F4F0',
   },
 
   // Nurse tip toggle
@@ -1927,30 +1961,30 @@ const styles = StyleSheet.create({
   },
   tipToggleText: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
+    fontSize: 13,
     color: colors.primary[600],
-    fontWeight: typography.fontWeight.medium,
+    fontWeight: '700',
   },
   tipBody: {
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 16,
     padding: spacing.md,
     marginTop: spacing.xs,
   },
   tipText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[700],
+    fontSize: 13,
+    color: '#8A8A8A',
     lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
   },
 
   // ── AI Suggestion Chips ──
   aiChip: {
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#EDE8E2',
+    borderRadius: 16,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    backgroundColor: colors.neutral[50],
+    backgroundColor: '#F7F4F0',
   },
   aiChipHeader: {
     flexDirection: 'row',
@@ -1963,19 +1997,19 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: colors.neutral[300],
+    borderColor: '#EDE8E2',
     alignItems: 'center',
     justifyContent: 'center',
   },
   aiChipTitle: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   aiChipReason: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
     lineHeight: typography.fontSize.xs * typography.lineHeight.relaxed,
     marginLeft: 30,
   },
@@ -1987,8 +2021,8 @@ const styles = StyleSheet.create({
     marginLeft: 30,
   },
   aiChipProduct: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     fontStyle: 'italic',
   },
 
@@ -1997,21 +2031,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.sm,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.neutral[100],
+    borderRadius: 16,
+    backgroundColor: '#F7F4F0',
   },
   skeletonTitle: {
     width: '60%',
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#EDE8E2',
     marginBottom: spacing.sm,
   },
   skeletonReason: {
     width: '90%',
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: '#EDE8E2',
   },
 
   // ── Inline Log Button ──
@@ -2020,17 +2054,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: '#F2B89C',
+    borderRadius: 9999,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.md,
     alignSelf: 'center',
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   inlineLogText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // (Book library styles are in bookStyles above)
@@ -2038,9 +2074,9 @@ const styles = StyleSheet.create({
   // Footer
   footerText: {
     fontFamily: SERIF_FONT,
-    fontSize: typography.fontSize.sm,
+    fontSize: 13,
     fontStyle: 'italic',
-    color: colors.textTertiary,
+    color: '#8A8A8A',
     textAlign: 'center',
     lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
     marginTop: spacing.xl,

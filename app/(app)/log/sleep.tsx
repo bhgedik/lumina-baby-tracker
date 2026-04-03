@@ -29,18 +29,29 @@ import type { SleepLog } from '../../../src/modules/sleep/types';
 const UI = {
   bg: '#F7F4F0',
   card: '#FFFFFF',
-  text: '#3D3D3D',
+  text: '#2D2A26',
   textSecondary: '#5C5C5C',  // body text — readable on cream
   textMuted: '#8A8A8A',      // small labels, captions
-  accent: '#B199CE',
+  accent: '#F2B89C',
 };
 
-const SOFT_SHADOW = {
+const CLAY_SHADOW = {
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  elevation: 2,
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
 };
 
 // ── Sleep states ─────────────────────────────────────────────
@@ -384,15 +395,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: UI.card,
-    borderRadius: 16,
+    borderRadius: 24,
     paddingVertical: 14,
     paddingHorizontal: 20,
     marginBottom: 20,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   statusText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
     color: UI.text,
   },
 
@@ -414,9 +426,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   timelineLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: UI.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   timelineTime: {
     fontSize: 12,
@@ -437,9 +451,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     gap: 16,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   stateCardDisabled: {
     opacity: 0.4,
@@ -456,14 +469,14 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   stateLabel: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: UI.text,
   },
   stateDesc: {
     fontSize: 13,
     fontWeight: '400',
-    color: UI.textSecondary,
+    color: '#8A8A8A',
     lineHeight: 18,
   },
   stateTime: {
@@ -486,10 +499,11 @@ const styles = StyleSheet.create({
   },
   completeSummary: {
     backgroundColor: UI.card,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 20,
     gap: 14,
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   completeSummaryRow: {
     flexDirection: 'row',
@@ -515,14 +529,15 @@ const styles = StyleSheet.create({
   doneButton: {
     height: 56,
     backgroundColor: UI.accent,
-    borderRadius: 999,
+    borderRadius: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SOFT_SHADOW,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   doneButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 });

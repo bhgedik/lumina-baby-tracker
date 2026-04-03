@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing } from '../../src/shared/constants/theme';
 import { useOnboardingStore } from '../../src/stores/onboardingStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const TOTAL_DURATION = 3500;
@@ -103,6 +104,9 @@ export default function AnalyzingScreen() {
       crossFadeText();
       Haptics.selectionAsync();
     }, 2400);
+
+    // Initialize RevenueCat during loading so offerings are ready for paywall
+    useSubscriptionStore.getState().initialize().catch(() => {});
 
     const t3 = setTimeout(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

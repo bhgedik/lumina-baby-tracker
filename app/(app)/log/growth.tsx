@@ -558,10 +558,29 @@ export default function GrowthLogScreen() {
   );
 }
 
+// ── Claymorphism tokens ──
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F7F4F0',
   },
   content: {
     padding: spacing.xl,
@@ -570,10 +589,12 @@ const styles = StyleSheet.create({
   // ── Segmented Control ──
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: colors.neutral[100],
-    borderRadius: borderRadius.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 3,
     marginBottom: spacing.lg,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   segmentTab: {
     flex: 1,
@@ -582,20 +603,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.xl - 2,
+    borderRadius: 20,
   },
   segmentTabActive: {
-    backgroundColor: colors.surface,
-    ...shadows.sm,
+    backgroundColor: '#F7F4F0',
   },
   segmentTabText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textTertiary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8A8A8A',
   },
   segmentTabTextActive: {
-    color: colors.primary[600],
-    fontWeight: typography.fontWeight.semibold,
+    color: '#2D2A26',
+    fontWeight: '700',
   },
 
   // ── Chart Section ──
@@ -607,7 +627,7 @@ const styles = StyleSheet.create({
     fontFamily: SERIF_FONT,
     fontSize: typography.fontSize.base,
     fontStyle: 'italic',
-    color: colors.textSecondary,
+    color: '#8A8A8A',
     marginBottom: spacing.lg,
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
@@ -624,11 +644,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   dateArrowDisabled: {
     opacity: 0.3,
@@ -637,20 +657,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.neutral[50],
-    borderRadius: borderRadius.full,
-    borderWidth: 1.5,
-    borderColor: colors.primary[200],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 9999,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
-  datePillShadow: {
-    shadowColor: colors.primary[500],
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+  datePillShadow: {},
   datePillIcon: {
     width: 26,
     height: 26,
@@ -660,17 +674,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   datePillLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 
   // ── Metric Card ──
   metricCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: spacing.lg,
     marginBottom: spacing.base,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -689,13 +705,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   metricTitle: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   metricSub: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
 
@@ -703,10 +719,10 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.neutral[50],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
+    backgroundColor: '#F7F4F0',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EDE8E2',
     paddingHorizontal: spacing.base,
     marginBottom: spacing.base,
   },
@@ -714,13 +730,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
     fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   unitText: {
-    fontSize: typography.fontSize.md,
-    color: colors.textTertiary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 16,
+    color: '#8A8A8A',
+    fontWeight: '700',
     marginLeft: spacing.sm,
   },
 
@@ -738,14 +754,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
   },
   tipBody: {
-    backgroundColor: colors.primary[50],
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 16,
     padding: spacing.md,
     marginTop: spacing.xs,
   },
   tipText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[700],
+    fontSize: 13,
+    color: '#8A8A8A',
     lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
   },
 
@@ -761,18 +777,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   noteLabel: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   notesInput: {
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#EDE8E2',
+    borderRadius: 16,
     padding: spacing.base,
     fontSize: typography.fontSize.base,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
+    color: '#2D2A26',
+    backgroundColor: '#F7F4F0',
     minHeight: 80,
     lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
   },
@@ -921,14 +937,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: '#F2B89C',
+    borderRadius: 9999,
     marginBottom: spacing.xl,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   emptyButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textInverse,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   emptyNote: {
     flexDirection: 'row',
@@ -952,15 +970,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     height: 56,
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
+    backgroundColor: '#F2B89C',
+    borderRadius: 9999,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   saveButtonDisabled: {
     opacity: 0.4,
   },
   saveButtonText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textInverse,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
 });

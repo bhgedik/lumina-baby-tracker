@@ -1,6 +1,6 @@
 // ============================================================
-// Lumina — Prep Checklist Tab (Pregnancy Mode)
-// Premium category-first dashboard with AI-powered task detail
+// Nodd — Prep Checklist Tab (Pregnancy Mode)
+// Claymorphism design system
 // ============================================================
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
@@ -18,8 +18,19 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image as RNImage } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../../../src/shared/constants/theme';
+import { colors, typography, spacing, borderRadius } from '../../../src/shared/constants/theme';
+
+// 3D Clay category icons
+const catIcons: Record<string, any> = {
+  'Safety':              require('../../../assets/illustrations/checklist-safety.png'),
+  'Hospital Bag':        require('../../../assets/illustrations/checklist-hospital.png'),
+  'Diaper Station':      require('../../../assets/illustrations/checklist-diaper.png'),
+  'Feeding Prep':        require('../../../assets/illustrations/checklist-feeding.png'),
+  'Bath Time':           require('../../../assets/illustrations/checklist-bath.png'),
+  'Postpartum Recovery': require('../../../assets/illustrations/checklist-recovery.png'),
+};
 import { BottomSheet } from '../../../src/shared/components/BottomSheet';
 import { usePrepChecklistStore } from '../../../src/stores/prepChecklistStore';
 import { useDashboardData } from '../../../src/modules/dashboard/hooks/useDashboardData';
@@ -32,16 +43,50 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 type IconName = ComponentProps<typeof Feather>['name'];
 
+// ─── Claymorphism Design Tokens ─────────────────────────────
+const CLAY_BG = '#F7F4F0';
+
+const CLAY_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 12 },
+  shadowOpacity: 0.08,
+  shadowRadius: 20,
+  elevation: 6,
+};
+
+const CLAY_INNER = {
+  borderTopWidth: 2,
+  borderLeftWidth: 1.5,
+  borderTopColor: 'rgba(255,255,255,0.9)',
+  borderLeftColor: 'rgba(255,255,255,0.6)',
+  borderBottomWidth: 1.5,
+  borderRightWidth: 1,
+  borderBottomColor: 'rgba(0,0,0,0.04)',
+  borderRightColor: 'rgba(0,0,0,0.02)',
+};
+
+const CLAY_CARD = {
+  backgroundColor: '#FFFFFF' as const,
+  borderRadius: 24,
+  ...CLAY_SHADOW,
+  ...CLAY_INNER,
+};
+
+const CLAY_PRESSED = {
+  transform: [{ scale: 0.98 }] as const,
+  shadowOpacity: 0.04,
+};
+
 // Category metadata — icon, accent color, background tint, tagline
 const CATEGORY_META: Record<string, { icon: IconName; color: string; bg: string; tagline: string }> = {
-  'Safety':              { icon: 'shield',    color: '#2E7D32', bg: '#E8F5E9', tagline: 'Making your home a safe haven' },
-  'Hospital Bag':        { icon: 'briefcase', color: colors.secondary[600], bg: colors.secondary[50], tagline: 'Everything you need, packed and ready' },
-  'Diaper Station':      { icon: 'layers',    color: '#F57F17', bg: '#FFF8E1', tagline: 'Your command center for changes' },
-  'Feeding Prep':        { icon: 'coffee',    color: '#5E35B1', bg: '#EDE7F6', tagline: 'Ready for every feed, day and night' },
-  'Bath Time':           { icon: 'droplet',   color: '#0288D1', bg: '#E1F5FE', tagline: 'Gentle care for delicate skin' },
-  'Postpartum Recovery': { icon: 'heart',     color: colors.secondary[500], bg: colors.secondary[50], tagline: 'Because your healing matters too' },
+  'Safety':              { icon: 'shield',    color: '#A78BBA', bg: '#F3EDF7', tagline: 'Making your home a safe haven' },
+  'Hospital Bag':        { icon: 'briefcase', color: '#A78BBA', bg: '#FEE8DC', tagline: 'Everything you need, packed and ready' },
+  'Diaper Station':      { icon: 'layers',    color: '#A78BBA', bg: '#FFF3D6', tagline: 'Your command center for changes' },
+  'Feeding Prep':        { icon: 'coffee',    color: '#A78BBA', bg: '#E8DDF3', tagline: 'Ready for every feed, day and night' },
+  'Bath Time':           { icon: 'droplet',   color: '#A78BBA', bg: '#DCE8F8', tagline: 'Gentle care for delicate skin' },
+  'Postpartum Recovery': { icon: 'heart',     color: '#A78BBA', bg: '#F8E0E6', tagline: 'Because your healing matters too' },
 };
-const DEFAULT_META = { icon: 'star' as IconName, color: colors.primary[600], bg: colors.primary[50], tagline: '' };
+const DEFAULT_META = { icon: 'star' as IconName, color: '#A78BBA', bg: '#F3EDF7', tagline: '' };
 
 // ============================================================
 // Main Screen
@@ -151,15 +196,23 @@ export default function ChecklistScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Back navigation */}
-          <Pressable style={styles.backRow} onPress={goBack} accessibilityLabel="Back to all categories">
-            <Feather name="chevron-left" size={20} color={colors.textSecondary} />
+          <Pressable
+            style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.7 }]}
+            onPress={goBack}
+            accessibilityLabel="Back to all categories"
+          >
+            <Feather name="chevron-left" size={20} color="#8A8A8A" />
             <Text style={styles.backText}>All Categories</Text>
           </Pressable>
 
           {/* Category header */}
           <View style={styles.catHeader}>
-            <View style={[styles.catHeaderIcon, { backgroundColor: meta.bg }]}>
-              <Feather name={meta.icon} size={24} color={meta.color} />
+            <View style={[styles.catHeaderIcon, { backgroundColor: meta.bg }, CLAY_INNER]}>
+              {catIcons[activeCategory] ? (
+                <RNImage source={catIcons[activeCategory]} style={styles.catIconImg} resizeMode="contain" />
+              ) : (
+                <Feather name={meta.icon} size={24} color={meta.color} />
+              )}
             </View>
             <View style={styles.catHeaderInfo}>
               <Text style={styles.catHeaderTitle}>{activeCategory}</Text>
@@ -173,7 +226,6 @@ export default function ChecklistScreen() {
           <View style={styles.catProgressWrap}>
             <ProgressPill
               progress={data.completed / Math.max(1, data.total)}
-              fillColor={meta.color}
               size="md"
             />
           </View>
@@ -194,7 +246,7 @@ export default function ChecklistScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <View style={[styles.emptyIcon, { backgroundColor: meta.bg }]}>
+              <View style={[styles.emptyIcon, { backgroundColor: meta.bg }, CLAY_SHADOW, CLAY_INNER]}>
                 <Feather name="check-circle" size={28} color={meta.color} />
               </View>
               <Text style={styles.emptyTitle}>All done!</Text>
@@ -214,29 +266,32 @@ export default function ChecklistScreen() {
                   setShowCompleted(!showCompleted);
                 }}
               >
-                <Text style={styles.completedToggleText}>
-                  Completed ({data.checked.length})
+                <Text style={styles.sectionHeader}>
+                  COMPLETED ({data.checked.length})
                 </Text>
                 <Feather
                   name={showCompleted ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={colors.textTertiary}
+                  color="#8E8A9F"
                 />
               </Pressable>
 
               {showCompleted && data.checked.map((item) => (
                 <Pressable
                   key={item.id}
-                  style={styles.completedRow}
+                  style={({ pressed }) => [
+                    styles.completedRow,
+                    pressed && { transform: [{ scale: 0.98 }] },
+                  ]}
                   onPress={() => setSelectedTask(item)}
                 >
                   <View style={styles.completedCheck}>
-                    <Feather name="check" size={12} color={colors.textInverse} />
+                    <Feather name="check" size={12} color="#FFFFFF" />
                   </View>
                   <Text style={styles.completedRowTitle} numberOfLines={1}>
                     {item.title}
                   </Text>
-                  <Feather name="chevron-right" size={14} color={colors.neutral[300]} />
+                  <Feather name="chevron-right" size={14} color="#D1D1D1" />
                 </Pressable>
               ))}
             </View>
@@ -244,7 +299,7 @@ export default function ChecklistScreen() {
 
           {(isLoading || isSurpriseLoading) && (
             <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color={colors.primary[400]} />
+              <ActivityIndicator size="small" color="#A78BBA" />
               <Text style={styles.loadingText}>Discovering more tasks...</Text>
             </View>
           )}
@@ -270,9 +325,9 @@ export default function ChecklistScreen() {
 
         {/* Overall progress card */}
         {overallProgress.total > 0 && (
-          <View style={[styles.overallCard, shadows.sm]}>
+          <View style={styles.overallCard}>
             <View style={styles.overallTop}>
-              <Text style={styles.overallLabel}>Overall Progress</Text>
+              <Text style={styles.overallLabel}>OVERALL PROGRESS</Text>
               <Text style={styles.overallCount}>
                 {overallProgress.completed}/{overallProgress.total}
               </Text>
@@ -286,53 +341,63 @@ export default function ChecklistScreen() {
 
         {isLoading && (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={colors.primary[500]} />
+            <ActivityIndicator size="small" color="#A78BBA" />
             <Text style={styles.loadingText}>Setting up your prep plan...</Text>
           </View>
         )}
 
-        {/* Category cards */}
+        {/* Section header */}
+        <Text style={styles.sectionHeader}>CATEGORIES</Text>
+
+        {/* Category cards — row layout matching clay list items */}
         <View style={styles.catGrid}>
           {MAIN_CATEGORIES.map((cat) => {
             const meta = CATEGORY_META[cat] ?? DEFAULT_META;
             const data = categoryData[cat] ?? { total: 0, completed: 0 };
             const isComplete = data.total > 0 && data.completed === data.total;
+            const icon = catIcons[cat];
 
             return (
               <Pressable
                 key={cat}
-                style={[styles.catCard, shadows.sm]}
+                style={({ pressed }) => [
+                  styles.catCard,
+                  pressed && styles.catCardPressed,
+                ]}
                 onPress={() => openCategory(cat)}
                 accessibilityRole="button"
                 accessibilityLabel={`${cat}: ${data.completed} of ${data.total} completed`}
               >
-                <View style={styles.catCardTop}>
+                <View style={styles.catCardRow}>
                   <View style={[styles.catCardIcon, { backgroundColor: meta.bg }]}>
-                    <Feather name={meta.icon} size={20} color={meta.color} />
+                    {icon ? (
+                      <RNImage source={icon} style={styles.catIconImg} resizeMode="contain" />
+                    ) : (
+                      <Feather name={meta.icon} size={22} color={meta.color} />
+                    )}
+                  </View>
+                  <View style={styles.catCardContent}>
+                    <Text style={styles.catCardName}>{cat}</Text>
+                    <Text style={styles.catCardTagline} numberOfLines={1}>{meta.tagline}</Text>
+                    <View style={styles.catCardBottom}>
+                      <View style={styles.catCardBarWrap}>
+                        <ProgressPill
+                          progress={data.completed / Math.max(1, data.total)}
+                          size="sm"
+                        />
+                      </View>
+                      <Text style={styles.catCardCount}>
+                        {data.completed}/{data.total}
+                      </Text>
+                    </View>
                   </View>
                   {isComplete ? (
                     <View style={styles.catCardDone}>
-                      <Feather name="check" size={12} color={colors.textInverse} />
+                      <Feather name="check" size={12} color="#FFFFFF" />
                     </View>
                   ) : (
-                    <Feather name="chevron-right" size={18} color={colors.textTertiary} />
+                    <Feather name="chevron-right" size={20} color="#C5C0D0" />
                   )}
-                </View>
-
-                <Text style={styles.catCardName}>{cat}</Text>
-                <Text style={styles.catCardTagline} numberOfLines={1}>{meta.tagline}</Text>
-
-                <View style={styles.catCardBottom}>
-                  <View style={styles.catCardBarWrap}>
-                    <ProgressPill
-                      progress={data.completed / Math.max(1, data.total)}
-                      fillColor={meta.color}
-                      size="sm"
-                    />
-                  </View>
-                  <Text style={[styles.catCardCount, { color: meta.color }]}>
-                    {data.completed}/{data.total}
-                  </Text>
                 </View>
               </Pressable>
             );
@@ -341,7 +406,7 @@ export default function ChecklistScreen() {
 
         {isSurpriseLoading && (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={colors.primary[300]} />
+            <ActivityIndicator size="small" color="#A78BBA" />
             <Text style={styles.loadingText}>Loading more tasks...</Text>
           </View>
         )}
@@ -392,23 +457,26 @@ function TaskCard({
 
   return (
     <RNAnimated.View style={{ opacity, transform: [{ translateY }] }}>
-      <View style={[styles.taskCard, shadows.sm]}>
+      <View style={styles.taskCard}>
         {/* Quick-check circle */}
         <Pressable
           onPress={onQuickCheck}
-          style={[styles.taskCheck, { borderColor: accentColor }]}
+          style={[styles.taskCheck, { borderColor: '#A78BBA' }]}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Mark "${item.title}" complete`}
         />
 
         {/* Card body — opens detail */}
-        <Pressable style={styles.taskBody} onPress={onPress}>
+        <Pressable
+          style={({ pressed }) => [styles.taskBody, pressed && { opacity: 0.7 }]}
+          onPress={onPress}
+        >
           <Text style={styles.taskTitle} numberOfLines={2}>{item.title}</Text>
           <View style={styles.taskAiRow}>
             <Text style={styles.taskSparkle}>✨</Text>
             <Text style={styles.taskAiLabel}>View expert insights</Text>
-            <Feather name="chevron-right" size={14} color={colors.textTertiary} />
+            <Feather name="chevron-right" size={14} color="#D1D1D1" />
           </View>
         </Pressable>
       </View>
@@ -417,14 +485,14 @@ function TaskCard({
 }
 
 // ============================================================
-// Progress Pill — premium bar with depth and shine
+// Progress Pill — clay-style bar with depth and shine
 // ============================================================
 
-const PILL_TRACK_COLOR = '#EDE8E1'; // soft warm beige inset
+const PILL_TRACK_COLOR = '#EDE8E1';
 
 function ProgressPill({
   progress,
-  fillColor = colors.primary[500],
+  fillColor = '#A78BBA',
   size = 'md',
 }: {
   progress: number;
@@ -444,7 +512,6 @@ function ProgressPill({
             { width: `${pct}%`, backgroundColor: fillColor, borderRadius: radius },
           ]}
         >
-          {/* Glossy highlight on top half for liquid depth */}
           <View style={[pillStyles.highlight, { borderRadius: radius }]} />
         </View>
       )}
@@ -456,7 +523,6 @@ const pillStyles = StyleSheet.create({
   track: {
     backgroundColor: PILL_TRACK_COLOR,
     overflow: 'hidden',
-    // Subtle inner-shadow illusion via border
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(0,0,0,0.04)',
   },
@@ -519,14 +585,14 @@ function DetailSheet({
           {/* Title */}
           <Text style={styles.detailTitle}>{task.title}</Text>
 
-          {/* Lumina's Take */}
+          {/* Expert's Take */}
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHead}>
-              <View style={[styles.detailSectionDot, { backgroundColor: colors.secondary[50] }]}>
-                <Feather name="heart" size={16} color={colors.secondary[500]} />
+              <View style={[styles.detailSectionDot, { backgroundColor: '#FFF0E6' }]}>
+                <Feather name="heart" size={16} color="#D4845A" />
               </View>
               <Text style={styles.detailSectionLabel}>
-                {"Lumina\u2019s Take"}
+                {"Expert\u2019s Take"}
               </Text>
             </View>
             <Text style={styles.detailSectionBody}>
@@ -538,8 +604,8 @@ function DetailSheet({
           {task.actionSteps && task.actionSteps.length > 0 && (
             <View style={styles.detailSection}>
               <View style={styles.detailSectionHead}>
-                <View style={[styles.detailSectionDot, { backgroundColor: colors.primary[50] }]}>
-                  <Feather name="clipboard" size={16} color={colors.primary[600]} />
+                <View style={[styles.detailSectionDot, { backgroundColor: '#F3EDF7' }]}>
+                  <Feather name="clipboard" size={16} color="#A78BBA" />
                 </View>
                 <Text style={styles.detailSectionLabel}>Your Action Plan</Text>
               </View>
@@ -558,13 +624,17 @@ function DetailSheet({
 
           {/* Complete / Undo button */}
           <Pressable
-            style={[styles.detailCTA, isChecked && styles.detailCTAUndo]}
+            style={({ pressed }) => [
+              styles.detailCTA,
+              isChecked && styles.detailCTAUndo,
+              pressed && { transform: [{ scale: 0.98 }], shadowOpacity: 0.04 },
+            ]}
             onPress={() => onComplete(task)}
           >
             <Feather
               name={isChecked ? 'rotate-ccw' : 'check-circle'}
               size={20}
-              color={isChecked ? colors.textSecondary : colors.textInverse}
+              color={isChecked ? '#8A8A8A' : '#FFFFFF'}
             />
             <Text style={[styles.detailCTAText, isChecked && styles.detailCTAUndoText]}>
               {isChecked ? 'Undo Completion' : 'Mark as Completed'}
@@ -584,102 +654,126 @@ function DetailSheet({
 }
 
 // ============================================================
-// Styles
+// Styles — Claymorphism Design System
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: spacing.xl, paddingBottom: 120 },
+  container: { flex: 1, backgroundColor: CLAY_BG },
+  scrollContent: { padding: 24, paddingBottom: 120 },
 
   // ─── Header ─────────────────────────────────────────────
   title: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#3D3D3D',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
+    fontSize: 16,
+    color: '#8A8A8A',
+    marginBottom: 24,
+  },
+
+  // ─── Section Headers ──────────────────────────────────────
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 14,
+    marginTop: 8,
   },
 
   // ─── Overall Progress Card ──────────────────────────────
   overallCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.base,
-    marginBottom: spacing.xl,
+    ...CLAY_CARD,
+    padding: 20,
+    marginBottom: 24,
   },
   overallTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   overallLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   overallCount: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary[700],
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#A78BBA',
   },
 
-  // ─── Category Grid (Level 1) ───────────────────────────
+  // ─── Category Grid (Level 1) — row layout ─────────────
   catGrid: {
-    gap: spacing.md,
+    gap: 12,
   },
   catCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.base,
-    gap: spacing.xs,
+    ...CLAY_CARD,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  catCardTop: {
+  catCardPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.04,
+  },
+  catCardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    gap: 14,
   },
   catCardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+    ...CLAY_INNER,
+  },
+  catIconImg: {
+    width: 40,
+    height: 40,
+  },
+  catCardContent: {
+    flex: 1,
+    gap: 2,
   },
   catCardDone: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary[500],
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#A78BBA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   catCardName: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   catCardTagline: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-    marginBottom: spacing.xs,
+    fontSize: 13,
+    color: '#8A8A8A',
   },
   catCardBottom: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 10,
+    marginTop: 4,
   },
   catCardBarWrap: {
     flex: 1,
   },
   catCardCount: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#A78BBA',
     minWidth: 34,
     textAlign: 'right',
   },
@@ -688,19 +782,19 @@ const styles = StyleSheet.create({
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.lg,
+    gap: 6,
+    marginBottom: 20,
   },
   backText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 14,
+    color: '#8A8A8A',
+    fontWeight: '600',
   },
   catHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    gap: 14,
+    marginBottom: 16,
   },
   catHeaderIcon: {
     width: 52,
@@ -713,30 +807,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   catHeaderTitle: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   catHeaderCount: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#8A8A8A',
     marginTop: 2,
   },
   catProgressWrap: {
-    marginBottom: spacing.xl,
+    marginBottom: 24,
   },
 
   // ─── Task List ────────────────────────────────────────
   taskList: {
-    gap: spacing.md,
+    gap: 14,
   },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.base,
-    gap: spacing.md,
+    ...CLAY_CARD,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
   },
   taskCheck: {
     width: 26,
@@ -746,31 +840,31 @@ const styles = StyleSheet.create({
   },
   taskBody: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 6,
   },
   taskTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize.base * typography.lineHeight.normal,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2A26',
+    lineHeight: 22,
   },
   taskAiRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
   },
   taskSparkle: { fontSize: 12 },
   taskAiLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 13,
+    color: '#8A8A8A',
+    fontWeight: '500',
   },
 
   // ─── Empty State ──────────────────────────────────────
   emptyState: {
     alignItems: 'center',
-    paddingVertical: spacing['3xl'],
-    gap: spacing.md,
+    paddingVertical: 48,
+    gap: 14,
   },
   emptyIcon: {
     width: 64,
@@ -778,203 +872,202 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 8,
   },
   emptyTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2D2A26',
   },
   emptySub: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
+    fontSize: 16,
+    color: '#8A8A8A',
     textAlign: 'center',
   },
 
   // ─── Completed Section ────────────────────────────────
   completedSection: {
-    marginTop: spacing.xl,
+    marginTop: 28,
   },
   completedToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.md,
+    paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.neutral[100],
-  },
-  completedToggleText: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.textTertiary,
+    borderTopColor: 'rgba(0,0,0,0.04)',
   },
   completedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.neutral[100],
+    borderBottomColor: 'rgba(0,0,0,0.04)',
   },
   completedCheck: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.primary[500],
+    backgroundColor: '#A78BBA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   completedRowTitle: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: 14,
+    color: '#8A8A8A',
   },
 
   // ─── Loading ──────────────────────────────────────────
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
+    gap: 10,
+    paddingVertical: 20,
     justifyContent: 'center',
   },
   loadingText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: 13,
+    color: '#8A8A8A',
   },
 
   // ─── Detail Sheet (Level 3) ───────────────────────────
   detailScroll: { maxHeight: 520 },
-  detailContent: { paddingBottom: spacing.xl, gap: spacing.base },
+  detailContent: { paddingBottom: 24, gap: 18 },
 
   detailBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 10,
   },
   detailCatPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 100,
   },
   detailCatLabel: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: 12,
+    fontWeight: '700',
   },
   detailAiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.neutral[50],
-    borderRadius: borderRadius.full,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F7F4F0',
+    borderRadius: 100,
   },
   detailAiIcon: { fontSize: 11 },
   detailAiText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 12,
+    color: '#8A8A8A',
+    fontWeight: '500',
   },
 
   detailTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
-    lineHeight: typography.fontSize.lg * typography.lineHeight.normal,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2D2A26',
+    lineHeight: 28,
   },
 
   detailSection: {
-    backgroundColor: colors.neutral[50],
-    borderRadius: borderRadius.xl,
-    padding: spacing.base,
-    gap: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    gap: 14,
+    ...CLAY_SHADOW,
+    ...CLAY_INNER,
   },
   detailSectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 10,
   },
   detailSectionDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   detailSectionLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8A9F',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   },
   detailSectionBody: {
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    fontSize: 16,
+    color: '#8A8A8A',
+    lineHeight: 24,
   },
 
-  actionList: { gap: spacing.md },
+  actionList: { gap: 14 },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
+    gap: 14,
   },
   actionNum: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary[500],
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#A78BBA',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 1,
   },
   actionNumText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textInverse,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   actionStepText: {
     flex: 1,
-    fontSize: typography.fontSize.base,
-    color: colors.textSecondary,
-    lineHeight: typography.fontSize.base * typography.lineHeight.relaxed,
+    fontSize: 16,
+    color: '#8A8A8A',
+    lineHeight: 24,
   },
 
   detailCTA: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary[500],
-    borderRadius: borderRadius.full,
-    paddingVertical: spacing.base,
-    ...shadows.md,
+    gap: 10,
+    backgroundColor: '#A78BBA',
+    borderRadius: 100,
+    paddingVertical: 16,
+    ...CLAY_SHADOW,
   },
   detailCTAUndo: {
-    backgroundColor: colors.neutral[100],
+    backgroundColor: '#F7F4F0',
     shadowOpacity: 0,
     elevation: 0,
+    ...CLAY_INNER,
   },
   detailCTAText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.textInverse,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   detailCTAUndoText: {
-    color: colors.textSecondary,
+    color: '#8A8A8A',
   },
   detailDismiss: {
     alignSelf: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: 10,
   },
   detailDismissText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: 14,
+    color: '#8A8A8A',
+    fontWeight: '500',
   },
 });
